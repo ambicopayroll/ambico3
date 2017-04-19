@@ -387,13 +387,9 @@ class ct_jdw_krj_def_view extends ct_jdw_krj_def {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->jdw_id->SetVisibility();
-		$this->jdw_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pegawai_id->SetVisibility();
 		$this->tgl->SetVisibility();
 		$this->jk_id->SetVisibility();
-		$this->scan_masuk->SetVisibility();
-		$this->scan_keluar->SetVisibility();
 		$this->hk_def->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
@@ -670,7 +666,7 @@ class ct_jdw_krj_def_view extends ct_jdw_krj_def {
 		if ($this->UseSelectLimit) {
 			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			if ($dbtype == "MSSQL") {
-				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderByList())));
 			} else {
 				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
 			}
@@ -713,10 +709,21 @@ class ct_jdw_krj_def_view extends ct_jdw_krj_def {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
+		if ($this->AuditTrailOnView) $this->WriteAuditTrailOnView($row);
 		$this->jdw_id->setDbValue($rs->fields('jdw_id'));
 		$this->pegawai_id->setDbValue($rs->fields('pegawai_id'));
+		if (array_key_exists('EV__pegawai_id', $rs->fields)) {
+			$this->pegawai_id->VirtualValue = $rs->fields('EV__pegawai_id'); // Set up virtual field value
+		} else {
+			$this->pegawai_id->VirtualValue = ""; // Clear value
+		}
 		$this->tgl->setDbValue($rs->fields('tgl'));
 		$this->jk_id->setDbValue($rs->fields('jk_id'));
+		if (array_key_exists('EV__jk_id', $rs->fields)) {
+			$this->jk_id->VirtualValue = $rs->fields('EV__jk_id'); // Set up virtual field value
+		} else {
+			$this->jk_id->VirtualValue = ""; // Clear value
+		}
 		$this->scan_masuk->setDbValue($rs->fields('scan_masuk'));
 		$this->scan_keluar->setDbValue($rs->fields('scan_keluar'));
 		$this->hk_def->setDbValue($rs->fields('hk_def'));
@@ -766,16 +773,63 @@ class ct_jdw_krj_def_view extends ct_jdw_krj_def {
 		$this->jdw_id->ViewCustomAttributes = "";
 
 		// pegawai_id
-		$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+		if ($this->pegawai_id->VirtualValue <> "") {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
+		} else {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+		if (strval($this->pegawai_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
+		$sWhereWrk = "";
+		$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pegawai_id->ViewValue = $this->pegawai_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+			}
+		} else {
+			$this->pegawai_id->ViewValue = NULL;
+		}
+		}
 		$this->pegawai_id->ViewCustomAttributes = "";
 
 		// tgl
 		$this->tgl->ViewValue = $this->tgl->CurrentValue;
-		$this->tgl->ViewValue = ew_FormatDateTime($this->tgl->ViewValue, 0);
+		$this->tgl->ViewValue = tgl_indo($this->tgl->ViewValue);
 		$this->tgl->ViewCustomAttributes = "";
 
 		// jk_id
-		$this->jk_id->ViewValue = $this->jk_id->CurrentValue;
+		if ($this->jk_id->VirtualValue <> "") {
+			$this->jk_id->ViewValue = $this->jk_id->VirtualValue;
+		} else {
+		if (strval($this->jk_id->CurrentValue) <> "") {
+			$sFilterWrk = "`jk_id`" . ew_SearchString("=", $this->jk_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `jk_id`, `jk_nm` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `t_jk`";
+		$sWhereWrk = "";
+		$this->jk_id->LookupFilters = array("dx1" => '`jk_nm`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->jk_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->jk_id->ViewValue = $this->jk_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->jk_id->ViewValue = $this->jk_id->CurrentValue;
+			}
+		} else {
+			$this->jk_id->ViewValue = NULL;
+		}
+		}
 		$this->jk_id->ViewCustomAttributes = "";
 
 		// scan_masuk
@@ -789,13 +843,12 @@ class ct_jdw_krj_def_view extends ct_jdw_krj_def {
 		$this->scan_keluar->ViewCustomAttributes = "";
 
 		// hk_def
-		$this->hk_def->ViewValue = $this->hk_def->CurrentValue;
+		if (strval($this->hk_def->CurrentValue) <> "") {
+			$this->hk_def->ViewValue = $this->hk_def->OptionCaption($this->hk_def->CurrentValue);
+		} else {
+			$this->hk_def->ViewValue = NULL;
+		}
 		$this->hk_def->ViewCustomAttributes = "";
-
-			// jdw_id
-			$this->jdw_id->LinkCustomAttributes = "";
-			$this->jdw_id->HrefValue = "";
-			$this->jdw_id->TooltipValue = "";
 
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
@@ -811,16 +864,6 @@ class ct_jdw_krj_def_view extends ct_jdw_krj_def {
 			$this->jk_id->LinkCustomAttributes = "";
 			$this->jk_id->HrefValue = "";
 			$this->jk_id->TooltipValue = "";
-
-			// scan_masuk
-			$this->scan_masuk->LinkCustomAttributes = "";
-			$this->scan_masuk->HrefValue = "";
-			$this->scan_masuk->TooltipValue = "";
-
-			// scan_keluar
-			$this->scan_keluar->LinkCustomAttributes = "";
-			$this->scan_keluar->HrefValue = "";
-			$this->scan_keluar->TooltipValue = "";
 
 			// hk_def
 			$this->hk_def->LinkCustomAttributes = "";
@@ -1296,8 +1339,12 @@ ft_jdw_krj_defview.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+ft_jdw_krj_defview.Lists["x_pegawai_id"] = {"LinkField":"x_pegawai_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pegawai_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pegawai"};
+ft_jdw_krj_defview.Lists["x_jk_id"] = {"LinkField":"x_jk_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_jk_nm","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"t_jk"};
+ft_jdw_krj_defview.Lists["x_hk_def"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ft_jdw_krj_defview.Lists["x_hk_def"].Options = <?php echo json_encode($t_jdw_krj_def->hk_def->Options()) ?>;
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -1384,17 +1431,6 @@ $t_jdw_krj_def_view->ShowMessage();
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($t_jdw_krj_def->jdw_id->Visible) { // jdw_id ?>
-	<tr id="r_jdw_id">
-		<td><span id="elh_t_jdw_krj_def_jdw_id"><?php echo $t_jdw_krj_def->jdw_id->FldCaption() ?></span></td>
-		<td data-name="jdw_id"<?php echo $t_jdw_krj_def->jdw_id->CellAttributes() ?>>
-<span id="el_t_jdw_krj_def_jdw_id">
-<span<?php echo $t_jdw_krj_def->jdw_id->ViewAttributes() ?>>
-<?php echo $t_jdw_krj_def->jdw_id->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($t_jdw_krj_def->pegawai_id->Visible) { // pegawai_id ?>
 	<tr id="r_pegawai_id">
 		<td><span id="elh_t_jdw_krj_def_pegawai_id"><?php echo $t_jdw_krj_def->pegawai_id->FldCaption() ?></span></td>
@@ -1424,28 +1460,6 @@ $t_jdw_krj_def_view->ShowMessage();
 <span id="el_t_jdw_krj_def_jk_id">
 <span<?php echo $t_jdw_krj_def->jk_id->ViewAttributes() ?>>
 <?php echo $t_jdw_krj_def->jk_id->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($t_jdw_krj_def->scan_masuk->Visible) { // scan_masuk ?>
-	<tr id="r_scan_masuk">
-		<td><span id="elh_t_jdw_krj_def_scan_masuk"><?php echo $t_jdw_krj_def->scan_masuk->FldCaption() ?></span></td>
-		<td data-name="scan_masuk"<?php echo $t_jdw_krj_def->scan_masuk->CellAttributes() ?>>
-<span id="el_t_jdw_krj_def_scan_masuk">
-<span<?php echo $t_jdw_krj_def->scan_masuk->ViewAttributes() ?>>
-<?php echo $t_jdw_krj_def->scan_masuk->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($t_jdw_krj_def->scan_keluar->Visible) { // scan_keluar ?>
-	<tr id="r_scan_keluar">
-		<td><span id="elh_t_jdw_krj_def_scan_keluar"><?php echo $t_jdw_krj_def->scan_keluar->FldCaption() ?></span></td>
-		<td data-name="scan_keluar"<?php echo $t_jdw_krj_def->scan_keluar->CellAttributes() ?>>
-<span id="el_t_jdw_krj_def_scan_keluar">
-<span<?php echo $t_jdw_krj_def->scan_keluar->ViewAttributes() ?>>
-<?php echo $t_jdw_krj_def->scan_keluar->ViewValue ?></span>
 </span>
 </td>
 	</tr>

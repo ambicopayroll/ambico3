@@ -1835,16 +1835,16 @@
     <table id="t_jdw_krj_def">
       <phrase id="tblcaption" value="Jadwal Kerja (Perincian)" />
       <field id="jdw_id">
-        <phrase id="fldcaption" value="jdw id" />
+        <phrase id="fldcaption" value="ID" />
       </field>
       <field id="pegawai_id">
-        <phrase id="fldcaption" value="pegawai id" />
+        <phrase id="fldcaption" value="Nama" />
       </field>
       <field id="tgl">
-        <phrase id="fldcaption" value="tgl" />
+        <phrase id="fldcaption" value="Tgl." />
       </field>
       <field id="jk_id">
-        <phrase id="fldcaption" value="jk id" />
+        <phrase id="fldcaption" value="Kode Jam Kerja" />
       </field>
       <field id="scan_masuk">
         <phrase id="fldcaption" value="scan masuk" />
@@ -1853,7 +1853,11 @@
         <phrase id="fldcaption" value="scan keluar" />
       </field>
       <field id="hk_def">
-        <phrase id="fldcaption" value="hk def" />
+        <phrase id="fldcaption" value="Gol. Hari Kerja" />
+        <phrase id="fldtagvalue1" value="5" />
+        <phrase id="fldtagcaption1" value="5 HK" />
+        <phrase id="fldtagvalue2" value="6" />
+        <phrase id="fldtagcaption2" value="6 HK" />
       </field>
     </table>
     <table id="t_jdw_krj_peg">

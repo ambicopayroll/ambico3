@@ -289,13 +289,9 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 		// Create form object
 		$objForm = new cFormObj();
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->jdw_id->SetVisibility();
-		$this->jdw_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pegawai_id->SetVisibility();
 		$this->tgl->SetVisibility();
 		$this->jk_id->SetVisibility();
-		$this->scan_masuk->SetVisibility();
-		$this->scan_keluar->SetVisibility();
 		$this->hk_def->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
@@ -551,29 +547,21 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 
 		// Load from form
 		global $objForm;
-		if (!$this->jdw_id->FldIsDetailKey)
-			$this->jdw_id->setFormValue($objForm->GetValue("x_jdw_id"));
 		if (!$this->pegawai_id->FldIsDetailKey) {
 			$this->pegawai_id->setFormValue($objForm->GetValue("x_pegawai_id"));
 		}
 		if (!$this->tgl->FldIsDetailKey) {
 			$this->tgl->setFormValue($objForm->GetValue("x_tgl"));
-			$this->tgl->CurrentValue = ew_UnFormatDateTime($this->tgl->CurrentValue, 0);
+			$this->tgl->CurrentValue = ew_UnFormatDateTime($this->tgl->CurrentValue, 5);
 		}
 		if (!$this->jk_id->FldIsDetailKey) {
 			$this->jk_id->setFormValue($objForm->GetValue("x_jk_id"));
 		}
-		if (!$this->scan_masuk->FldIsDetailKey) {
-			$this->scan_masuk->setFormValue($objForm->GetValue("x_scan_masuk"));
-			$this->scan_masuk->CurrentValue = ew_UnFormatDateTime($this->scan_masuk->CurrentValue, 0);
-		}
-		if (!$this->scan_keluar->FldIsDetailKey) {
-			$this->scan_keluar->setFormValue($objForm->GetValue("x_scan_keluar"));
-			$this->scan_keluar->CurrentValue = ew_UnFormatDateTime($this->scan_keluar->CurrentValue, 0);
-		}
 		if (!$this->hk_def->FldIsDetailKey) {
 			$this->hk_def->setFormValue($objForm->GetValue("x_hk_def"));
 		}
+		if (!$this->jdw_id->FldIsDetailKey)
+			$this->jdw_id->setFormValue($objForm->GetValue("x_jdw_id"));
 	}
 
 	// Restore form values
@@ -583,12 +571,8 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 		$this->jdw_id->CurrentValue = $this->jdw_id->FormValue;
 		$this->pegawai_id->CurrentValue = $this->pegawai_id->FormValue;
 		$this->tgl->CurrentValue = $this->tgl->FormValue;
-		$this->tgl->CurrentValue = ew_UnFormatDateTime($this->tgl->CurrentValue, 0);
+		$this->tgl->CurrentValue = ew_UnFormatDateTime($this->tgl->CurrentValue, 5);
 		$this->jk_id->CurrentValue = $this->jk_id->FormValue;
-		$this->scan_masuk->CurrentValue = $this->scan_masuk->FormValue;
-		$this->scan_masuk->CurrentValue = ew_UnFormatDateTime($this->scan_masuk->CurrentValue, 0);
-		$this->scan_keluar->CurrentValue = $this->scan_keluar->FormValue;
-		$this->scan_keluar->CurrentValue = ew_UnFormatDateTime($this->scan_keluar->CurrentValue, 0);
 		$this->hk_def->CurrentValue = $this->hk_def->FormValue;
 	}
 
@@ -604,7 +588,7 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 		if ($this->UseSelectLimit) {
 			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			if ($dbtype == "MSSQL") {
-				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderByList())));
 			} else {
 				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
 			}
@@ -649,8 +633,18 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 		$this->Row_Selected($row);
 		$this->jdw_id->setDbValue($rs->fields('jdw_id'));
 		$this->pegawai_id->setDbValue($rs->fields('pegawai_id'));
+		if (array_key_exists('EV__pegawai_id', $rs->fields)) {
+			$this->pegawai_id->VirtualValue = $rs->fields('EV__pegawai_id'); // Set up virtual field value
+		} else {
+			$this->pegawai_id->VirtualValue = ""; // Clear value
+		}
 		$this->tgl->setDbValue($rs->fields('tgl'));
 		$this->jk_id->setDbValue($rs->fields('jk_id'));
+		if (array_key_exists('EV__jk_id', $rs->fields)) {
+			$this->jk_id->VirtualValue = $rs->fields('EV__jk_id'); // Set up virtual field value
+		} else {
+			$this->jk_id->VirtualValue = ""; // Clear value
+		}
 		$this->scan_masuk->setDbValue($rs->fields('scan_masuk'));
 		$this->scan_keluar->setDbValue($rs->fields('scan_keluar'));
 		$this->hk_def->setDbValue($rs->fields('hk_def'));
@@ -694,16 +688,63 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 		$this->jdw_id->ViewCustomAttributes = "";
 
 		// pegawai_id
-		$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+		if ($this->pegawai_id->VirtualValue <> "") {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
+		} else {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+		if (strval($this->pegawai_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
+		$sWhereWrk = "";
+		$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pegawai_id->ViewValue = $this->pegawai_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+			}
+		} else {
+			$this->pegawai_id->ViewValue = NULL;
+		}
+		}
 		$this->pegawai_id->ViewCustomAttributes = "";
 
 		// tgl
 		$this->tgl->ViewValue = $this->tgl->CurrentValue;
-		$this->tgl->ViewValue = ew_FormatDateTime($this->tgl->ViewValue, 0);
+		$this->tgl->ViewValue = tgl_indo($this->tgl->ViewValue);
 		$this->tgl->ViewCustomAttributes = "";
 
 		// jk_id
-		$this->jk_id->ViewValue = $this->jk_id->CurrentValue;
+		if ($this->jk_id->VirtualValue <> "") {
+			$this->jk_id->ViewValue = $this->jk_id->VirtualValue;
+		} else {
+		if (strval($this->jk_id->CurrentValue) <> "") {
+			$sFilterWrk = "`jk_id`" . ew_SearchString("=", $this->jk_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `jk_id`, `jk_nm` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `t_jk`";
+		$sWhereWrk = "";
+		$this->jk_id->LookupFilters = array("dx1" => '`jk_nm`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->jk_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->jk_id->ViewValue = $this->jk_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->jk_id->ViewValue = $this->jk_id->CurrentValue;
+			}
+		} else {
+			$this->jk_id->ViewValue = NULL;
+		}
+		}
 		$this->jk_id->ViewCustomAttributes = "";
 
 		// scan_masuk
@@ -717,13 +758,12 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 		$this->scan_keluar->ViewCustomAttributes = "";
 
 		// hk_def
-		$this->hk_def->ViewValue = $this->hk_def->CurrentValue;
+		if (strval($this->hk_def->CurrentValue) <> "") {
+			$this->hk_def->ViewValue = $this->hk_def->OptionCaption($this->hk_def->CurrentValue);
+		} else {
+			$this->hk_def->ViewValue = NULL;
+		}
 		$this->hk_def->ViewCustomAttributes = "";
-
-			// jdw_id
-			$this->jdw_id->LinkCustomAttributes = "";
-			$this->jdw_id->HrefValue = "";
-			$this->jdw_id->TooltipValue = "";
 
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
@@ -740,77 +780,106 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 			$this->jk_id->HrefValue = "";
 			$this->jk_id->TooltipValue = "";
 
-			// scan_masuk
-			$this->scan_masuk->LinkCustomAttributes = "";
-			$this->scan_masuk->HrefValue = "";
-			$this->scan_masuk->TooltipValue = "";
-
-			// scan_keluar
-			$this->scan_keluar->LinkCustomAttributes = "";
-			$this->scan_keluar->HrefValue = "";
-			$this->scan_keluar->TooltipValue = "";
-
 			// hk_def
 			$this->hk_def->LinkCustomAttributes = "";
 			$this->hk_def->HrefValue = "";
 			$this->hk_def->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
-			// jdw_id
-			$this->jdw_id->EditAttrs["class"] = "form-control";
-			$this->jdw_id->EditCustomAttributes = "";
-			$this->jdw_id->EditValue = $this->jdw_id->CurrentValue;
-			$this->jdw_id->ViewCustomAttributes = "";
-
 			// pegawai_id
 			$this->pegawai_id->EditAttrs["class"] = "form-control";
 			$this->pegawai_id->EditCustomAttributes = "";
 			if ($this->pegawai_id->getSessionValue() <> "") {
 				$this->pegawai_id->CurrentValue = $this->pegawai_id->getSessionValue();
-			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+			if ($this->pegawai_id->VirtualValue <> "") {
+				$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
+			} else {
+				$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+			if (strval($this->pegawai_id->CurrentValue) <> "") {
+				$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+			$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
+			$sWhereWrk = "";
+			$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+				$rswrk = Conn()->Execute($sSqlWrk);
+				if ($rswrk && !$rswrk->EOF) { // Lookup values found
+					$arwrk = array();
+					$arwrk[1] = $rswrk->fields('DispFld');
+					$this->pegawai_id->ViewValue = $this->pegawai_id->DisplayValue($arwrk);
+					$rswrk->Close();
+				} else {
+					$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+				}
+			} else {
+				$this->pegawai_id->ViewValue = NULL;
+			}
+			}
 			$this->pegawai_id->ViewCustomAttributes = "";
 			} else {
 			$this->pegawai_id->EditValue = ew_HtmlEncode($this->pegawai_id->CurrentValue);
+			if (strval($this->pegawai_id->CurrentValue) <> "") {
+				$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+			$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
+			$sWhereWrk = "";
+			$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+				$rswrk = Conn()->Execute($sSqlWrk);
+				if ($rswrk && !$rswrk->EOF) { // Lookup values found
+					$arwrk = array();
+					$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
+					$this->pegawai_id->EditValue = $this->pegawai_id->DisplayValue($arwrk);
+					$rswrk->Close();
+				} else {
+					$this->pegawai_id->EditValue = ew_HtmlEncode($this->pegawai_id->CurrentValue);
+				}
+			} else {
+				$this->pegawai_id->EditValue = NULL;
+			}
 			$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
 			}
 
 			// tgl
 			$this->tgl->EditAttrs["class"] = "form-control";
 			$this->tgl->EditCustomAttributes = "";
-			$this->tgl->EditValue = ew_HtmlEncode(ew_FormatDateTime($this->tgl->CurrentValue, 8));
+			$this->tgl->EditValue = ew_HtmlEncode($this->tgl->CurrentValue);
 			$this->tgl->PlaceHolder = ew_RemoveHtml($this->tgl->FldCaption());
 
 			// jk_id
-			$this->jk_id->EditAttrs["class"] = "form-control";
 			$this->jk_id->EditCustomAttributes = "";
-			$this->jk_id->EditValue = ew_HtmlEncode($this->jk_id->CurrentValue);
-			$this->jk_id->PlaceHolder = ew_RemoveHtml($this->jk_id->FldCaption());
-
-			// scan_masuk
-			$this->scan_masuk->EditAttrs["class"] = "form-control";
-			$this->scan_masuk->EditCustomAttributes = "";
-			$this->scan_masuk->EditValue = ew_HtmlEncode(ew_FormatDateTime($this->scan_masuk->CurrentValue, 8));
-			$this->scan_masuk->PlaceHolder = ew_RemoveHtml($this->scan_masuk->FldCaption());
-
-			// scan_keluar
-			$this->scan_keluar->EditAttrs["class"] = "form-control";
-			$this->scan_keluar->EditCustomAttributes = "";
-			$this->scan_keluar->EditValue = ew_HtmlEncode(ew_FormatDateTime($this->scan_keluar->CurrentValue, 8));
-			$this->scan_keluar->PlaceHolder = ew_RemoveHtml($this->scan_keluar->FldCaption());
+			if (trim(strval($this->jk_id->CurrentValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`jk_id`" . ew_SearchString("=", $this->jk_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+			}
+			$sSqlWrk = "SELECT `jk_id`, `jk_nm` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `t_jk`";
+			$sWhereWrk = "";
+			$this->jk_id->LookupFilters = array("dx1" => '`jk_nm`');
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->jk_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
+				$this->jk_id->ViewValue = $this->jk_id->DisplayValue($arwrk);
+			} else {
+				$this->jk_id->ViewValue = $Language->Phrase("PleaseSelect");
+			}
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			$this->jk_id->EditValue = $arwrk;
 
 			// hk_def
-			$this->hk_def->EditAttrs["class"] = "form-control";
 			$this->hk_def->EditCustomAttributes = "";
-			$this->hk_def->EditValue = ew_HtmlEncode($this->hk_def->CurrentValue);
-			$this->hk_def->PlaceHolder = ew_RemoveHtml($this->hk_def->FldCaption());
+			$this->hk_def->EditValue = $this->hk_def->Options(FALSE);
 
 			// Edit refer script
-			// jdw_id
-
-			$this->jdw_id->LinkCustomAttributes = "";
-			$this->jdw_id->HrefValue = "";
-
 			// pegawai_id
+
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
 
@@ -821,14 +890,6 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 			// jk_id
 			$this->jk_id->LinkCustomAttributes = "";
 			$this->jk_id->HrefValue = "";
-
-			// scan_masuk
-			$this->scan_masuk->LinkCustomAttributes = "";
-			$this->scan_masuk->HrefValue = "";
-
-			// scan_keluar
-			$this->scan_keluar->LinkCustomAttributes = "";
-			$this->scan_keluar->HrefValue = "";
 
 			// hk_def
 			$this->hk_def->LinkCustomAttributes = "";
@@ -858,32 +919,17 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 		if (!$this->pegawai_id->FldIsDetailKey && !is_null($this->pegawai_id->FormValue) && $this->pegawai_id->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->pegawai_id->FldCaption(), $this->pegawai_id->ReqErrMsg));
 		}
-		if (!ew_CheckInteger($this->pegawai_id->FormValue)) {
-			ew_AddMessage($gsFormError, $this->pegawai_id->FldErrMsg());
-		}
 		if (!$this->tgl->FldIsDetailKey && !is_null($this->tgl->FormValue) && $this->tgl->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->tgl->FldCaption(), $this->tgl->ReqErrMsg));
 		}
-		if (!ew_CheckDateDef($this->tgl->FormValue)) {
+		if (!ew_CheckDate($this->tgl->FormValue)) {
 			ew_AddMessage($gsFormError, $this->tgl->FldErrMsg());
 		}
 		if (!$this->jk_id->FldIsDetailKey && !is_null($this->jk_id->FormValue) && $this->jk_id->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->jk_id->FldCaption(), $this->jk_id->ReqErrMsg));
 		}
-		if (!ew_CheckInteger($this->jk_id->FormValue)) {
-			ew_AddMessage($gsFormError, $this->jk_id->FldErrMsg());
-		}
-		if (!ew_CheckDateDef($this->scan_masuk->FormValue)) {
-			ew_AddMessage($gsFormError, $this->scan_masuk->FldErrMsg());
-		}
-		if (!ew_CheckDateDef($this->scan_keluar->FormValue)) {
-			ew_AddMessage($gsFormError, $this->scan_keluar->FldErrMsg());
-		}
-		if (!$this->hk_def->FldIsDetailKey && !is_null($this->hk_def->FormValue) && $this->hk_def->FormValue == "") {
+		if ($this->hk_def->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->hk_def->FldCaption(), $this->hk_def->ReqErrMsg));
-		}
-		if (!ew_CheckInteger($this->hk_def->FormValue)) {
-			ew_AddMessage($gsFormError, $this->hk_def->FldErrMsg());
 		}
 
 		// Return validate result
@@ -925,16 +971,10 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 			$this->pegawai_id->SetDbValueDef($rsnew, $this->pegawai_id->CurrentValue, 0, $this->pegawai_id->ReadOnly);
 
 			// tgl
-			$this->tgl->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->tgl->CurrentValue, 0), ew_CurrentDate(), $this->tgl->ReadOnly);
+			$this->tgl->SetDbValueDef($rsnew, $this->tgl->CurrentValue, ew_CurrentDate(), $this->tgl->ReadOnly);
 
 			// jk_id
 			$this->jk_id->SetDbValueDef($rsnew, $this->jk_id->CurrentValue, 0, $this->jk_id->ReadOnly);
-
-			// scan_masuk
-			$this->scan_masuk->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->scan_masuk->CurrentValue, 0), NULL, $this->scan_masuk->ReadOnly);
-
-			// scan_keluar
-			$this->scan_keluar->SetDbValueDef($rsnew, ew_UnFormatDateTime($this->scan_keluar->CurrentValue, 0), NULL, $this->scan_keluar->ReadOnly);
 
 			// hk_def
 			$this->hk_def->SetDbValueDef($rsnew, $this->hk_def->CurrentValue, 0, $this->hk_def->ReadOnly);
@@ -1047,6 +1087,30 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 		global $gsLanguage;
 		$pageId = $pageId ?: $this->PageID;
 		switch ($fld->FldVar) {
+		case "x_pegawai_id":
+			$sSqlWrk = "";
+			$sSqlWrk = "SELECT `pegawai_id` AS `LinkFld`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
+			$sWhereWrk = "{filter}";
+			$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
+			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "", "f0" => '`pegawai_id` = {filter_value}', "t0" => "3", "fn0" => "");
+			$sSqlWrk = "";
+			$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			if ($sSqlWrk <> "")
+				$fld->LookupFilters["s"] .= $sSqlWrk;
+			break;
+		case "x_jk_id":
+			$sSqlWrk = "";
+			$sSqlWrk = "SELECT `jk_id` AS `LinkFld`, `jk_nm` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `t_jk`";
+			$sWhereWrk = "{filter}";
+			$this->jk_id->LookupFilters = array("dx1" => '`jk_nm`');
+			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "", "f0" => '`jk_id` = {filter_value}', "t0" => "3", "fn0" => "");
+			$sSqlWrk = "";
+			$this->Lookup_Selecting($this->jk_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			if ($sSqlWrk <> "")
+				$fld->LookupFilters["s"] .= $sSqlWrk;
+			break;
 		}
 	}
 
@@ -1055,6 +1119,19 @@ class ct_jdw_krj_def_edit extends ct_jdw_krj_def {
 		global $gsLanguage;
 		$pageId = $pageId ?: $this->PageID;
 		switch ($fld->FldVar) {
+		case "x_pegawai_id":
+			$sSqlWrk = "";
+			$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld` FROM `pegawai`";
+			$sWhereWrk = "`pegawai_nama` LIKE '{query_value}%'";
+			$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
+			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "");
+			$sSqlWrk = "";
+			$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$sSqlWrk .= " LIMIT " . EW_AUTO_SUGGEST_MAX_ENTRIES;
+			if ($sSqlWrk <> "")
+				$fld->LookupFilters["s"] .= $sSqlWrk;
+			break;
 		}
 	}
 
@@ -1169,33 +1246,18 @@ ft_jdw_krj_defedit.Validate = function() {
 			elm = this.GetElements("x" + infix + "_pegawai_id");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_jdw_krj_def->pegawai_id->FldCaption(), $t_jdw_krj_def->pegawai_id->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_pegawai_id");
-			if (elm && !ew_CheckInteger(elm.value))
-				return this.OnError(elm, "<?php echo ew_JsEncode2($t_jdw_krj_def->pegawai_id->FldErrMsg()) ?>");
 			elm = this.GetElements("x" + infix + "_tgl");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_jdw_krj_def->tgl->FldCaption(), $t_jdw_krj_def->tgl->ReqErrMsg)) ?>");
 			elm = this.GetElements("x" + infix + "_tgl");
-			if (elm && !ew_CheckDateDef(elm.value))
+			if (elm && !ew_CheckDate(elm.value))
 				return this.OnError(elm, "<?php echo ew_JsEncode2($t_jdw_krj_def->tgl->FldErrMsg()) ?>");
 			elm = this.GetElements("x" + infix + "_jk_id");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_jdw_krj_def->jk_id->FldCaption(), $t_jdw_krj_def->jk_id->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_jk_id");
-			if (elm && !ew_CheckInteger(elm.value))
-				return this.OnError(elm, "<?php echo ew_JsEncode2($t_jdw_krj_def->jk_id->FldErrMsg()) ?>");
-			elm = this.GetElements("x" + infix + "_scan_masuk");
-			if (elm && !ew_CheckDateDef(elm.value))
-				return this.OnError(elm, "<?php echo ew_JsEncode2($t_jdw_krj_def->scan_masuk->FldErrMsg()) ?>");
-			elm = this.GetElements("x" + infix + "_scan_keluar");
-			if (elm && !ew_CheckDateDef(elm.value))
-				return this.OnError(elm, "<?php echo ew_JsEncode2($t_jdw_krj_def->scan_keluar->FldErrMsg()) ?>");
 			elm = this.GetElements("x" + infix + "_hk_def");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_jdw_krj_def->hk_def->FldCaption(), $t_jdw_krj_def->hk_def->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_hk_def");
-			if (elm && !ew_CheckInteger(elm.value))
-				return this.OnError(elm, "<?php echo ew_JsEncode2($t_jdw_krj_def->hk_def->FldErrMsg()) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -1229,8 +1291,12 @@ ft_jdw_krj_defedit.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+ft_jdw_krj_defedit.Lists["x_pegawai_id"] = {"LinkField":"x_pegawai_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pegawai_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pegawai"};
+ft_jdw_krj_defedit.Lists["x_jk_id"] = {"LinkField":"x_jk_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_jk_nm","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"t_jk"};
+ft_jdw_krj_defedit.Lists["x_hk_def"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ft_jdw_krj_defedit.Lists["x_hk_def"].Options = <?php echo json_encode($t_jdw_krj_def->hk_def->Options()) ?>;
 
+// Form object for search
 </script>
 <script type="text/javascript">
 
@@ -1306,21 +1372,9 @@ $t_jdw_krj_def_edit->ShowMessage();
 <input type="hidden" name="fk_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->getSessionValue() ?>">
 <?php } ?>
 <div>
-<?php if ($t_jdw_krj_def->jdw_id->Visible) { // jdw_id ?>
-	<div id="r_jdw_id" class="form-group">
-		<label id="elh_t_jdw_krj_def_jdw_id" class="col-sm-2 control-label ewLabel"><?php echo $t_jdw_krj_def->jdw_id->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $t_jdw_krj_def->jdw_id->CellAttributes() ?>>
-<span id="el_t_jdw_krj_def_jdw_id">
-<span<?php echo $t_jdw_krj_def->jdw_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_jdw_krj_def->jdw_id->EditValue ?></p></span>
-</span>
-<input type="hidden" data-table="t_jdw_krj_def" data-field="x_jdw_id" name="x_jdw_id" id="x_jdw_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->jdw_id->CurrentValue) ?>">
-<?php echo $t_jdw_krj_def->jdw_id->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
 <?php if ($t_jdw_krj_def->pegawai_id->Visible) { // pegawai_id ?>
 	<div id="r_pegawai_id" class="form-group">
-		<label id="elh_t_jdw_krj_def_pegawai_id" for="x_pegawai_id" class="col-sm-2 control-label ewLabel"><?php echo $t_jdw_krj_def->pegawai_id->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<label id="elh_t_jdw_krj_def_pegawai_id" class="col-sm-2 control-label ewLabel"><?php echo $t_jdw_krj_def->pegawai_id->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $t_jdw_krj_def->pegawai_id->CellAttributes() ?>>
 <?php if ($t_jdw_krj_def->pegawai_id->getSessionValue() <> "") { ?>
 <span id="el_t_jdw_krj_def_pegawai_id">
@@ -1330,7 +1384,21 @@ $t_jdw_krj_def_edit->ShowMessage();
 <input type="hidden" id="x_pegawai_id" name="x_pegawai_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->CurrentValue) ?>">
 <?php } else { ?>
 <span id="el_t_jdw_krj_def_pegawai_id">
-<input type="text" data-table="t_jdw_krj_def" data-field="x_pegawai_id" name="x_pegawai_id" id="x_pegawai_id" size="30" placeholder="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->getPlaceHolder()) ?>" value="<?php echo $t_jdw_krj_def->pegawai_id->EditValue ?>"<?php echo $t_jdw_krj_def->pegawai_id->EditAttributes() ?>>
+<?php
+$wrkonchange = trim(" " . @$t_jdw_krj_def->pegawai_id->EditAttrs["onchange"]);
+if ($wrkonchange <> "") $wrkonchange = " onchange=\"" . ew_JsEncode2($wrkonchange) . "\"";
+$t_jdw_krj_def->pegawai_id->EditAttrs["onchange"] = "";
+?>
+<span id="as_x_pegawai_id" style="white-space: nowrap; z-index: 8980">
+	<input type="text" name="sv_x_pegawai_id" id="sv_x_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_jdw_krj_def->pegawai_id->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jdw_krj_def" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_jdw_krj_def->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x_pegawai_id" id="x_pegawai_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->CurrentValue) ?>"<?php echo $wrkonchange ?>>
+<input type="hidden" name="q_x_pegawai_id" id="q_x_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->LookupFilterQuery(true) ?>">
+<script type="text/javascript">
+ft_jdw_krj_defedit.CreateAutoSuggest({"id":"x_pegawai_id","forceSelect":true});
+</script>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_jdw_krj_def->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" name="s_x_pegawai_id" id="s_x_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->LookupFilterQuery(false) ?>">
 </span>
 <?php } ?>
 <?php echo $t_jdw_krj_def->pegawai_id->CustomMsg ?></div></div>
@@ -1341,7 +1409,12 @@ $t_jdw_krj_def_edit->ShowMessage();
 		<label id="elh_t_jdw_krj_def_tgl" for="x_tgl" class="col-sm-2 control-label ewLabel"><?php echo $t_jdw_krj_def->tgl->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $t_jdw_krj_def->tgl->CellAttributes() ?>>
 <span id="el_t_jdw_krj_def_tgl">
-<input type="text" data-table="t_jdw_krj_def" data-field="x_tgl" name="x_tgl" id="x_tgl" placeholder="<?php echo ew_HtmlEncode($t_jdw_krj_def->tgl->getPlaceHolder()) ?>" value="<?php echo $t_jdw_krj_def->tgl->EditValue ?>"<?php echo $t_jdw_krj_def->tgl->EditAttributes() ?>>
+<input type="text" data-table="t_jdw_krj_def" data-field="x_tgl" data-format="5" name="x_tgl" id="x_tgl" placeholder="<?php echo ew_HtmlEncode($t_jdw_krj_def->tgl->getPlaceHolder()) ?>" value="<?php echo $t_jdw_krj_def->tgl->EditValue ?>"<?php echo $t_jdw_krj_def->tgl->EditAttributes() ?>>
+<?php if (!$t_jdw_krj_def->tgl->ReadOnly && !$t_jdw_krj_def->tgl->Disabled && !isset($t_jdw_krj_def->tgl->EditAttrs["readonly"]) && !isset($t_jdw_krj_def->tgl->EditAttrs["disabled"])) { ?>
+<script type="text/javascript">
+ew_CreateCalendar("ft_jdw_krj_defedit", "x_tgl", 5);
+</script>
+<?php } ?>
 </span>
 <?php echo $t_jdw_krj_def->tgl->CustomMsg ?></div></div>
 	</div>
@@ -1351,42 +1424,31 @@ $t_jdw_krj_def_edit->ShowMessage();
 		<label id="elh_t_jdw_krj_def_jk_id" for="x_jk_id" class="col-sm-2 control-label ewLabel"><?php echo $t_jdw_krj_def->jk_id->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $t_jdw_krj_def->jk_id->CellAttributes() ?>>
 <span id="el_t_jdw_krj_def_jk_id">
-<input type="text" data-table="t_jdw_krj_def" data-field="x_jk_id" name="x_jk_id" id="x_jk_id" size="30" placeholder="<?php echo ew_HtmlEncode($t_jdw_krj_def->jk_id->getPlaceHolder()) ?>" value="<?php echo $t_jdw_krj_def->jk_id->EditValue ?>"<?php echo $t_jdw_krj_def->jk_id->EditAttributes() ?>>
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x_jk_id"><?php echo (strval($t_jdw_krj_def->jk_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $t_jdw_krj_def->jk_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_jdw_krj_def->jk_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x_jk_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="t_jdw_krj_def" data-field="x_jk_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_jdw_krj_def->jk_id->DisplayValueSeparatorAttribute() ?>" name="x_jk_id" id="x_jk_id" value="<?php echo $t_jdw_krj_def->jk_id->CurrentValue ?>"<?php echo $t_jdw_krj_def->jk_id->EditAttributes() ?>>
+<input type="hidden" name="s_x_jk_id" id="s_x_jk_id" value="<?php echo $t_jdw_krj_def->jk_id->LookupFilterQuery() ?>">
 </span>
 <?php echo $t_jdw_krj_def->jk_id->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
-<?php if ($t_jdw_krj_def->scan_masuk->Visible) { // scan_masuk ?>
-	<div id="r_scan_masuk" class="form-group">
-		<label id="elh_t_jdw_krj_def_scan_masuk" for="x_scan_masuk" class="col-sm-2 control-label ewLabel"><?php echo $t_jdw_krj_def->scan_masuk->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $t_jdw_krj_def->scan_masuk->CellAttributes() ?>>
-<span id="el_t_jdw_krj_def_scan_masuk">
-<input type="text" data-table="t_jdw_krj_def" data-field="x_scan_masuk" name="x_scan_masuk" id="x_scan_masuk" placeholder="<?php echo ew_HtmlEncode($t_jdw_krj_def->scan_masuk->getPlaceHolder()) ?>" value="<?php echo $t_jdw_krj_def->scan_masuk->EditValue ?>"<?php echo $t_jdw_krj_def->scan_masuk->EditAttributes() ?>>
-</span>
-<?php echo $t_jdw_krj_def->scan_masuk->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
-<?php if ($t_jdw_krj_def->scan_keluar->Visible) { // scan_keluar ?>
-	<div id="r_scan_keluar" class="form-group">
-		<label id="elh_t_jdw_krj_def_scan_keluar" for="x_scan_keluar" class="col-sm-2 control-label ewLabel"><?php echo $t_jdw_krj_def->scan_keluar->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $t_jdw_krj_def->scan_keluar->CellAttributes() ?>>
-<span id="el_t_jdw_krj_def_scan_keluar">
-<input type="text" data-table="t_jdw_krj_def" data-field="x_scan_keluar" name="x_scan_keluar" id="x_scan_keluar" placeholder="<?php echo ew_HtmlEncode($t_jdw_krj_def->scan_keluar->getPlaceHolder()) ?>" value="<?php echo $t_jdw_krj_def->scan_keluar->EditValue ?>"<?php echo $t_jdw_krj_def->scan_keluar->EditAttributes() ?>>
-</span>
-<?php echo $t_jdw_krj_def->scan_keluar->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
 <?php if ($t_jdw_krj_def->hk_def->Visible) { // hk_def ?>
 	<div id="r_hk_def" class="form-group">
-		<label id="elh_t_jdw_krj_def_hk_def" for="x_hk_def" class="col-sm-2 control-label ewLabel"><?php echo $t_jdw_krj_def->hk_def->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<label id="elh_t_jdw_krj_def_hk_def" class="col-sm-2 control-label ewLabel"><?php echo $t_jdw_krj_def->hk_def->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
 		<div class="col-sm-10"><div<?php echo $t_jdw_krj_def->hk_def->CellAttributes() ?>>
 <span id="el_t_jdw_krj_def_hk_def">
-<input type="text" data-table="t_jdw_krj_def" data-field="x_hk_def" name="x_hk_def" id="x_hk_def" size="30" placeholder="<?php echo ew_HtmlEncode($t_jdw_krj_def->hk_def->getPlaceHolder()) ?>" value="<?php echo $t_jdw_krj_def->hk_def->EditValue ?>"<?php echo $t_jdw_krj_def->hk_def->EditAttributes() ?>>
+<div id="tp_x_hk_def" class="ewTemplate"><input type="radio" data-table="t_jdw_krj_def" data-field="x_hk_def" data-value-separator="<?php echo $t_jdw_krj_def->hk_def->DisplayValueSeparatorAttribute() ?>" name="x_hk_def" id="x_hk_def" value="{value}"<?php echo $t_jdw_krj_def->hk_def->EditAttributes() ?>></div>
+<div id="dsl_x_hk_def" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
+<?php echo $t_jdw_krj_def->hk_def->RadioButtonListHtml(FALSE, "x_hk_def") ?>
+</div></div>
 </span>
 <?php echo $t_jdw_krj_def->hk_def->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>
+<input type="hidden" data-table="t_jdw_krj_def" data-field="x_jdw_id" name="x_jdw_id" id="x_jdw_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->jdw_id->CurrentValue) ?>">
 <?php if (!$t_jdw_krj_def_edit->IsModal) { ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">

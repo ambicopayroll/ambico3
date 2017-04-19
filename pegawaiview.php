@@ -1545,7 +1545,7 @@ class cpegawai_view extends cpegawai {
 	// Set up detail pages
 	function SetupDetailPages() {
 		$pages = new cSubPages();
-		$pages->Style = "tabs";
+		$pages->Style = "pills";
 		$pages->Add('t_jdw_krj_peg');
 		$pages->Add('t_jdw_krj_def');
 		$pages->Add('t_rumus_peg');

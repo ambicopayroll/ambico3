@@ -57,10 +57,8 @@ class ct_jdw_krj_peg extends cTable {
 		$this->fields['jdw_id'] = &$this->jdw_id;
 
 		// pegawai_id
-		$this->pegawai_id = new cField('t_jdw_krj_peg', 't_jdw_krj_peg', 'x_pegawai_id', 'pegawai_id', '`pegawai_id`', '`pegawai_id`', 3, -1, FALSE, '`EV__pegawai_id`', TRUE, TRUE, TRUE, 'FORMATTED TEXT', 'SELECT');
+		$this->pegawai_id = new cField('t_jdw_krj_peg', 't_jdw_krj_peg', 'x_pegawai_id', 'pegawai_id', '`pegawai_id`', '`pegawai_id`', 3, -1, FALSE, '`EV__pegawai_id`', TRUE, TRUE, TRUE, 'FORMATTED TEXT', 'TEXT');
 		$this->pegawai_id->Sortable = TRUE; // Allow sort
-		$this->pegawai_id->UsePleaseSelect = TRUE; // Use PleaseSelect by default
-		$this->pegawai_id->PleaseSelectText = $Language->Phrase("PleaseSelect"); // PleaseSelect text
 		$this->pegawai_id->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['pegawai_id'] = &$this->pegawai_id;
 
@@ -284,7 +282,7 @@ class ct_jdw_krj_peg extends cTable {
 	var $_SqlOrderBy = "";
 
 	function getSqlOrderBy() { // Order By
-		return ($this->_SqlOrderBy <> "") ? $this->_SqlOrderBy : "";
+		return ($this->_SqlOrderBy <> "") ? $this->_SqlOrderBy : "`pegawai_id` ASC,`tgl1` ASC";
 	}
 
 	function SqlOrderBy() { // For backward compatibility
@@ -752,6 +750,7 @@ class ct_jdw_krj_peg extends cTable {
 		if ($this->pegawai_id->VirtualValue <> "") {
 			$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
 		} else {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
 		if (strval($this->pegawai_id->CurrentValue) <> "") {
 			$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
@@ -875,6 +874,7 @@ class ct_jdw_krj_peg extends cTable {
 		if ($this->pegawai_id->VirtualValue <> "") {
 			$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
 		} else {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
 		if (strval($this->pegawai_id->CurrentValue) <> "") {
 			$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
@@ -898,6 +898,8 @@ class ct_jdw_krj_peg extends cTable {
 		}
 		$this->pegawai_id->ViewCustomAttributes = "";
 		} else {
+		$this->pegawai_id->EditValue = $this->pegawai_id->CurrentValue;
+		$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
 		}
 
 		// tgl1

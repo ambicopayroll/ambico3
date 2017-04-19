@@ -525,6 +525,7 @@ class ct_jdw_krj_peg_delete extends ct_jdw_krj_peg {
 		if ($this->pegawai_id->VirtualValue <> "") {
 			$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
 		} else {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
 		if (strval($this->pegawai_id->CurrentValue) <> "") {
 			$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
 		$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
