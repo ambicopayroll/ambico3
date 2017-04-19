@@ -595,6 +595,9 @@
     <menu id="42">
       <phrase id="menutext" value="Jadwal Kerja (Periode)" />
     </menu>
+    <menu id="41">
+      <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
+    </menu>
     <menu id="45">
       <phrase id="menutext" value="Setup Gaji" />
     </menu>
@@ -609,9 +612,6 @@
     </menu>
     <menu id="43">
       <phrase id="menutext" value="Jam Kerja" />
-    </menu>
-    <menu id="41">
-      <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
     </menu>
     <menu id="44">
       <phrase id="menutext" value="Komponen Gaji" />
@@ -1519,16 +1519,16 @@
     <table id="pegawai">
       <phrase id="tblcaption" value="Pegawai" />
       <field id="pegawai_id">
-        <phrase id="fldcaption" value="pegawai id" />
+        <phrase id="fldcaption" value="ID" />
       </field>
       <field id="pegawai_pin">
-        <phrase id="fldcaption" value="pegawai pin" />
+        <phrase id="fldcaption" value="PIN" />
       </field>
       <field id="pegawai_nip">
-        <phrase id="fldcaption" value="pegawai nip" />
+        <phrase id="fldcaption" value="NIK" />
       </field>
       <field id="pegawai_nama">
-        <phrase id="fldcaption" value="pegawai nama" />
+        <phrase id="fldcaption" value="Nama" />
       </field>
       <field id="pegawai_pwd">
         <phrase id="fldcaption" value="pegawai pwd" />
@@ -1552,13 +1552,13 @@
         <phrase id="fldcaption" value="tgl lahir" />
       </field>
       <field id="pembagian1_id">
-        <phrase id="fldcaption" value="pembagian 1 id" />
+        <phrase id="fldcaption" value="Jabatan" />
       </field>
       <field id="pembagian2_id">
-        <phrase id="fldcaption" value="pembagian 2 id" />
+        <phrase id="fldcaption" value="Divisi" />
       </field>
       <field id="pembagian3_id">
-        <phrase id="fldcaption" value="pembagian 3 id" />
+        <phrase id="fldcaption" value="Status" />
       </field>
       <field id="tgl_mulai_kerja">
         <phrase id="fldcaption" value="tgl mulai kerja" />
@@ -1567,7 +1567,11 @@
         <phrase id="fldcaption" value="tgl resign" />
       </field>
       <field id="gender">
-        <phrase id="fldcaption" value="gender" />
+        <phrase id="fldcaption" value="Jns. Klmn." />
+        <phrase id="fldtagvalue1" value="1" />
+        <phrase id="fldtagcaption1" value="Laki-laki" />
+        <phrase id="fldtagvalue2" value="2" />
+        <phrase id="fldtagcaption2" value="Perempuan" />
       </field>
       <field id="tgl_masuk_pertama">
         <phrase id="fldcaption" value="tgl masuk pertama" />
@@ -1855,22 +1859,26 @@
     <table id="t_jdw_krj_peg">
       <phrase id="tblcaption" value="Jadwal Kerja (Periode)" />
       <field id="jdw_id">
-        <phrase id="fldcaption" value="jdw id" />
+        <phrase id="fldcaption" value="ID" />
       </field>
       <field id="pegawai_id">
-        <phrase id="fldcaption" value="pegawai id" />
+        <phrase id="fldcaption" value="Nama" />
       </field>
       <field id="tgl1">
-        <phrase id="fldcaption" value="tgl 1" />
+        <phrase id="fldcaption" value="Tgl. Mulai" />
       </field>
       <field id="tgl2">
-        <phrase id="fldcaption" value="tgl 2" />
+        <phrase id="fldcaption" value="Tgl. Selesai" />
       </field>
       <field id="jk_id">
-        <phrase id="fldcaption" value="jk id" />
+        <phrase id="fldcaption" value="Kode Jam Kerja" />
       </field>
       <field id="hk">
-        <phrase id="fldcaption" value="hk" />
+        <phrase id="fldcaption" value="Gol. Hari Kerja" />
+        <phrase id="fldtagvalue1" value="5" />
+        <phrase id="fldtagcaption1" value="5 HK" />
+        <phrase id="fldtagvalue2" value="6" />
+        <phrase id="fldtagcaption2" value="6 HK" />
       </field>
     </table>
     <table id="t_jk">

@@ -6,6 +6,7 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql13.php") ?>
 <?php include_once "phpfn13.php" ?>
 <?php include_once "t_jdw_krj_definfo.php" ?>
+<?php include_once "pegawaiinfo.php" ?>
 <?php include_once "t_userinfo.php" ?>
 <?php include_once "userfn13.php" ?>
 <?php
@@ -287,6 +288,9 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 		$this->MultiDeleteUrl = "t_jdw_krj_defdelete.php";
 		$this->MultiUpdateUrl = "t_jdw_krj_defupdate.php";
 
+		// Table object (pegawai)
+		if (!isset($GLOBALS['pegawai'])) $GLOBALS['pegawai'] = new cpegawai();
+
 		// Table object (t_user)
 		if (!isset($GLOBALS['t_user'])) $GLOBALS['t_user'] = new ct_user();
 
@@ -448,6 +452,9 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 
 		// Create Token
 		$this->CreateToken();
+
+		// Set up master detail parameters
+		$this->SetUpMasterParms();
 
 		// Setup other options
 		$this->SetupOtherOptions();
@@ -621,8 +628,28 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 		$sFilter = "";
 		if (!$Security->CanList())
 			$sFilter = "(0=1)"; // Filter all records
+
+		// Restore master/detail filter
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Restore master filter
+		$this->DbDetailFilter = $this->GetDetailFilter(); // Restore detail filter
 		ew_AddFilter($sFilter, $this->DbDetailFilter);
 		ew_AddFilter($sFilter, $this->SearchWhere);
+
+		// Load master record
+		if ($this->CurrentMode <> "add" && $this->GetMasterFilter() <> "" && $this->getCurrentMasterTable() == "pegawai") {
+			global $pegawai;
+			$rsmaster = $pegawai->LoadRs($this->DbMasterFilter);
+			$this->MasterRecordExists = ($rsmaster && !$rsmaster->EOF);
+			if (!$this->MasterRecordExists) {
+				$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record found
+				$this->Page_Terminate("pegawailist.php"); // Return to master page
+			} else {
+				$pegawai->LoadListRowValues($rsmaster);
+				$pegawai->RowType = EW_ROWTYPE_MASTER; // Master row
+				$pegawai->RenderListRow();
+				$rsmaster->Close();
+			}
+		}
 
 		// Set up filter in session
 		$this->setSessionWhere($sFilter);
@@ -749,6 +776,14 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 
 		// Check if reset command
 		if (substr($this->Command,0,5) == "reset") {
+
+			// Reset master/detail keys
+			if ($this->Command == "resetall") {
+				$this->setCurrentMasterTable(""); // Clear master table
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+				$this->pegawai_id->setSessionValue("");
+			}
 
 			// Reset sorting order
 			if ($this->Command == "resetsort") {
@@ -1439,6 +1474,25 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 		// Call Page Exporting server event
 		$this->ExportDoc->ExportCustom = !$this->Page_Exporting();
 		$ParentTable = "";
+
+		// Export master record
+		if (EW_EXPORT_MASTER_RECORD && $this->GetMasterFilter() <> "" && $this->getCurrentMasterTable() == "pegawai") {
+			global $pegawai;
+			if (!isset($pegawai)) $pegawai = new cpegawai;
+			$rsmaster = $pegawai->LoadRs($this->DbMasterFilter); // Load master record
+			if ($rsmaster && !$rsmaster->EOF) {
+				$ExportStyle = $Doc->Style;
+				$Doc->SetStyle("v"); // Change to vertical
+				if ($this->Export <> "csv" || EW_EXPORT_MASTER_RECORD_FOR_CSV) {
+					$Doc->Table = &$pegawai;
+					$pegawai->ExportDocument($Doc, $rsmaster, 1, 1);
+					$Doc->ExportEmptyRow();
+					$Doc->Table = &$this;
+				}
+				$Doc->SetStyle($ExportStyle); // Restore
+				$rsmaster->Close();
+			}
+		}
 		$sHeader = $this->PageHeader;
 		$this->Page_DataRendering($sHeader);
 		$Doc->Text .= $sHeader;
@@ -1594,6 +1648,72 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 				"&y_" . $FldParm . "=" . urlencode($FldSearchValue2) .
 				"&w_" . $FldParm . "=" . urlencode($Fld->AdvancedSearch->getValue("w"));
 		}
+	}
+
+	// Set up master/detail based on QueryString
+	function SetUpMasterParms() {
+		$bValidMaster = FALSE;
+
+		// Get the keys for master table
+		if (isset($_GET[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_GET[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "pegawai") {
+				$bValidMaster = TRUE;
+				if (@$_GET["fk_pegawai_id"] <> "") {
+					$GLOBALS["pegawai"]->pegawai_id->setQueryStringValue($_GET["fk_pegawai_id"]);
+					$this->pegawai_id->setQueryStringValue($GLOBALS["pegawai"]->pegawai_id->QueryStringValue);
+					$this->pegawai_id->setSessionValue($this->pegawai_id->QueryStringValue);
+					if (!is_numeric($GLOBALS["pegawai"]->pegawai_id->QueryStringValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
+		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
+			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
+			if ($sMasterTblVar == "") {
+				$bValidMaster = TRUE;
+				$this->DbMasterFilter = "";
+				$this->DbDetailFilter = "";
+			}
+			if ($sMasterTblVar == "pegawai") {
+				$bValidMaster = TRUE;
+				if (@$_POST["fk_pegawai_id"] <> "") {
+					$GLOBALS["pegawai"]->pegawai_id->setFormValue($_POST["fk_pegawai_id"]);
+					$this->pegawai_id->setFormValue($GLOBALS["pegawai"]->pegawai_id->FormValue);
+					$this->pegawai_id->setSessionValue($this->pegawai_id->FormValue);
+					if (!is_numeric($GLOBALS["pegawai"]->pegawai_id->FormValue)) $bValidMaster = FALSE;
+				} else {
+					$bValidMaster = FALSE;
+				}
+			}
+		}
+		if ($bValidMaster) {
+
+			// Update URL
+			$this->AddUrl = $this->AddMasterUrl($this->AddUrl);
+			$this->InlineAddUrl = $this->AddMasterUrl($this->InlineAddUrl);
+			$this->GridAddUrl = $this->AddMasterUrl($this->GridAddUrl);
+			$this->GridEditUrl = $this->AddMasterUrl($this->GridEditUrl);
+
+			// Save current master table
+			$this->setCurrentMasterTable($sMasterTblVar);
+
+			// Reset start record counter (new master key)
+			$this->StartRec = 1;
+			$this->setStartRecordNumber($this->StartRec);
+
+			// Clear previous master key from Session
+			if ($sMasterTblVar <> "pegawai") {
+				if ($this->pegawai_id->CurrentValue == "") $this->pegawai_id->setSessionValue("");
+			}
+		}
+		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
+		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
 	// Set up Breadcrumb
@@ -1806,6 +1926,17 @@ ft_jdw_krj_deflist.ValidateRequired = false;
 <div class="clearfix"></div>
 </div>
 <?php } ?>
+<?php if (($t_jdw_krj_def->Export == "") || (EW_EXPORT_MASTER_RECORD && $t_jdw_krj_def->Export == "print")) { ?>
+<?php
+if ($t_jdw_krj_def_list->DbMasterFilter <> "" && $t_jdw_krj_def->getCurrentMasterTable() == "pegawai") {
+	if ($t_jdw_krj_def_list->MasterRecordExists) {
+?>
+<?php include_once "pegawaimaster.php" ?>
+<?php
+	}
+}
+?>
+<?php } ?>
 <?php
 	$bSelectLimit = $t_jdw_krj_def_list->UseSelectLimit;
 	if ($bSelectLimit) {
@@ -1844,26 +1975,44 @@ $t_jdw_krj_def_list->ShowMessage();
 <div class="panel-heading ewGridUpperPanel">
 <?php if ($t_jdw_krj_def->CurrentAction <> "gridadd" && $t_jdw_krj_def->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="form-inline ewForm ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($t_jdw_krj_def_list->Pager)) $t_jdw_krj_def_list->Pager = new cNumericPager($t_jdw_krj_def_list->StartRec, $t_jdw_krj_def_list->DisplayRecs, $t_jdw_krj_def_list->TotalRecs, $t_jdw_krj_def_list->RecRange) ?>
+<?php if (!isset($t_jdw_krj_def_list->Pager)) $t_jdw_krj_def_list->Pager = new cPrevNextPager($t_jdw_krj_def_list->StartRec, $t_jdw_krj_def_list->DisplayRecs, $t_jdw_krj_def_list->TotalRecs) ?>
 <?php if ($t_jdw_krj_def_list->Pager->RecordCount > 0 && $t_jdw_krj_def_list->Pager->Visible) { ?>
 <div class="ewPager">
-<div class="ewNumericPage"><ul class="pagination">
+<span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
+<div class="ewPrevNext"><div class="input-group">
+<div class="input-group-btn">
+<!--first page button-->
 	<?php if ($t_jdw_krj_def_list->Pager->FirstButton->Enabled) { ?>
-	<li><a href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
+<!--previous page button-->
 	<?php if ($t_jdw_krj_def_list->Pager->PrevButton->Enabled) { ?>
-	<li><a href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
-	<?php foreach ($t_jdw_krj_def_list->Pager->Items as $PagerItem) { ?>
-		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $t_jdw_krj_def_list->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
-	<?php } ?>
+</div>
+<!--current page number-->
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_jdw_krj_def_list->Pager->CurrentPage ?>">
+<div class="input-group-btn">
+<!--next page button-->
 	<?php if ($t_jdw_krj_def_list->Pager->NextButton->Enabled) { ?>
-	<li><a href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
+<!--last page button-->
 	<?php if ($t_jdw_krj_def_list->Pager->LastButton->Enabled) { ?>
-	<li><a href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
-</ul></div>
+</div>
+</div>
+</div>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_jdw_krj_def_list->Pager->PageCount ?></span>
 </div>
 <div class="ewPager ewRec">
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $t_jdw_krj_def_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $t_jdw_krj_def_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $t_jdw_krj_def_list->Pager->RecordCount ?></span>
@@ -1898,6 +2047,10 @@ $t_jdw_krj_def_list->ShowMessage();
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $t_jdw_krj_def_list->Token ?>">
 <?php } ?>
 <input type="hidden" name="t" value="t_jdw_krj_def">
+<?php if ($t_jdw_krj_def->getCurrentMasterTable() == "pegawai" && $t_jdw_krj_def->CurrentAction <> "") { ?>
+<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="pegawai">
+<input type="hidden" name="fk_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->getSessionValue() ?>">
+<?php } ?>
 <div id="gmp_t_jdw_krj_def" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <?php if ($t_jdw_krj_def_list->TotalRecs > 0 || $t_jdw_krj_def->CurrentAction == "gridedit") { ?>
 <table id="tbl_t_jdw_krj_deflist" class="table ewTable">
@@ -2129,26 +2282,44 @@ if ($t_jdw_krj_def_list->Recordset)
 <div class="panel-footer ewGridLowerPanel">
 <?php if ($t_jdw_krj_def->CurrentAction <> "gridadd" && $t_jdw_krj_def->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($t_jdw_krj_def_list->Pager)) $t_jdw_krj_def_list->Pager = new cNumericPager($t_jdw_krj_def_list->StartRec, $t_jdw_krj_def_list->DisplayRecs, $t_jdw_krj_def_list->TotalRecs, $t_jdw_krj_def_list->RecRange) ?>
+<?php if (!isset($t_jdw_krj_def_list->Pager)) $t_jdw_krj_def_list->Pager = new cPrevNextPager($t_jdw_krj_def_list->StartRec, $t_jdw_krj_def_list->DisplayRecs, $t_jdw_krj_def_list->TotalRecs) ?>
 <?php if ($t_jdw_krj_def_list->Pager->RecordCount > 0 && $t_jdw_krj_def_list->Pager->Visible) { ?>
 <div class="ewPager">
-<div class="ewNumericPage"><ul class="pagination">
+<span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
+<div class="ewPrevNext"><div class="input-group">
+<div class="input-group-btn">
+<!--first page button-->
 	<?php if ($t_jdw_krj_def_list->Pager->FirstButton->Enabled) { ?>
-	<li><a href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
+<!--previous page button-->
 	<?php if ($t_jdw_krj_def_list->Pager->PrevButton->Enabled) { ?>
-	<li><a href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
-	<?php foreach ($t_jdw_krj_def_list->Pager->Items as $PagerItem) { ?>
-		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $t_jdw_krj_def_list->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
-	<?php } ?>
+</div>
+<!--current page number-->
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_jdw_krj_def_list->Pager->CurrentPage ?>">
+<div class="input-group-btn">
+<!--next page button-->
 	<?php if ($t_jdw_krj_def_list->Pager->NextButton->Enabled) { ?>
-	<li><a href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
+<!--last page button-->
 	<?php if ($t_jdw_krj_def_list->Pager->LastButton->Enabled) { ?>
-	<li><a href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_jdw_krj_def_list->PageUrl() ?>start=<?php echo $t_jdw_krj_def_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
-</ul></div>
+</div>
+</div>
+</div>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_jdw_krj_def_list->Pager->PageCount ?></span>
 </div>
 <div class="ewPager ewRec">
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $t_jdw_krj_def_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $t_jdw_krj_def_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $t_jdw_krj_def_list->Pager->RecordCount ?></span>

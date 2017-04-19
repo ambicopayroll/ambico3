@@ -7,6 +7,12 @@ $pegawai = NULL;
 // Table class for pegawai
 //
 class cpegawai extends cTable {
+	var $AuditTrailOnAdd = TRUE;
+	var $AuditTrailOnEdit = TRUE;
+	var $AuditTrailOnDelete = TRUE;
+	var $AuditTrailOnView = FALSE;
+	var $AuditTrailOnViewData = FALSE;
+	var $AuditTrailOnSearch = FALSE;
 	var $pegawai_id;
 	var $pegawai_pin;
 	var $pegawai_nip;
@@ -55,7 +61,7 @@ class cpegawai extends cTable {
 		$this->DetailAdd = FALSE; // Allow detail add
 		$this->DetailEdit = FALSE; // Allow detail edit
 		$this->DetailView = FALSE; // Allow detail view
-		$this->ShowMultipleDetails = FALSE; // Show multiple details
+		$this->ShowMultipleDetails = TRUE; // Show multiple details
 		$this->GridAddRowCount = 5;
 		$this->AllowAddDeleteRow = ew_AllowAddDeleteRow(); // Allow add/delete row
 		$this->UserIDAllowSecurity = 0; // User ID Allow
@@ -120,20 +126,26 @@ class cpegawai extends cTable {
 		$this->fields['tgl_lahir'] = &$this->tgl_lahir;
 
 		// pembagian1_id
-		$this->pembagian1_id = new cField('pegawai', 'pegawai', 'x_pembagian1_id', 'pembagian1_id', '`pembagian1_id`', '`pembagian1_id`', 3, -1, FALSE, '`pembagian1_id`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->pembagian1_id = new cField('pegawai', 'pegawai', 'x_pembagian1_id', 'pembagian1_id', '`pembagian1_id`', '`pembagian1_id`', 3, -1, FALSE, '`EV__pembagian1_id`', TRUE, TRUE, TRUE, 'FORMATTED TEXT', 'SELECT');
 		$this->pembagian1_id->Sortable = TRUE; // Allow sort
+		$this->pembagian1_id->UsePleaseSelect = TRUE; // Use PleaseSelect by default
+		$this->pembagian1_id->PleaseSelectText = $Language->Phrase("PleaseSelect"); // PleaseSelect text
 		$this->pembagian1_id->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['pembagian1_id'] = &$this->pembagian1_id;
 
 		// pembagian2_id
-		$this->pembagian2_id = new cField('pegawai', 'pegawai', 'x_pembagian2_id', 'pembagian2_id', '`pembagian2_id`', '`pembagian2_id`', 3, -1, FALSE, '`pembagian2_id`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->pembagian2_id = new cField('pegawai', 'pegawai', 'x_pembagian2_id', 'pembagian2_id', '`pembagian2_id`', '`pembagian2_id`', 3, -1, FALSE, '`EV__pembagian2_id`', TRUE, TRUE, TRUE, 'FORMATTED TEXT', 'SELECT');
 		$this->pembagian2_id->Sortable = TRUE; // Allow sort
+		$this->pembagian2_id->UsePleaseSelect = TRUE; // Use PleaseSelect by default
+		$this->pembagian2_id->PleaseSelectText = $Language->Phrase("PleaseSelect"); // PleaseSelect text
 		$this->pembagian2_id->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['pembagian2_id'] = &$this->pembagian2_id;
 
 		// pembagian3_id
-		$this->pembagian3_id = new cField('pegawai', 'pegawai', 'x_pembagian3_id', 'pembagian3_id', '`pembagian3_id`', '`pembagian3_id`', 3, -1, FALSE, '`pembagian3_id`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->pembagian3_id = new cField('pegawai', 'pegawai', 'x_pembagian3_id', 'pembagian3_id', '`pembagian3_id`', '`pembagian3_id`', 3, -1, FALSE, '`EV__pembagian3_id`', TRUE, TRUE, TRUE, 'FORMATTED TEXT', 'SELECT');
 		$this->pembagian3_id->Sortable = TRUE; // Allow sort
+		$this->pembagian3_id->UsePleaseSelect = TRUE; // Use PleaseSelect by default
+		$this->pembagian3_id->PleaseSelectText = $Language->Phrase("PleaseSelect"); // PleaseSelect text
 		$this->pembagian3_id->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['pembagian3_id'] = &$this->pembagian3_id;
 
@@ -150,8 +162,9 @@ class cpegawai extends cTable {
 		$this->fields['tgl_resign'] = &$this->tgl_resign;
 
 		// gender
-		$this->gender = new cField('pegawai', 'pegawai', 'x_gender', 'gender', '`gender`', '`gender`', 16, -1, FALSE, '`gender`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->gender = new cField('pegawai', 'pegawai', 'x_gender', 'gender', '`gender`', '`gender`', 16, -1, FALSE, '`gender`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'RADIO');
 		$this->gender->Sortable = TRUE; // Allow sort
+		$this->gender->OptionCount = 2;
 		$this->gender->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['gender'] = &$this->gender;
 
@@ -216,9 +229,63 @@ class cpegawai extends cTable {
 			} else {
 				$this->setSessionOrderBy($sSortField . " " . $sThisSort); // Save to Session
 			}
+			$sSortFieldList = ($ofld->FldVirtualExpression <> "") ? $ofld->FldVirtualExpression : $sSortField;
+			if ($ctrl) {
+				$sOrderByList = $this->getSessionOrderByList();
+				if (strpos($sOrderByList, $sSortFieldList . " " . $sLastSort) !== FALSE) {
+					$sOrderByList = str_replace($sSortFieldList . " " . $sLastSort, $sSortFieldList . " " . $sThisSort, $sOrderByList);
+				} else {
+					if ($sOrderByList <> "") $sOrderByList .= ", ";
+					$sOrderByList .= $sSortFieldList . " " . $sThisSort;
+				}
+				$this->setSessionOrderByList($sOrderByList); // Save to Session
+			} else {
+				$this->setSessionOrderByList($sSortFieldList . " " . $sThisSort); // Save to Session
+			}
 		} else {
 			if (!$ctrl) $ofld->setSort("");
 		}
+	}
+
+	// Session ORDER BY for List page
+	function getSessionOrderByList() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_ORDER_BY_LIST];
+	}
+
+	function setSessionOrderByList($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_ORDER_BY_LIST] = $v;
+	}
+
+	// Current detail table name
+	function getCurrentDetailTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE];
+	}
+
+	function setCurrentDetailTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_DETAIL_TABLE] = $v;
+	}
+
+	// Get detail url
+	function GetDetailUrl() {
+
+		// Detail url
+		$sDetailUrl = "";
+		if ($this->getCurrentDetailTable() == "t_jdw_krj_peg") {
+			$sDetailUrl = $GLOBALS["t_jdw_krj_peg"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
+			$sDetailUrl .= "&fk_pegawai_id=" . urlencode($this->pegawai_id->CurrentValue);
+		}
+		if ($this->getCurrentDetailTable() == "t_jdw_krj_def") {
+			$sDetailUrl = $GLOBALS["t_jdw_krj_def"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
+			$sDetailUrl .= "&fk_pegawai_id=" . urlencode($this->pegawai_id->CurrentValue);
+		}
+		if ($this->getCurrentDetailTable() == "t_rumus_peg") {
+			$sDetailUrl = $GLOBALS["t_rumus_peg"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
+			$sDetailUrl .= "&fk_pegawai_id=" . urlencode($this->pegawai_id->CurrentValue);
+		}
+		if ($sDetailUrl == "") {
+			$sDetailUrl = "pegawailist.php";
+		}
+		return $sDetailUrl;
 	}
 
 	// Table level SQL
@@ -247,6 +314,23 @@ class cpegawai extends cTable {
 
 	function setSqlSelect($v) {
 		$this->_SqlSelect = $v;
+	}
+	var $_SqlSelectList = "";
+
+	function getSqlSelectList() { // Select for List page
+		$select = "";
+		$select = "SELECT * FROM (" .
+			"SELECT *, (SELECT `pembagian1_nama` FROM `pembagian1` `EW_TMP_LOOKUPTABLE` WHERE `EW_TMP_LOOKUPTABLE`.`pembagian1_id` = `pegawai`.`pembagian1_id` LIMIT 1) AS `EV__pembagian1_id`, (SELECT `pembagian2_nama` FROM `pembagian2` `EW_TMP_LOOKUPTABLE` WHERE `EW_TMP_LOOKUPTABLE`.`pembagian2_id` = `pegawai`.`pembagian2_id` LIMIT 1) AS `EV__pembagian2_id`, (SELECT `pembagian3_nama` FROM `pembagian3` `EW_TMP_LOOKUPTABLE` WHERE `EW_TMP_LOOKUPTABLE`.`pembagian3_id` = `pegawai`.`pembagian3_id` LIMIT 1) AS `EV__pembagian3_id` FROM `pegawai`" .
+			") `EW_TMP_TABLE`";
+		return ($this->_SqlSelectList <> "") ? $this->_SqlSelectList : $select;
+	}
+
+	function SqlSelectList() { // For backward compatibility
+		return $this->getSqlSelectList();
+	}
+
+	function setSqlSelectList($v) {
+		$this->_SqlSelectList = $v;
 	}
 	var $_SqlWhere = "";
 
@@ -359,15 +443,50 @@ class cpegawai extends cTable {
 		ew_AddFilter($sFilter, $this->CurrentFilter);
 		$sFilter = $this->ApplyUserIDFilters($sFilter);
 		$this->Recordset_Selecting($sFilter);
-		$sSort = $this->getSessionOrderBy();
-		return ew_BuildSelectSql($this->getSqlSelect(), $this->getSqlWhere(), $this->getSqlGroupBy(),
-			$this->getSqlHaving(), $this->getSqlOrderBy(), $sFilter, $sSort);
+		if ($this->UseVirtualFields()) {
+			$sSort = $this->getSessionOrderByList();
+			return ew_BuildSelectSql($this->getSqlSelectList(), $this->getSqlWhere(), $this->getSqlGroupBy(),
+				$this->getSqlHaving(), $this->getSqlOrderBy(), $sFilter, $sSort);
+		} else {
+			$sSort = $this->getSessionOrderBy();
+			return ew_BuildSelectSql($this->getSqlSelect(), $this->getSqlWhere(), $this->getSqlGroupBy(),
+				$this->getSqlHaving(), $this->getSqlOrderBy(), $sFilter, $sSort);
+		}
 	}
 
 	// Get ORDER BY clause
 	function GetOrderBy() {
-		$sSort = $this->getSessionOrderBy();
+		$sSort = ($this->UseVirtualFields()) ? $this->getSessionOrderByList() : $this->getSessionOrderBy();
 		return ew_BuildSelectSql("", "", "", "", $this->getSqlOrderBy(), "", $sSort);
+	}
+
+	// Check if virtual fields is used in SQL
+	function UseVirtualFields() {
+		$sWhere = $this->getSessionWhere();
+		$sOrderBy = $this->getSessionOrderByList();
+		if ($sWhere <> "")
+			$sWhere = " " . str_replace(array("(",")"), array("",""), $sWhere) . " ";
+		if ($sOrderBy <> "")
+			$sOrderBy = " " . str_replace(array("(",")"), array("",""), $sOrderBy) . " ";
+		if ($this->pembagian1_id->AdvancedSearch->SearchValue <> "" ||
+			$this->pembagian1_id->AdvancedSearch->SearchValue2 <> "" ||
+			strpos($sWhere, " " . $this->pembagian1_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		if (strpos($sOrderBy, " " . $this->pembagian1_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		if ($this->pembagian2_id->AdvancedSearch->SearchValue <> "" ||
+			$this->pembagian2_id->AdvancedSearch->SearchValue2 <> "" ||
+			strpos($sWhere, " " . $this->pembagian2_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		if (strpos($sOrderBy, " " . $this->pembagian2_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		if ($this->pembagian3_id->AdvancedSearch->SearchValue <> "" ||
+			$this->pembagian3_id->AdvancedSearch->SearchValue2 <> "" ||
+			strpos($sWhere, " " . $this->pembagian3_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		if (strpos($sOrderBy, " " . $this->pembagian3_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		return FALSE;
 	}
 
 	// Try to get record count
@@ -446,6 +565,8 @@ class cpegawai extends cTable {
 		$conn = &$this->Connection();
 		$bInsert = $conn->Execute($this->InsertSQL($rs));
 		if ($bInsert) {
+			if ($this->AuditTrailOnAdd)
+				$this->WriteAuditTrailOnAdd($rs);
 		}
 		return $bInsert;
 	}
@@ -473,6 +594,12 @@ class cpegawai extends cTable {
 	function Update(&$rs, $where = "", $rsold = NULL, $curfilter = TRUE) {
 		$conn = &$this->Connection();
 		$bUpdate = $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
+		if ($bUpdate && $this->AuditTrailOnEdit) {
+			$rsaudit = $rs;
+			$fldname = 'pegawai_id';
+			if (!array_key_exists($fldname, $rsaudit)) $rsaudit[$fldname] = $rsold[$fldname];
+			$this->WriteAuditTrailOnEdit($rsaudit, $rsold);
+		}
 		return $bUpdate;
 	}
 
@@ -498,6 +625,8 @@ class cpegawai extends cTable {
 	function Delete(&$rs, $where = "", $curfilter = TRUE) {
 		$conn = &$this->Connection();
 		$bDelete = $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
+		if ($bDelete && $this->AuditTrailOnDelete)
+			$this->WriteAuditTrailOnDelete($rs);
 		return $bDelete;
 	}
 
@@ -558,7 +687,10 @@ class cpegawai extends cTable {
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		$url = $this->KeyUrl("pegawaiedit.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			$url = $this->KeyUrl("pegawaiedit.php", $this->UrlParm($parm));
+		else
+			$url = $this->KeyUrl("pegawaiedit.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -570,7 +702,10 @@ class cpegawai extends cTable {
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		$url = $this->KeyUrl("pegawaiadd.php", $this->UrlParm($parm));
+		if ($parm <> "")
+			$url = $this->KeyUrl("pegawaiadd.php", $this->UrlParm($parm));
+		else
+			$url = $this->KeyUrl("pegawaiadd.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -786,15 +921,84 @@ class cpegawai extends cTable {
 		$this->tgl_lahir->ViewCustomAttributes = "";
 
 		// pembagian1_id
-		$this->pembagian1_id->ViewValue = $this->pembagian1_id->CurrentValue;
+		if ($this->pembagian1_id->VirtualValue <> "") {
+			$this->pembagian1_id->ViewValue = $this->pembagian1_id->VirtualValue;
+		} else {
+		if (strval($this->pembagian1_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pembagian1_id`" . ew_SearchString("=", $this->pembagian1_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pembagian1_id`, `pembagian1_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pembagian1`";
+		$sWhereWrk = "";
+		$this->pembagian1_id->LookupFilters = array("dx1" => '`pembagian1_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pembagian1_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pembagian1_id->ViewValue = $this->pembagian1_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pembagian1_id->ViewValue = $this->pembagian1_id->CurrentValue;
+			}
+		} else {
+			$this->pembagian1_id->ViewValue = NULL;
+		}
+		}
 		$this->pembagian1_id->ViewCustomAttributes = "";
 
 		// pembagian2_id
-		$this->pembagian2_id->ViewValue = $this->pembagian2_id->CurrentValue;
+		if ($this->pembagian2_id->VirtualValue <> "") {
+			$this->pembagian2_id->ViewValue = $this->pembagian2_id->VirtualValue;
+		} else {
+		if (strval($this->pembagian2_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pembagian2_id`" . ew_SearchString("=", $this->pembagian2_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pembagian2_id`, `pembagian2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pembagian2`";
+		$sWhereWrk = "";
+		$this->pembagian2_id->LookupFilters = array("dx1" => '`pembagian2_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pembagian2_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pembagian2_id->ViewValue = $this->pembagian2_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pembagian2_id->ViewValue = $this->pembagian2_id->CurrentValue;
+			}
+		} else {
+			$this->pembagian2_id->ViewValue = NULL;
+		}
+		}
 		$this->pembagian2_id->ViewCustomAttributes = "";
 
 		// pembagian3_id
-		$this->pembagian3_id->ViewValue = $this->pembagian3_id->CurrentValue;
+		if ($this->pembagian3_id->VirtualValue <> "") {
+			$this->pembagian3_id->ViewValue = $this->pembagian3_id->VirtualValue;
+		} else {
+		if (strval($this->pembagian3_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pembagian3_id`" . ew_SearchString("=", $this->pembagian3_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pembagian3_id`, `pembagian3_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pembagian3`";
+		$sWhereWrk = "";
+		$this->pembagian3_id->LookupFilters = array("dx1" => '`pembagian3_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pembagian3_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pembagian3_id->ViewValue = $this->pembagian3_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pembagian3_id->ViewValue = $this->pembagian3_id->CurrentValue;
+			}
+		} else {
+			$this->pembagian3_id->ViewValue = NULL;
+		}
+		}
 		$this->pembagian3_id->ViewCustomAttributes = "";
 
 		// tgl_mulai_kerja
@@ -808,7 +1012,11 @@ class cpegawai extends cTable {
 		$this->tgl_resign->ViewCustomAttributes = "";
 
 		// gender
-		$this->gender->ViewValue = $this->gender->CurrentValue;
+		if (strval($this->gender->CurrentValue) <> "") {
+			$this->gender->ViewValue = $this->gender->OptionCaption($this->gender->CurrentValue);
+		} else {
+			$this->gender->ViewValue = NULL;
+		}
 		$this->gender->ViewCustomAttributes = "";
 
 		// tgl_masuk_pertama
@@ -1031,20 +1239,14 @@ class cpegawai extends cTable {
 		// pembagian1_id
 		$this->pembagian1_id->EditAttrs["class"] = "form-control";
 		$this->pembagian1_id->EditCustomAttributes = "";
-		$this->pembagian1_id->EditValue = $this->pembagian1_id->CurrentValue;
-		$this->pembagian1_id->PlaceHolder = ew_RemoveHtml($this->pembagian1_id->FldCaption());
 
 		// pembagian2_id
 		$this->pembagian2_id->EditAttrs["class"] = "form-control";
 		$this->pembagian2_id->EditCustomAttributes = "";
-		$this->pembagian2_id->EditValue = $this->pembagian2_id->CurrentValue;
-		$this->pembagian2_id->PlaceHolder = ew_RemoveHtml($this->pembagian2_id->FldCaption());
 
 		// pembagian3_id
 		$this->pembagian3_id->EditAttrs["class"] = "form-control";
 		$this->pembagian3_id->EditCustomAttributes = "";
-		$this->pembagian3_id->EditValue = $this->pembagian3_id->CurrentValue;
-		$this->pembagian3_id->PlaceHolder = ew_RemoveHtml($this->pembagian3_id->FldCaption());
 
 		// tgl_mulai_kerja
 		$this->tgl_mulai_kerja->EditAttrs["class"] = "form-control";
@@ -1059,10 +1261,8 @@ class cpegawai extends cTable {
 		$this->tgl_resign->PlaceHolder = ew_RemoveHtml($this->tgl_resign->FldCaption());
 
 		// gender
-		$this->gender->EditAttrs["class"] = "form-control";
 		$this->gender->EditCustomAttributes = "";
-		$this->gender->EditValue = $this->gender->CurrentValue;
-		$this->gender->PlaceHolder = ew_RemoveHtml($this->gender->FldCaption());
+		$this->gender->EditValue = $this->gender->Options(FALSE);
 
 		// tgl_masuk_pertama
 		$this->tgl_masuk_pertama->EditAttrs["class"] = "form-control";
@@ -1127,29 +1327,13 @@ class cpegawai extends cTable {
 			if ($Doc->Horizontal) { // Horizontal format, write header
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
-					if ($this->pegawai_id->Exportable) $Doc->ExportCaption($this->pegawai_id);
 					if ($this->pegawai_pin->Exportable) $Doc->ExportCaption($this->pegawai_pin);
 					if ($this->pegawai_nip->Exportable) $Doc->ExportCaption($this->pegawai_nip);
 					if ($this->pegawai_nama->Exportable) $Doc->ExportCaption($this->pegawai_nama);
-					if ($this->pegawai_pwd->Exportable) $Doc->ExportCaption($this->pegawai_pwd);
-					if ($this->pegawai_rfid->Exportable) $Doc->ExportCaption($this->pegawai_rfid);
-					if ($this->pegawai_privilege->Exportable) $Doc->ExportCaption($this->pegawai_privilege);
-					if ($this->pegawai_telp->Exportable) $Doc->ExportCaption($this->pegawai_telp);
-					if ($this->pegawai_status->Exportable) $Doc->ExportCaption($this->pegawai_status);
-					if ($this->tempat_lahir->Exportable) $Doc->ExportCaption($this->tempat_lahir);
-					if ($this->tgl_lahir->Exportable) $Doc->ExportCaption($this->tgl_lahir);
 					if ($this->pembagian1_id->Exportable) $Doc->ExportCaption($this->pembagian1_id);
 					if ($this->pembagian2_id->Exportable) $Doc->ExportCaption($this->pembagian2_id);
 					if ($this->pembagian3_id->Exportable) $Doc->ExportCaption($this->pembagian3_id);
-					if ($this->tgl_mulai_kerja->Exportable) $Doc->ExportCaption($this->tgl_mulai_kerja);
-					if ($this->tgl_resign->Exportable) $Doc->ExportCaption($this->tgl_resign);
 					if ($this->gender->Exportable) $Doc->ExportCaption($this->gender);
-					if ($this->tgl_masuk_pertama->Exportable) $Doc->ExportCaption($this->tgl_masuk_pertama);
-					if ($this->photo_path->Exportable) $Doc->ExportCaption($this->photo_path);
-					if ($this->tmp_img->Exportable) $Doc->ExportCaption($this->tmp_img);
-					if ($this->nama_bank->Exportable) $Doc->ExportCaption($this->nama_bank);
-					if ($this->nama_rek->Exportable) $Doc->ExportCaption($this->nama_rek);
-					if ($this->no_rek->Exportable) $Doc->ExportCaption($this->no_rek);
 				} else {
 					if ($this->pegawai_id->Exportable) $Doc->ExportCaption($this->pegawai_id);
 					if ($this->pegawai_pin->Exportable) $Doc->ExportCaption($this->pegawai_pin);
@@ -1204,29 +1388,13 @@ class cpegawai extends cTable {
 				if (!$Doc->ExportCustom) {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
-						if ($this->pegawai_id->Exportable) $Doc->ExportField($this->pegawai_id);
 						if ($this->pegawai_pin->Exportable) $Doc->ExportField($this->pegawai_pin);
 						if ($this->pegawai_nip->Exportable) $Doc->ExportField($this->pegawai_nip);
 						if ($this->pegawai_nama->Exportable) $Doc->ExportField($this->pegawai_nama);
-						if ($this->pegawai_pwd->Exportable) $Doc->ExportField($this->pegawai_pwd);
-						if ($this->pegawai_rfid->Exportable) $Doc->ExportField($this->pegawai_rfid);
-						if ($this->pegawai_privilege->Exportable) $Doc->ExportField($this->pegawai_privilege);
-						if ($this->pegawai_telp->Exportable) $Doc->ExportField($this->pegawai_telp);
-						if ($this->pegawai_status->Exportable) $Doc->ExportField($this->pegawai_status);
-						if ($this->tempat_lahir->Exportable) $Doc->ExportField($this->tempat_lahir);
-						if ($this->tgl_lahir->Exportable) $Doc->ExportField($this->tgl_lahir);
 						if ($this->pembagian1_id->Exportable) $Doc->ExportField($this->pembagian1_id);
 						if ($this->pembagian2_id->Exportable) $Doc->ExportField($this->pembagian2_id);
 						if ($this->pembagian3_id->Exportable) $Doc->ExportField($this->pembagian3_id);
-						if ($this->tgl_mulai_kerja->Exportable) $Doc->ExportField($this->tgl_mulai_kerja);
-						if ($this->tgl_resign->Exportable) $Doc->ExportField($this->tgl_resign);
 						if ($this->gender->Exportable) $Doc->ExportField($this->gender);
-						if ($this->tgl_masuk_pertama->Exportable) $Doc->ExportField($this->tgl_masuk_pertama);
-						if ($this->photo_path->Exportable) $Doc->ExportField($this->photo_path);
-						if ($this->tmp_img->Exportable) $Doc->ExportField($this->tmp_img);
-						if ($this->nama_bank->Exportable) $Doc->ExportField($this->nama_bank);
-						if ($this->nama_rek->Exportable) $Doc->ExportField($this->nama_rek);
-						if ($this->no_rek->Exportable) $Doc->ExportField($this->no_rek);
 					} else {
 						if ($this->pegawai_id->Exportable) $Doc->ExportField($this->pegawai_id);
 						if ($this->pegawai_pin->Exportable) $Doc->ExportField($this->pegawai_pin);
@@ -1288,6 +1456,129 @@ class cpegawai extends cTable {
 			return ew_ArrayToJson($rsarr);
 		} else {
 			return FALSE;
+		}
+	}
+
+	// Write Audit Trail start/end for grid update
+	function WriteAuditTrailDummy($typ) {
+		$table = 'pegawai';
+		$usr = CurrentUserID();
+		ew_WriteAuditTrail("log", ew_StdCurrentDateTime(), ew_ScriptName(), $usr, $typ, $table, "", "", "", "");
+	}
+
+	// Write Audit Trail (add page)
+	function WriteAuditTrailOnAdd(&$rs) {
+		global $Language;
+		if (!$this->AuditTrailOnAdd) return;
+		$table = 'pegawai';
+
+		// Get key value
+		$key = "";
+		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+		$key .= $rs['pegawai_id'];
+
+		// Write Audit Trail
+		$dt = ew_StdCurrentDateTime();
+		$id = ew_ScriptName();
+		$usr = CurrentUserID();
+		foreach (array_keys($rs) as $fldname) {
+			if (array_key_exists($fldname, $this->fields) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
+				if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") {
+					$newvalue = $Language->Phrase("PasswordMask"); // Password Field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) {
+					if (EW_AUDIT_TRAIL_TO_DATABASE)
+						$newvalue = $rs[$fldname];
+					else
+						$newvalue = "[MEMO]"; // Memo Field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) {
+					$newvalue = "[XML]"; // XML Field
+				} else {
+					$newvalue = $rs[$fldname];
+				}
+				ew_WriteAuditTrail("log", $dt, $id, $usr, "A", $table, $fldname, $key, "", $newvalue);
+			}
+		}
+	}
+
+	// Write Audit Trail (edit page)
+	function WriteAuditTrailOnEdit(&$rsold, &$rsnew) {
+		global $Language;
+		if (!$this->AuditTrailOnEdit) return;
+		$table = 'pegawai';
+
+		// Get key value
+		$key = "";
+		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+		$key .= $rsold['pegawai_id'];
+
+		// Write Audit Trail
+		$dt = ew_StdCurrentDateTime();
+		$id = ew_ScriptName();
+		$usr = CurrentUserID();
+		foreach (array_keys($rsnew) as $fldname) {
+			if (array_key_exists($fldname, $this->fields) && array_key_exists($fldname, $rsold) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
+				if ($this->fields[$fldname]->FldDataType == EW_DATATYPE_DATE) { // DateTime field
+					$modified = (ew_FormatDateTime($rsold[$fldname], 0) <> ew_FormatDateTime($rsnew[$fldname], 0));
+				} else {
+					$modified = !ew_CompareValue($rsold[$fldname], $rsnew[$fldname]);
+				}
+				if ($modified) {
+					if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") { // Password Field
+						$oldvalue = $Language->Phrase("PasswordMask");
+						$newvalue = $Language->Phrase("PasswordMask");
+					} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) { // Memo field
+						if (EW_AUDIT_TRAIL_TO_DATABASE) {
+							$oldvalue = $rsold[$fldname];
+							$newvalue = $rsnew[$fldname];
+						} else {
+							$oldvalue = "[MEMO]";
+							$newvalue = "[MEMO]";
+						}
+					} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) { // XML field
+						$oldvalue = "[XML]";
+						$newvalue = "[XML]";
+					} else {
+						$oldvalue = $rsold[$fldname];
+						$newvalue = $rsnew[$fldname];
+					}
+					ew_WriteAuditTrail("log", $dt, $id, $usr, "U", $table, $fldname, $key, $oldvalue, $newvalue);
+				}
+			}
+		}
+	}
+
+	// Write Audit Trail (delete page)
+	function WriteAuditTrailOnDelete(&$rs) {
+		global $Language;
+		if (!$this->AuditTrailOnDelete) return;
+		$table = 'pegawai';
+
+		// Get key value
+		$key = "";
+		if ($key <> "")
+			$key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+		$key .= $rs['pegawai_id'];
+
+		// Write Audit Trail
+		$dt = ew_StdCurrentDateTime();
+		$id = ew_ScriptName();
+		$curUser = CurrentUserID();
+		foreach (array_keys($rs) as $fldname) {
+			if (array_key_exists($fldname, $this->fields) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
+				if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") {
+					$oldvalue = $Language->Phrase("PasswordMask"); // Password Field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) {
+					if (EW_AUDIT_TRAIL_TO_DATABASE)
+						$oldvalue = $rs[$fldname];
+					else
+						$oldvalue = "[MEMO]"; // Memo field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) {
+					$oldvalue = "[XML]"; // XML field
+				} else {
+					$oldvalue = $rs[$fldname];
+				}
+				ew_WriteAuditTrail("log", $dt, $id, $curUser, "D", $table, $fldname, $key, $oldvalue, "");
+			}
 		}
 	}
 

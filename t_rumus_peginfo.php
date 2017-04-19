@@ -94,6 +94,53 @@ class ct_rumus_peg extends cTable {
 		}
 	}
 
+	// Current master table name
+	function getCurrentMasterTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE];
+	}
+
+	function setCurrentMasterTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE] = $v;
+	}
+
+	// Session master WHERE clause
+	function GetMasterFilter() {
+
+		// Master filter
+		$sMasterFilter = "";
+		if ($this->getCurrentMasterTable() == "pegawai") {
+			if ($this->pegawai_id->getSessionValue() <> "")
+				$sMasterFilter .= "`pegawai_id`=" . ew_QuotedValue($this->pegawai_id->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
+		return $sMasterFilter;
+	}
+
+	// Session detail WHERE clause
+	function GetDetailFilter() {
+
+		// Detail filter
+		$sDetailFilter = "";
+		if ($this->getCurrentMasterTable() == "pegawai") {
+			if ($this->pegawai_id->getSessionValue() <> "")
+				$sDetailFilter .= "`pegawai_id`=" . ew_QuotedValue($this->pegawai_id->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
+		return $sDetailFilter;
+	}
+
+	// Master filter
+	function SqlMasterFilter_pegawai() {
+		return "`pegawai_id`=@pegawai_id@";
+	}
+
+	// Detail filter
+	function SqlDetailFilter_pegawai() {
+		return "`pegawai_id`=@pegawai_id@";
+	}
+
 	// Table level SQL
 	var $_SqlFrom = "";
 
@@ -464,6 +511,10 @@ class ct_rumus_peg extends cTable {
 
 	// Add master url
 	function AddMasterUrl($url) {
+		if ($this->getCurrentMasterTable() == "pegawai" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
+			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
+			$url .= "&fk_pegawai_id=" . urlencode($this->pegawai_id->CurrentValue);
+		}
 		return $url;
 	}
 
@@ -624,8 +675,14 @@ class ct_rumus_peg extends cTable {
 		// pegawai_id
 		$this->pegawai_id->EditAttrs["class"] = "form-control";
 		$this->pegawai_id->EditCustomAttributes = "";
+		if ($this->pegawai_id->getSessionValue() <> "") {
+			$this->pegawai_id->CurrentValue = $this->pegawai_id->getSessionValue();
+		$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+		$this->pegawai_id->ViewCustomAttributes = "";
+		} else {
 		$this->pegawai_id->EditValue = $this->pegawai_id->CurrentValue;
 		$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
+		}
 
 		// rumus_id
 		$this->rumus_id->EditAttrs["class"] = "form-control";

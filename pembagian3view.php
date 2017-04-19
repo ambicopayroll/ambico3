@@ -1208,26 +1208,44 @@ $pembagian3_view->ShowMessage();
 <?php if (!$pembagian3_view->IsModal) { ?>
 <?php if ($pembagian3->Export == "") { ?>
 <form name="ewPagerForm" class="form-inline ewForm ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($pembagian3_view->Pager)) $pembagian3_view->Pager = new cNumericPager($pembagian3_view->StartRec, $pembagian3_view->DisplayRecs, $pembagian3_view->TotalRecs, $pembagian3_view->RecRange) ?>
+<?php if (!isset($pembagian3_view->Pager)) $pembagian3_view->Pager = new cPrevNextPager($pembagian3_view->StartRec, $pembagian3_view->DisplayRecs, $pembagian3_view->TotalRecs) ?>
 <?php if ($pembagian3_view->Pager->RecordCount > 0 && $pembagian3_view->Pager->Visible) { ?>
 <div class="ewPager">
-<div class="ewNumericPage"><ul class="pagination">
+<span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
+<div class="ewPrevNext"><div class="input-group">
+<div class="input-group-btn">
+<!--first page button-->
 	<?php if ($pembagian3_view->Pager->FirstButton->Enabled) { ?>
-	<li><a href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
+<!--previous page button-->
 	<?php if ($pembagian3_view->Pager->PrevButton->Enabled) { ?>
-	<li><a href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
-	<?php foreach ($pembagian3_view->Pager->Items as $PagerItem) { ?>
-		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $pembagian3_view->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
-	<?php } ?>
+</div>
+<!--current page number-->
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $pembagian3_view->Pager->CurrentPage ?>">
+<div class="input-group-btn">
+<!--next page button-->
 	<?php if ($pembagian3_view->Pager->NextButton->Enabled) { ?>
-	<li><a href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
+<!--last page button-->
 	<?php if ($pembagian3_view->Pager->LastButton->Enabled) { ?>
-	<li><a href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
-</ul></div>
+</div>
+</div>
+</div>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $pembagian3_view->Pager->PageCount ?></span>
 </div>
 <?php } ?>
 <div class="clearfix"></div>
@@ -1279,26 +1297,44 @@ $pembagian3_view->ShowMessage();
 </table>
 <?php if (!$pembagian3_view->IsModal) { ?>
 <?php if ($pembagian3->Export == "") { ?>
-<?php if (!isset($pembagian3_view->Pager)) $pembagian3_view->Pager = new cNumericPager($pembagian3_view->StartRec, $pembagian3_view->DisplayRecs, $pembagian3_view->TotalRecs, $pembagian3_view->RecRange) ?>
+<?php if (!isset($pembagian3_view->Pager)) $pembagian3_view->Pager = new cPrevNextPager($pembagian3_view->StartRec, $pembagian3_view->DisplayRecs, $pembagian3_view->TotalRecs) ?>
 <?php if ($pembagian3_view->Pager->RecordCount > 0 && $pembagian3_view->Pager->Visible) { ?>
 <div class="ewPager">
-<div class="ewNumericPage"><ul class="pagination">
+<span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
+<div class="ewPrevNext"><div class="input-group">
+<div class="input-group-btn">
+<!--first page button-->
 	<?php if ($pembagian3_view->Pager->FirstButton->Enabled) { ?>
-	<li><a href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
+<!--previous page button-->
 	<?php if ($pembagian3_view->Pager->PrevButton->Enabled) { ?>
-	<li><a href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
-	<?php foreach ($pembagian3_view->Pager->Items as $PagerItem) { ?>
-		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $pembagian3_view->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
-	<?php } ?>
+</div>
+<!--current page number-->
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $pembagian3_view->Pager->CurrentPage ?>">
+<div class="input-group-btn">
+<!--next page button-->
 	<?php if ($pembagian3_view->Pager->NextButton->Enabled) { ?>
-	<li><a href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
+<!--last page button-->
 	<?php if ($pembagian3_view->Pager->LastButton->Enabled) { ?>
-	<li><a href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $pembagian3_view->PageUrl() ?>start=<?php echo $pembagian3_view->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
-</ul></div>
+</div>
+</div>
+</div>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $pembagian3_view->Pager->PageCount ?></span>
 </div>
 <?php } ?>
 <div class="clearfix"></div>

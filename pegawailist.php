@@ -7,6 +7,9 @@ ob_start(); // Turn on output buffering
 <?php include_once "phpfn13.php" ?>
 <?php include_once "pegawaiinfo.php" ?>
 <?php include_once "t_userinfo.php" ?>
+<?php include_once "t_jdw_krj_peggridcls.php" ?>
+<?php include_once "t_jdw_krj_defgridcls.php" ?>
+<?php include_once "t_rumus_peggridcls.php" ?>
 <?php include_once "userfn13.php" ?>
 <?php
 
@@ -280,7 +283,7 @@ class cpegawai_list extends cpegawai {
 		$this->ExportXmlUrl = $this->PageUrl() . "export=xml";
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv";
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf";
-		$this->AddUrl = "pegawaiadd.php";
+		$this->AddUrl = "pegawaiadd.php?" . EW_TABLE_SHOW_DETAIL . "=";
 		$this->InlineAddUrl = $this->PageUrl() . "a=add";
 		$this->GridAddUrl = $this->PageUrl() . "a=gridadd";
 		$this->GridEditUrl = $this->PageUrl() . "a=gridedit";
@@ -362,6 +365,9 @@ class cpegawai_list extends cpegawai {
 			$Security->UserID_Loaded();
 		}
 
+		// Create form object
+		$objForm = new cFormObj();
+
 		// Get export parameters
 		$custom = "";
 		if (@$_GET["export"] <> "") {
@@ -410,28 +416,13 @@ class cpegawai_list extends cpegawai {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->pegawai_id->SetVisibility();
 		$this->pegawai_pin->SetVisibility();
 		$this->pegawai_nip->SetVisibility();
 		$this->pegawai_nama->SetVisibility();
-		$this->pegawai_pwd->SetVisibility();
-		$this->pegawai_rfid->SetVisibility();
-		$this->pegawai_privilege->SetVisibility();
-		$this->pegawai_telp->SetVisibility();
-		$this->pegawai_status->SetVisibility();
-		$this->tempat_lahir->SetVisibility();
-		$this->tgl_lahir->SetVisibility();
 		$this->pembagian1_id->SetVisibility();
 		$this->pembagian2_id->SetVisibility();
 		$this->pembagian3_id->SetVisibility();
-		$this->tgl_mulai_kerja->SetVisibility();
-		$this->tgl_resign->SetVisibility();
 		$this->gender->SetVisibility();
-		$this->tgl_masuk_pertama->SetVisibility();
-		$this->photo_path->SetVisibility();
-		$this->nama_bank->SetVisibility();
-		$this->nama_rek->SetVisibility();
-		$this->no_rek->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -448,6 +439,30 @@ class cpegawai_list extends cpegawai {
 
 		// Process auto fill
 		if (@$_POST["ajax"] == "autofill") {
+
+			// Process auto fill for detail table 't_jdw_krj_peg'
+			if (@$_POST["grid"] == "ft_jdw_krj_peggrid") {
+				if (!isset($GLOBALS["t_jdw_krj_peg_grid"])) $GLOBALS["t_jdw_krj_peg_grid"] = new ct_jdw_krj_peg_grid;
+				$GLOBALS["t_jdw_krj_peg_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
+
+			// Process auto fill for detail table 't_jdw_krj_def'
+			if (@$_POST["grid"] == "ft_jdw_krj_defgrid") {
+				if (!isset($GLOBALS["t_jdw_krj_def_grid"])) $GLOBALS["t_jdw_krj_def_grid"] = new ct_jdw_krj_def_grid;
+				$GLOBALS["t_jdw_krj_def_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
+
+			// Process auto fill for detail table 't_rumus_peg'
+			if (@$_POST["grid"] == "ft_rumus_peggrid") {
+				if (!isset($GLOBALS["t_rumus_peg_grid"])) $GLOBALS["t_rumus_peg_grid"] = new ct_rumus_peg_grid;
+				$GLOBALS["t_rumus_peg_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
 			$results = $this->GetAutoFill(@$_POST["name"], @$_POST["q"]);
 			if ($results) {
 
@@ -594,6 +609,71 @@ class cpegawai_list extends cpegawai {
 			if ($this->Export == "")
 				$this->SetupBreadcrumb();
 
+			// Check QueryString parameters
+			if (@$_GET["a"] <> "") {
+				$this->CurrentAction = $_GET["a"];
+
+				// Clear inline mode
+				if ($this->CurrentAction == "cancel")
+					$this->ClearInlineMode();
+
+				// Switch to grid edit mode
+				if ($this->CurrentAction == "gridedit")
+					$this->GridEditMode();
+
+				// Switch to inline edit mode
+				if ($this->CurrentAction == "edit")
+					$this->InlineEditMode();
+
+				// Switch to inline add mode
+				if ($this->CurrentAction == "add" || $this->CurrentAction == "copy")
+					$this->InlineAddMode();
+
+				// Switch to grid add mode
+				if ($this->CurrentAction == "gridadd")
+					$this->GridAddMode();
+			} else {
+				if (@$_POST["a_list"] <> "") {
+					$this->CurrentAction = $_POST["a_list"]; // Get action
+
+					// Grid Update
+					if (($this->CurrentAction == "gridupdate" || $this->CurrentAction == "gridoverwrite") && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridedit") {
+						if ($this->ValidateGridForm()) {
+							$bGridUpdate = $this->GridUpdate();
+						} else {
+							$bGridUpdate = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridUpdate) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridedit"; // Stay in Grid Edit mode
+						}
+					}
+
+					// Inline Update
+					if (($this->CurrentAction == "update" || $this->CurrentAction == "overwrite") && @$_SESSION[EW_SESSION_INLINE_MODE] == "edit")
+						$this->InlineUpdate();
+
+					// Insert Inline
+					if ($this->CurrentAction == "insert" && @$_SESSION[EW_SESSION_INLINE_MODE] == "add")
+						$this->InlineInsert();
+
+					// Grid Insert
+					if ($this->CurrentAction == "gridinsert" && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridadd") {
+						if ($this->ValidateGridForm()) {
+							$bGridInsert = $this->GridInsert();
+						} else {
+							$bGridInsert = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridInsert) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridadd"; // Stay in Grid Add mode
+						}
+					}
+				}
+			}
+
 			// Hide list options
 			if ($this->Export <> "") {
 				$this->ListOptions->HideAllOptions(array("sequence"));
@@ -615,6 +695,14 @@ class cpegawai_list extends cpegawai {
 			if ($this->Export <> "") {
 				foreach ($this->OtherOptions as &$option)
 					$option->HideAllOptions();
+			}
+
+			// Show grid delete link for grid add / grid edit
+			if ($this->AllowAddDeleteRow) {
+				if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+					$item = $this->ListOptions->GetItem("griddelete");
+					if ($item) $item->Visible = TRUE;
+				}
 			}
 
 			// Get default search criteria
@@ -730,6 +818,234 @@ class cpegawai_list extends cpegawai {
 		}
 	}
 
+	//  Exit inline mode
+	function ClearInlineMode() {
+		$this->setKey("pegawai_id", ""); // Clear inline edit key
+		$this->LastAction = $this->CurrentAction; // Save last action
+		$this->CurrentAction = ""; // Clear action
+		$_SESSION[EW_SESSION_INLINE_MODE] = ""; // Clear inline mode
+	}
+
+	// Switch to Grid Add mode
+	function GridAddMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridadd"; // Enabled grid add
+	}
+
+	// Switch to Grid Edit mode
+	function GridEditMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridedit"; // Enable grid edit
+	}
+
+	// Switch to Inline Edit mode
+	function InlineEditMode() {
+		global $Security, $Language;
+		if (!$Security->CanEdit())
+			$this->Page_Terminate("login.php"); // Go to login page
+		$bInlineEdit = TRUE;
+		if (@$_GET["pegawai_id"] <> "") {
+			$this->pegawai_id->setQueryStringValue($_GET["pegawai_id"]);
+		} else {
+			$bInlineEdit = FALSE;
+		}
+		if ($bInlineEdit) {
+			if ($this->LoadRow()) {
+				$this->setKey("pegawai_id", $this->pegawai_id->CurrentValue); // Set up inline edit key
+				$_SESSION[EW_SESSION_INLINE_MODE] = "edit"; // Enable inline edit
+			}
+		}
+	}
+
+	// Perform update to Inline Edit record
+	function InlineUpdate() {
+		global $Language, $objForm, $gsFormError;
+		$objForm->Index = 1; 
+		$this->LoadFormValues(); // Get form values
+
+		// Validate form
+		$bInlineUpdate = TRUE;
+		if (!$this->ValidateForm()) {	
+			$bInlineUpdate = FALSE; // Form error, reset action
+			$this->setFailureMessage($gsFormError);
+		} else {
+			$bInlineUpdate = FALSE;
+			$rowkey = strval($objForm->GetValue($this->FormKeyName));
+			if ($this->SetupKeyValues($rowkey)) { // Set up key values
+				if ($this->CheckInlineEditKey()) { // Check key
+					$this->SendEmail = TRUE; // Send email on update success
+					$bInlineUpdate = $this->EditRow(); // Update record
+				} else {
+					$bInlineUpdate = FALSE;
+				}
+			}
+		}
+		if ($bInlineUpdate) { // Update success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Set up success message
+			$this->ClearInlineMode(); // Clear inline edit mode
+		} else {
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("UpdateFailed")); // Set update failed message
+			$this->EventCancelled = TRUE; // Cancel event
+			$this->CurrentAction = "edit"; // Stay in edit mode
+		}
+	}
+
+	// Check Inline Edit key
+	function CheckInlineEditKey() {
+
+		//CheckInlineEditKey = True
+		if (strval($this->getKey("pegawai_id")) <> strval($this->pegawai_id->CurrentValue))
+			return FALSE;
+		return TRUE;
+	}
+
+	// Switch to Inline Add mode
+	function InlineAddMode() {
+		global $Security, $Language;
+		if (!$Security->CanAdd())
+			$this->Page_Terminate("login.php"); // Return to login page
+		if ($this->CurrentAction == "copy") {
+			if (@$_GET["pegawai_id"] <> "") {
+				$this->pegawai_id->setQueryStringValue($_GET["pegawai_id"]);
+				$this->setKey("pegawai_id", $this->pegawai_id->CurrentValue); // Set up key
+			} else {
+				$this->setKey("pegawai_id", ""); // Clear key
+				$this->CurrentAction = "add";
+			}
+		}
+		$_SESSION[EW_SESSION_INLINE_MODE] = "add"; // Enable inline add
+	}
+
+	// Perform update to Inline Add/Copy record
+	function InlineInsert() {
+		global $Language, $objForm, $gsFormError;
+		$this->LoadOldRecord(); // Load old recordset
+		$objForm->Index = 0;
+		$this->LoadFormValues(); // Get form values
+
+		// Validate form
+		if (!$this->ValidateForm()) {
+			$this->setFailureMessage($gsFormError); // Set validation error message
+			$this->EventCancelled = TRUE; // Set event cancelled
+			$this->CurrentAction = "add"; // Stay in add mode
+			return;
+		}
+		$this->SendEmail = TRUE; // Send email on add success
+		if ($this->AddRow($this->OldRecordset)) { // Add record
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up add success message
+			$this->ClearInlineMode(); // Clear inline add mode
+		} else { // Add failed
+			$this->EventCancelled = TRUE; // Set event cancelled
+			$this->CurrentAction = "add"; // Stay in add mode
+		}
+	}
+
+	// Perform update to grid
+	function GridUpdate() {
+		global $Language, $objForm, $gsFormError;
+		$bGridUpdate = TRUE;
+
+		// Get old recordset
+		$this->CurrentFilter = $this->BuildKeyFilter();
+		if ($this->CurrentFilter == "")
+			$this->CurrentFilter = "0=1";
+		$sSql = $this->SQL();
+		$conn = &$this->Connection();
+		if ($rs = $conn->Execute($sSql)) {
+			$rsold = $rs->GetRows();
+			$rs->Close();
+		}
+
+		// Call Grid Updating event
+		if (!$this->Grid_Updating($rsold)) {
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("GridEditCancelled")); // Set grid edit cancelled message
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+		if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateBegin")); // Batch update begin
+		$sKey = "";
+
+		// Update row index and get row key
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Update all rows based on key
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+			$objForm->Index = $rowindex;
+			$rowkey = strval($objForm->GetValue($this->FormKeyName));
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+
+			// Load all values and keys
+			if ($rowaction <> "insertdelete") { // Skip insert then deleted rows
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "" || $rowaction == "edit" || $rowaction == "delete") {
+					$bGridUpdate = $this->SetupKeyValues($rowkey); // Set up key values
+				} else {
+					$bGridUpdate = TRUE;
+				}
+
+				// Skip empty row
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// No action required
+				// Validate form and insert/update/delete record
+
+				} elseif ($bGridUpdate) {
+					if ($rowaction == "delete") {
+						$this->CurrentFilter = $this->KeyFilter();
+						$bGridUpdate = $this->DeleteRows(); // Delete this row
+					} else if (!$this->ValidateForm()) {
+						$bGridUpdate = FALSE; // Form error, reset action
+						$this->setFailureMessage($gsFormError);
+					} else {
+						if ($rowaction == "insert") {
+							$bGridUpdate = $this->AddRow(); // Insert this row
+						} else {
+							if ($rowkey <> "") {
+								$this->SendEmail = FALSE; // Do not send email on update success
+								$bGridUpdate = $this->EditRow(); // Update this row
+							}
+						} // End update
+					}
+				}
+				if ($bGridUpdate) {
+					if ($sKey <> "") $sKey .= ", ";
+					$sKey .= $rowkey;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($bGridUpdate) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Updated event
+			$this->Grid_Updated($rsold, $rsnew);
+			if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateSuccess")); // Batch update success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Set up update success message
+			$this->ClearInlineMode(); // Clear inline edit mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateRollback")); // Batch update rollback
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("UpdateFailed")); // Set update failed message
+		}
+		return $bGridUpdate;
+	}
+
 	// Build filter for all keys
 	function BuildKeyFilter() {
 		global $objForm;
@@ -766,6 +1082,188 @@ class cpegawai_list extends cpegawai {
 				return FALSE;
 		}
 		return TRUE;
+	}
+
+	// Perform Grid Add
+	function GridInsert() {
+		global $Language, $objForm, $gsFormError;
+		$rowindex = 1;
+		$bGridInsert = FALSE;
+		$conn = &$this->Connection();
+
+		// Call Grid Inserting event
+		if (!$this->Grid_Inserting()) {
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("GridAddCancelled")); // Set grid add cancelled message
+			}
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+
+		// Init key filter
+		$sWrkFilter = "";
+		$addcnt = 0;
+		if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertBegin")); // Batch insert begin
+		$sKey = "";
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Insert all rows
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "" && $rowaction <> "insert")
+				continue; // Skip
+			$this->LoadFormValues(); // Get form values
+			if (!$this->EmptyRow()) {
+				$addcnt++;
+				$this->SendEmail = FALSE; // Do not send email on insert success
+
+				// Validate form
+				if (!$this->ValidateForm()) {
+					$bGridInsert = FALSE; // Form error, reset action
+					$this->setFailureMessage($gsFormError);
+				} else {
+					$bGridInsert = $this->AddRow($this->OldRecordset); // Insert this row
+				}
+				if ($bGridInsert) {
+					if ($sKey <> "") $sKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+					$sKey .= $this->pegawai_id->CurrentValue;
+
+					// Add filter for this record
+					$sFilter = $this->KeyFilter();
+					if ($sWrkFilter <> "") $sWrkFilter .= " OR ";
+					$sWrkFilter .= $sFilter;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($addcnt == 0) { // No record inserted
+			$this->setFailureMessage($Language->Phrase("NoAddRecord"));
+			$bGridInsert = FALSE;
+		}
+		if ($bGridInsert) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			$this->CurrentFilter = $sWrkFilter;
+			$sSql = $this->SQL();
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Inserted event
+			$this->Grid_Inserted($rsnew);
+			if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertSuccess")); // Batch insert success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("InsertSuccess")); // Set up insert success message
+			$this->ClearInlineMode(); // Clear grid add mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertRollback")); // Batch insert rollback
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("InsertFailed")); // Set insert failed message
+			}
+		}
+		return $bGridInsert;
+	}
+
+	// Check if empty row
+	function EmptyRow() {
+		global $objForm;
+		if ($objForm->HasValue("x_pegawai_pin") && $objForm->HasValue("o_pegawai_pin") && $this->pegawai_pin->CurrentValue <> $this->pegawai_pin->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_pegawai_nip") && $objForm->HasValue("o_pegawai_nip") && $this->pegawai_nip->CurrentValue <> $this->pegawai_nip->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_pegawai_nama") && $objForm->HasValue("o_pegawai_nama") && $this->pegawai_nama->CurrentValue <> $this->pegawai_nama->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_pembagian1_id") && $objForm->HasValue("o_pembagian1_id") && $this->pembagian1_id->CurrentValue <> $this->pembagian1_id->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_pembagian2_id") && $objForm->HasValue("o_pembagian2_id") && $this->pembagian2_id->CurrentValue <> $this->pembagian2_id->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_pembagian3_id") && $objForm->HasValue("o_pembagian3_id") && $this->pembagian3_id->CurrentValue <> $this->pembagian3_id->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_gender") && $objForm->HasValue("o_gender") && $this->gender->CurrentValue <> $this->gender->OldValue)
+			return FALSE;
+		return TRUE;
+	}
+
+	// Validate grid form
+	function ValidateGridForm() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Validate all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else if (!$this->ValidateForm()) {
+					return FALSE;
+				}
+			}
+		}
+		return TRUE;
+	}
+
+	// Get all form values of the grid
+	function GetGridFormValues() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+		$rows = array();
+
+		// Loop through all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else {
+					$rows[] = $this->GetFieldValues("FormValue"); // Return row as array
+				}
+			}
+		}
+		return $rows; // Return as array of array
+	}
+
+	// Restore form values for current row
+	function RestoreCurrentRowFormValues($idx) {
+		global $objForm;
+
+		// Get row based on current index
+		$objForm->Index = $idx;
+		$this->LoadFormValues(); // Load form values
 	}
 
 	// Get list of filters
@@ -1219,28 +1717,13 @@ class cpegawai_list extends cpegawai {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->pegawai_id, $bCtrl); // pegawai_id
 			$this->UpdateSort($this->pegawai_pin, $bCtrl); // pegawai_pin
 			$this->UpdateSort($this->pegawai_nip, $bCtrl); // pegawai_nip
 			$this->UpdateSort($this->pegawai_nama, $bCtrl); // pegawai_nama
-			$this->UpdateSort($this->pegawai_pwd, $bCtrl); // pegawai_pwd
-			$this->UpdateSort($this->pegawai_rfid, $bCtrl); // pegawai_rfid
-			$this->UpdateSort($this->pegawai_privilege, $bCtrl); // pegawai_privilege
-			$this->UpdateSort($this->pegawai_telp, $bCtrl); // pegawai_telp
-			$this->UpdateSort($this->pegawai_status, $bCtrl); // pegawai_status
-			$this->UpdateSort($this->tempat_lahir, $bCtrl); // tempat_lahir
-			$this->UpdateSort($this->tgl_lahir, $bCtrl); // tgl_lahir
 			$this->UpdateSort($this->pembagian1_id, $bCtrl); // pembagian1_id
 			$this->UpdateSort($this->pembagian2_id, $bCtrl); // pembagian2_id
 			$this->UpdateSort($this->pembagian3_id, $bCtrl); // pembagian3_id
-			$this->UpdateSort($this->tgl_mulai_kerja, $bCtrl); // tgl_mulai_kerja
-			$this->UpdateSort($this->tgl_resign, $bCtrl); // tgl_resign
 			$this->UpdateSort($this->gender, $bCtrl); // gender
-			$this->UpdateSort($this->tgl_masuk_pertama, $bCtrl); // tgl_masuk_pertama
-			$this->UpdateSort($this->photo_path, $bCtrl); // photo_path
-			$this->UpdateSort($this->nama_bank, $bCtrl); // nama_bank
-			$this->UpdateSort($this->nama_rek, $bCtrl); // nama_rek
-			$this->UpdateSort($this->no_rek, $bCtrl); // no_rek
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -1273,28 +1756,14 @@ class cpegawai_list extends cpegawai {
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->pegawai_id->setSort("");
+				$this->setSessionOrderByList($sOrderBy);
 				$this->pegawai_pin->setSort("");
 				$this->pegawai_nip->setSort("");
 				$this->pegawai_nama->setSort("");
-				$this->pegawai_pwd->setSort("");
-				$this->pegawai_rfid->setSort("");
-				$this->pegawai_privilege->setSort("");
-				$this->pegawai_telp->setSort("");
-				$this->pegawai_status->setSort("");
-				$this->tempat_lahir->setSort("");
-				$this->tgl_lahir->setSort("");
 				$this->pembagian1_id->setSort("");
 				$this->pembagian2_id->setSort("");
 				$this->pembagian3_id->setSort("");
-				$this->tgl_mulai_kerja->setSort("");
-				$this->tgl_resign->setSort("");
 				$this->gender->setSort("");
-				$this->tgl_masuk_pertama->setSort("");
-				$this->photo_path->setSort("");
-				$this->nama_bank->setSort("");
-				$this->nama_rek->setSort("");
-				$this->no_rek->setSort("");
 			}
 
 			// Reset start position
@@ -1306,6 +1775,14 @@ class cpegawai_list extends cpegawai {
 	// Set up list options
 	function SetupListOptions() {
 		global $Security, $Language;
+
+		// "griddelete"
+		if ($this->AllowAddDeleteRow) {
+			$item = &$this->ListOptions->Add("griddelete");
+			$item->CssStyle = "white-space: nowrap;";
+			$item->OnLeft = TRUE;
+			$item->Visible = FALSE; // Default hidden
+		}
 
 		// Add group option item
 		$item = &$this->ListOptions->Add($this->ListOptions->GroupOptionName);
@@ -1331,6 +1808,46 @@ class cpegawai_list extends cpegawai {
 		$item->Visible = $Security->CanAdd();
 		$item->OnLeft = TRUE;
 
+		// "detail_t_jdw_krj_peg"
+		$item = &$this->ListOptions->Add("detail_t_jdw_krj_peg");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = $Security->AllowList(CurrentProjectID() . 't_jdw_krj_peg') && !$this->ShowMultipleDetails;
+		$item->OnLeft = TRUE;
+		$item->ShowInButtonGroup = FALSE;
+		if (!isset($GLOBALS["t_jdw_krj_peg_grid"])) $GLOBALS["t_jdw_krj_peg_grid"] = new ct_jdw_krj_peg_grid;
+
+		// "detail_t_jdw_krj_def"
+		$item = &$this->ListOptions->Add("detail_t_jdw_krj_def");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = $Security->AllowList(CurrentProjectID() . 't_jdw_krj_def') && !$this->ShowMultipleDetails;
+		$item->OnLeft = TRUE;
+		$item->ShowInButtonGroup = FALSE;
+		if (!isset($GLOBALS["t_jdw_krj_def_grid"])) $GLOBALS["t_jdw_krj_def_grid"] = new ct_jdw_krj_def_grid;
+
+		// "detail_t_rumus_peg"
+		$item = &$this->ListOptions->Add("detail_t_rumus_peg");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = $Security->AllowList(CurrentProjectID() . 't_rumus_peg') && !$this->ShowMultipleDetails;
+		$item->OnLeft = TRUE;
+		$item->ShowInButtonGroup = FALSE;
+		if (!isset($GLOBALS["t_rumus_peg_grid"])) $GLOBALS["t_rumus_peg_grid"] = new ct_rumus_peg_grid;
+
+		// Multiple details
+		if ($this->ShowMultipleDetails) {
+			$item = &$this->ListOptions->Add("details");
+			$item->CssStyle = "white-space: nowrap;";
+			$item->Visible = $this->ShowMultipleDetails;
+			$item->OnLeft = TRUE;
+			$item->ShowInButtonGroup = FALSE;
+		}
+
+		// Set up detail pages
+		$pages = new cSubPages();
+		$pages->Add("t_jdw_krj_peg");
+		$pages->Add("t_jdw_krj_def");
+		$pages->Add("t_rumus_peg");
+		$this->DetailPages = $pages;
+
 		// List actions
 		$item = &$this->ListOptions->Add("listactions");
 		$item->CssStyle = "white-space: nowrap;";
@@ -1345,6 +1862,14 @@ class cpegawai_list extends cpegawai {
 		$item->OnLeft = TRUE;
 		$item->Header = "<input type=\"checkbox\" name=\"key\" id=\"key\" onclick=\"ew_SelectAllKey(this);\">";
 		$item->MoveTo(0);
+		$item->ShowInDropDown = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+
+		// "sequence"
+		$item = &$this->ListOptions->Add("sequence");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = TRUE;
+		$item->OnLeft = TRUE; // Always on left
 		$item->ShowInDropDown = FALSE;
 		$item->ShowInButtonGroup = FALSE;
 
@@ -1369,6 +1894,67 @@ class cpegawai_list extends cpegawai {
 		global $Security, $Language, $objForm;
 		$this->ListOptions->LoadDefault();
 
+		// Set up row action and key
+		if (is_numeric($this->RowIndex) && $this->CurrentMode <> "view") {
+			$objForm->Index = $this->RowIndex;
+			$ActionName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormActionName);
+			$OldKeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormOldKeyName);
+			$KeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormKeyName);
+			$BlankRowName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormBlankRowName);
+			if ($this->RowAction <> "")
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $ActionName . "\" id=\"" . $ActionName . "\" value=\"" . $this->RowAction . "\">";
+			if ($this->RowAction == "delete") {
+				$rowkey = $objForm->GetValue($this->FormKeyName);
+				$this->SetupKeyValues($rowkey);
+			}
+			if ($this->RowAction == "insert" && $this->CurrentAction == "F" && $this->EmptyRow())
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $BlankRowName . "\" id=\"" . $BlankRowName . "\" value=\"1\">";
+		}
+
+		// "delete"
+		if ($this->AllowAddDeleteRow) {
+			if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+				$option = &$this->ListOptions;
+				$option->UseButtonGroup = TRUE; // Use button group for grid delete button
+				$option->UseImageAndText = TRUE; // Use image and text for grid delete button
+				$oListOpt = &$option->Items["griddelete"];
+				if (!$Security->CanDelete() && is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
+					$oListOpt->Body = "&nbsp;";
+				} else {
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" onclick=\"return ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+				}
+			}
+		}
+
+		// "sequence"
+		$oListOpt = &$this->ListOptions->Items["sequence"];
+		$oListOpt->Body = ew_FormatSeqNo($this->RecCnt);
+
+		// "copy"
+		$oListOpt = &$this->ListOptions->Items["copy"];
+		if (($this->CurrentAction == "add" || $this->CurrentAction == "copy") && $this->RowType == EW_ROWTYPE_ADD) { // Inline Add/Copy
+			$this->ListOptions->CustomItem = "copy"; // Show copy column only
+			$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+			$oListOpt->Body = "<div" . (($oListOpt->OnLeft) ? " style=\"text-align: right\"" : "") . ">" .
+				"<a class=\"ewGridLink ewInlineInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("InsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("InsertLink") . "</a>&nbsp;" .
+				"<a class=\"ewGridLink ewInlineCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("CancelLink") . "</a>" .
+				"<input type=\"hidden\" name=\"a_list\" id=\"a_list\" value=\"insert\"></div>";
+			return;
+		}
+
+		// "edit"
+		$oListOpt = &$this->ListOptions->Items["edit"];
+		if ($this->CurrentAction == "edit" && $this->RowType == EW_ROWTYPE_EDIT) { // Inline-Edit
+			$this->ListOptions->CustomItem = "edit"; // Show edit column only
+			$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+				$oListOpt->Body = "<div" . (($oListOpt->OnLeft) ? " style=\"text-align: right\"" : "") . ">" .
+					"<a class=\"ewGridLink ewInlineUpdate\" title=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . ew_GetHashUrl($this->PageName(), $this->PageObjName . "_row_" . $this->RowCnt) . "');\">" . $Language->Phrase("UpdateLink") . "</a>&nbsp;" .
+					"<a class=\"ewGridLink ewInlineCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("CancelLink") . "</a>" .
+					"<input type=\"hidden\" name=\"a_list\" id=\"a_list\" value=\"update\"></div>";
+			$oListOpt->Body .= "<input type=\"hidden\" name=\"k" . $this->RowIndex . "_key\" id=\"k" . $this->RowIndex . "_key\" value=\"" . ew_HtmlEncode($this->pegawai_id->CurrentValue) . "\">";
+			return;
+		}
+
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
 		$viewcaption = ew_HtmlTitle($Language->Phrase("ViewLink"));
@@ -1383,6 +1969,7 @@ class cpegawai_list extends cpegawai {
 		$editcaption = ew_HtmlTitle($Language->Phrase("EditLink"));
 		if ($Security->CanEdit()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
+			$oListOpt->Body .= "<a class=\"ewRowLink ewInlineEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineEditLink")) . "\" href=\"" . ew_HtmlEncode(ew_GetHashUrl($this->InlineEditUrl, $this->PageObjName . "_row_" . $this->RowCnt)) . "\">" . $Language->Phrase("InlineEditLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
@@ -1392,6 +1979,7 @@ class cpegawai_list extends cpegawai {
 		$copycaption = ew_HtmlTitle($Language->Phrase("CopyLink"));
 		if ($Security->CanAdd()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . $copycaption . "\" data-caption=\"" . $copycaption . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
+			$oListOpt->Body .= "<a class=\"ewRowLink ewInlineCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->InlineCopyUrl) . "\">" . $Language->Phrase("InlineCopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
@@ -1424,10 +2012,129 @@ class cpegawai_list extends cpegawai {
 				$oListOpt->Visible = TRUE;
 			}
 		}
+		$DetailViewTblVar = "";
+		$DetailCopyTblVar = "";
+		$DetailEditTblVar = "";
+
+		// "detail_t_jdw_krj_peg"
+		$oListOpt = &$this->ListOptions->Items["detail_t_jdw_krj_peg"];
+		if ($Security->AllowList(CurrentProjectID() . 't_jdw_krj_peg')) {
+			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("t_jdw_krj_peg", "TblCaption");
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("t_jdw_krj_peglist.php?" . EW_TABLE_SHOW_MASTER . "=pegawai&fk_pegawai_id=" . urlencode(strval($this->pegawai_id->CurrentValue)) . "") . "\">" . $body . "</a>";
+			$links = "";
+			if ($GLOBALS["t_jdw_krj_peg_grid"]->DetailView && $Security->CanView() && $Security->AllowView(CurrentProjectID() . 't_jdw_krj_peg')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=t_jdw_krj_peg")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+				$DetailViewTblVar .= "t_jdw_krj_peg";
+			}
+			if ($GLOBALS["t_jdw_krj_peg_grid"]->DetailEdit && $Security->CanEdit() && $Security->AllowEdit(CurrentProjectID() . 't_jdw_krj_peg')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=t_jdw_krj_peg")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+				$DetailEditTblVar .= "t_jdw_krj_peg";
+			}
+			if ($GLOBALS["t_jdw_krj_peg_grid"]->DetailAdd && $Security->CanAdd() && $Security->AllowAdd(CurrentProjectID() . 't_jdw_krj_peg')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=t_jdw_krj_peg")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+				if ($DetailCopyTblVar <> "") $DetailCopyTblVar .= ",";
+				$DetailCopyTblVar .= "t_jdw_krj_peg";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+			}
+			$body = "<div class=\"btn-group\">" . $body . "</div>";
+			$oListOpt->Body = $body;
+			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
+		}
+
+		// "detail_t_jdw_krj_def"
+		$oListOpt = &$this->ListOptions->Items["detail_t_jdw_krj_def"];
+		if ($Security->AllowList(CurrentProjectID() . 't_jdw_krj_def')) {
+			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("t_jdw_krj_def", "TblCaption");
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("t_jdw_krj_deflist.php?" . EW_TABLE_SHOW_MASTER . "=pegawai&fk_pegawai_id=" . urlencode(strval($this->pegawai_id->CurrentValue)) . "") . "\">" . $body . "</a>";
+			$links = "";
+			if ($GLOBALS["t_jdw_krj_def_grid"]->DetailView && $Security->CanView() && $Security->AllowView(CurrentProjectID() . 't_jdw_krj_def')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=t_jdw_krj_def")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+				$DetailViewTblVar .= "t_jdw_krj_def";
+			}
+			if ($GLOBALS["t_jdw_krj_def_grid"]->DetailEdit && $Security->CanEdit() && $Security->AllowEdit(CurrentProjectID() . 't_jdw_krj_def')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=t_jdw_krj_def")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+				$DetailEditTblVar .= "t_jdw_krj_def";
+			}
+			if ($GLOBALS["t_jdw_krj_def_grid"]->DetailAdd && $Security->CanAdd() && $Security->AllowAdd(CurrentProjectID() . 't_jdw_krj_def')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=t_jdw_krj_def")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+				if ($DetailCopyTblVar <> "") $DetailCopyTblVar .= ",";
+				$DetailCopyTblVar .= "t_jdw_krj_def";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+			}
+			$body = "<div class=\"btn-group\">" . $body . "</div>";
+			$oListOpt->Body = $body;
+			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
+		}
+
+		// "detail_t_rumus_peg"
+		$oListOpt = &$this->ListOptions->Items["detail_t_rumus_peg"];
+		if ($Security->AllowList(CurrentProjectID() . 't_rumus_peg')) {
+			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("t_rumus_peg", "TblCaption");
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("t_rumus_peglist.php?" . EW_TABLE_SHOW_MASTER . "=pegawai&fk_pegawai_id=" . urlencode(strval($this->pegawai_id->CurrentValue)) . "") . "\">" . $body . "</a>";
+			$links = "";
+			if ($GLOBALS["t_rumus_peg_grid"]->DetailView && $Security->CanView() && $Security->AllowView(CurrentProjectID() . 't_rumus_peg')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=t_rumus_peg")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+				$DetailViewTblVar .= "t_rumus_peg";
+			}
+			if ($GLOBALS["t_rumus_peg_grid"]->DetailEdit && $Security->CanEdit() && $Security->AllowEdit(CurrentProjectID() . 't_rumus_peg')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=t_rumus_peg")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+				$DetailEditTblVar .= "t_rumus_peg";
+			}
+			if ($GLOBALS["t_rumus_peg_grid"]->DetailAdd && $Security->CanAdd() && $Security->AllowAdd(CurrentProjectID() . 't_rumus_peg')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=t_rumus_peg")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+				if ($DetailCopyTblVar <> "") $DetailCopyTblVar .= ",";
+				$DetailCopyTblVar .= "t_rumus_peg";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+			}
+			$body = "<div class=\"btn-group\">" . $body . "</div>";
+			$oListOpt->Body = $body;
+			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
+		}
+		if ($this->ShowMultipleDetails) {
+			$body = $Language->Phrase("MultipleMasterDetails");
+			$body = "<div class=\"btn-group\">";
+			$links = "";
+			if ($DetailViewTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailViewTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+			}
+			if ($DetailEditTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailEditTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+			}
+			if ($DetailCopyTblVar <> "") {
+				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailCopyTblVar)) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewMasterDetail\" title=\"" . ew_HtmlTitle($Language->Phrase("MultipleMasterDetails")) . "\" data-toggle=\"dropdown\">" . $Language->Phrase("MultipleMasterDetails") . "<b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu ewMenu\">". $links . "</ul>";
+			}
+			$body .= "</div>";
+
+			// Multiple details
+			$oListOpt = &$this->ListOptions->Items["details"];
+			$oListOpt->Body = $body;
+		}
 
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
 		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->pegawai_id->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
+		if ($this->CurrentAction == "gridedit" && is_numeric($this->RowIndex)) {
+			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->pegawai_id->CurrentValue . "\">";
+		}
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -1445,6 +2152,65 @@ class cpegawai_list extends cpegawai {
 		$addcaption = ew_HtmlTitle($Language->Phrase("AddLink"));
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . $addcaption . "\" data-caption=\"" . $addcaption . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
 		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+
+		// Inline Add
+		$item = &$option->Add("inlineadd");
+		$item->Body = "<a class=\"ewAddEdit ewInlineAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineAddLink")) . "\" href=\"" . ew_HtmlEncode($this->InlineAddUrl) . "\">" .$Language->Phrase("InlineAddLink") . "</a>";
+		$item->Visible = ($this->InlineAddUrl <> "" && $Security->CanAdd());
+		$item = &$option->Add("gridadd");
+		$item->Body = "<a class=\"ewAddEdit ewGridAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" href=\"" . ew_HtmlEncode($this->GridAddUrl) . "\">" . $Language->Phrase("GridAddLink") . "</a>";
+		$item->Visible = ($this->GridAddUrl <> "" && $Security->CanAdd());
+		$option = $options["detail"];
+		$DetailTableLink = "";
+		$item = &$option->Add("detailadd_t_jdw_krj_peg");
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=t_jdw_krj_peg");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["t_jdw_krj_peg"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
+		$item->Visible = ($GLOBALS["t_jdw_krj_peg"]->DetailAdd && $Security->AllowAdd(CurrentProjectID() . 't_jdw_krj_peg') && $Security->CanAdd());
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "t_jdw_krj_peg";
+		}
+		$item = &$option->Add("detailadd_t_jdw_krj_def");
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=t_jdw_krj_def");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["t_jdw_krj_def"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
+		$item->Visible = ($GLOBALS["t_jdw_krj_def"]->DetailAdd && $Security->AllowAdd(CurrentProjectID() . 't_jdw_krj_def') && $Security->CanAdd());
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "t_jdw_krj_def";
+		}
+		$item = &$option->Add("detailadd_t_rumus_peg");
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=t_rumus_peg");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["t_rumus_peg"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
+		$item->Visible = ($GLOBALS["t_rumus_peg"]->DetailAdd && $Security->AllowAdd(CurrentProjectID() . 't_rumus_peg') && $Security->CanAdd());
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "t_rumus_peg";
+		}
+
+		// Add multiple details
+		if ($this->ShowMultipleDetails) {
+			$item = &$option->Add("detailsadd");
+			$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=" . $DetailTableLink);
+			$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddMasterDetailLink")) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $Language->Phrase("AddMasterDetailLink") . "</a>";
+			$item->Visible = ($DetailTableLink <> "" && $Security->CanAdd());
+
+			// Hide single master/detail items
+			$ar = explode(",", $DetailTableLink);
+			$cnt = count($ar);
+			for ($i = 0; $i < $cnt; $i++) {
+				if ($item = &$option->GetItem("detailadd_" . $ar[$i]))
+					$item->Visible = FALSE;
+			}
+		}
+
+		// Add grid edit
+		$option = $options["addedit"];
+		$item = &$option->Add("gridedit");
+		$item->Body = "<a class=\"ewAddEdit ewGridEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GridEditUrl) . "\">" . $Language->Phrase("GridEditLink") . "</a>";
+		$item->Visible = ($this->GridEditUrl <> "" && $Security->CanEdit());
 		$option = $options["action"];
 
 		// Add multi delete
@@ -1487,6 +2253,7 @@ class cpegawai_list extends cpegawai {
 	function RenderOtherOptions() {
 		global $Language, $Security;
 		$options = &$this->OtherOptions;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "gridedit") { // Not grid add/edit mode
 			$option = &$options["action"];
 
 			// Set up list action buttons
@@ -1508,6 +2275,56 @@ class cpegawai_list extends cpegawai {
 				$option = &$options["action"];
 				$option->HideAllOptions();
 			}
+		} else { // Grid add/edit mode
+
+			// Hide all options first
+			foreach ($options as &$option)
+				$option->HideAllOptions();
+			if ($this->CurrentAction == "gridadd") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = $Security->CanAdd();
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+
+				// Add grid insert
+				$item = &$option->Add("gridinsert");
+				$item->Body = "<a class=\"ewAction ewGridInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridInsertLink") . "</a>";
+
+				// Add grid cancel
+				$item = &$option->Add("gridcancel");
+				$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+				$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+			if ($this->CurrentAction == "gridedit") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = $Security->CanAdd();
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+					$item = &$option->Add("gridsave");
+					$item->Body = "<a class=\"ewAction ewGridSave\" title=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridSaveLink") . "</a>";
+					$item = &$option->Add("gridcancel");
+					$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+					$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+		}
 	}
 
 	// Process list action
@@ -1672,11 +2489,79 @@ class cpegawai_list extends cpegawai {
 		}
 	}
 
+	// Load default values
+	function LoadDefaultValues() {
+		$this->pegawai_pin->CurrentValue = NULL;
+		$this->pegawai_pin->OldValue = $this->pegawai_pin->CurrentValue;
+		$this->pegawai_nip->CurrentValue = NULL;
+		$this->pegawai_nip->OldValue = $this->pegawai_nip->CurrentValue;
+		$this->pegawai_nama->CurrentValue = NULL;
+		$this->pegawai_nama->OldValue = $this->pegawai_nama->CurrentValue;
+		$this->pembagian1_id->CurrentValue = 0;
+		$this->pembagian1_id->OldValue = $this->pembagian1_id->CurrentValue;
+		$this->pembagian2_id->CurrentValue = 0;
+		$this->pembagian2_id->OldValue = $this->pembagian2_id->CurrentValue;
+		$this->pembagian3_id->CurrentValue = 0;
+		$this->pembagian3_id->OldValue = $this->pembagian3_id->CurrentValue;
+		$this->gender->CurrentValue = 1;
+		$this->gender->OldValue = $this->gender->CurrentValue;
+	}
+
 	// Load basic search values
 	function LoadBasicSearchValues() {
 		$this->BasicSearch->Keyword = @$_GET[EW_TABLE_BASIC_SEARCH];
 		if ($this->BasicSearch->Keyword <> "") $this->Command = "search";
 		$this->BasicSearch->Type = @$_GET[EW_TABLE_BASIC_SEARCH_TYPE];
+	}
+
+	// Load form values
+	function LoadFormValues() {
+
+		// Load from form
+		global $objForm;
+		if (!$this->pegawai_pin->FldIsDetailKey) {
+			$this->pegawai_pin->setFormValue($objForm->GetValue("x_pegawai_pin"));
+		}
+		$this->pegawai_pin->setOldValue($objForm->GetValue("o_pegawai_pin"));
+		if (!$this->pegawai_nip->FldIsDetailKey) {
+			$this->pegawai_nip->setFormValue($objForm->GetValue("x_pegawai_nip"));
+		}
+		$this->pegawai_nip->setOldValue($objForm->GetValue("o_pegawai_nip"));
+		if (!$this->pegawai_nama->FldIsDetailKey) {
+			$this->pegawai_nama->setFormValue($objForm->GetValue("x_pegawai_nama"));
+		}
+		$this->pegawai_nama->setOldValue($objForm->GetValue("o_pegawai_nama"));
+		if (!$this->pembagian1_id->FldIsDetailKey) {
+			$this->pembagian1_id->setFormValue($objForm->GetValue("x_pembagian1_id"));
+		}
+		$this->pembagian1_id->setOldValue($objForm->GetValue("o_pembagian1_id"));
+		if (!$this->pembagian2_id->FldIsDetailKey) {
+			$this->pembagian2_id->setFormValue($objForm->GetValue("x_pembagian2_id"));
+		}
+		$this->pembagian2_id->setOldValue($objForm->GetValue("o_pembagian2_id"));
+		if (!$this->pembagian3_id->FldIsDetailKey) {
+			$this->pembagian3_id->setFormValue($objForm->GetValue("x_pembagian3_id"));
+		}
+		$this->pembagian3_id->setOldValue($objForm->GetValue("o_pembagian3_id"));
+		if (!$this->gender->FldIsDetailKey) {
+			$this->gender->setFormValue($objForm->GetValue("x_gender"));
+		}
+		$this->gender->setOldValue($objForm->GetValue("o_gender"));
+		if (!$this->pegawai_id->FldIsDetailKey)
+			$this->pegawai_id->setFormValue($objForm->GetValue("x_pegawai_id"));
+	}
+
+	// Restore form values
+	function RestoreFormValues() {
+		global $objForm;
+		$this->pegawai_id->CurrentValue = $this->pegawai_id->FormValue;
+		$this->pegawai_pin->CurrentValue = $this->pegawai_pin->FormValue;
+		$this->pegawai_nip->CurrentValue = $this->pegawai_nip->FormValue;
+		$this->pegawai_nama->CurrentValue = $this->pegawai_nama->FormValue;
+		$this->pembagian1_id->CurrentValue = $this->pembagian1_id->FormValue;
+		$this->pembagian2_id->CurrentValue = $this->pembagian2_id->FormValue;
+		$this->pembagian3_id->CurrentValue = $this->pembagian3_id->FormValue;
+		$this->gender->CurrentValue = $this->gender->FormValue;
 	}
 
 	// Load recordset
@@ -1691,7 +2576,7 @@ class cpegawai_list extends cpegawai {
 		if ($this->UseSelectLimit) {
 			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			if ($dbtype == "MSSQL") {
-				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderByList())));
 			} else {
 				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
 			}
@@ -1746,8 +2631,23 @@ class cpegawai_list extends cpegawai {
 		$this->tempat_lahir->setDbValue($rs->fields('tempat_lahir'));
 		$this->tgl_lahir->setDbValue($rs->fields('tgl_lahir'));
 		$this->pembagian1_id->setDbValue($rs->fields('pembagian1_id'));
+		if (array_key_exists('EV__pembagian1_id', $rs->fields)) {
+			$this->pembagian1_id->VirtualValue = $rs->fields('EV__pembagian1_id'); // Set up virtual field value
+		} else {
+			$this->pembagian1_id->VirtualValue = ""; // Clear value
+		}
 		$this->pembagian2_id->setDbValue($rs->fields('pembagian2_id'));
+		if (array_key_exists('EV__pembagian2_id', $rs->fields)) {
+			$this->pembagian2_id->VirtualValue = $rs->fields('EV__pembagian2_id'); // Set up virtual field value
+		} else {
+			$this->pembagian2_id->VirtualValue = ""; // Clear value
+		}
 		$this->pembagian3_id->setDbValue($rs->fields('pembagian3_id'));
+		if (array_key_exists('EV__pembagian3_id', $rs->fields)) {
+			$this->pembagian3_id->VirtualValue = $rs->fields('EV__pembagian3_id'); // Set up virtual field value
+		} else {
+			$this->pembagian3_id->VirtualValue = ""; // Clear value
+		}
 		$this->tgl_mulai_kerja->setDbValue($rs->fields('tgl_mulai_kerja'));
 		$this->tgl_resign->setDbValue($rs->fields('tgl_resign'));
 		$this->gender->setDbValue($rs->fields('gender'));
@@ -1899,15 +2799,84 @@ class cpegawai_list extends cpegawai {
 		$this->tgl_lahir->ViewCustomAttributes = "";
 
 		// pembagian1_id
-		$this->pembagian1_id->ViewValue = $this->pembagian1_id->CurrentValue;
+		if ($this->pembagian1_id->VirtualValue <> "") {
+			$this->pembagian1_id->ViewValue = $this->pembagian1_id->VirtualValue;
+		} else {
+		if (strval($this->pembagian1_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pembagian1_id`" . ew_SearchString("=", $this->pembagian1_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pembagian1_id`, `pembagian1_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pembagian1`";
+		$sWhereWrk = "";
+		$this->pembagian1_id->LookupFilters = array("dx1" => '`pembagian1_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pembagian1_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pembagian1_id->ViewValue = $this->pembagian1_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pembagian1_id->ViewValue = $this->pembagian1_id->CurrentValue;
+			}
+		} else {
+			$this->pembagian1_id->ViewValue = NULL;
+		}
+		}
 		$this->pembagian1_id->ViewCustomAttributes = "";
 
 		// pembagian2_id
-		$this->pembagian2_id->ViewValue = $this->pembagian2_id->CurrentValue;
+		if ($this->pembagian2_id->VirtualValue <> "") {
+			$this->pembagian2_id->ViewValue = $this->pembagian2_id->VirtualValue;
+		} else {
+		if (strval($this->pembagian2_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pembagian2_id`" . ew_SearchString("=", $this->pembagian2_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pembagian2_id`, `pembagian2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pembagian2`";
+		$sWhereWrk = "";
+		$this->pembagian2_id->LookupFilters = array("dx1" => '`pembagian2_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pembagian2_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pembagian2_id->ViewValue = $this->pembagian2_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pembagian2_id->ViewValue = $this->pembagian2_id->CurrentValue;
+			}
+		} else {
+			$this->pembagian2_id->ViewValue = NULL;
+		}
+		}
 		$this->pembagian2_id->ViewCustomAttributes = "";
 
 		// pembagian3_id
-		$this->pembagian3_id->ViewValue = $this->pembagian3_id->CurrentValue;
+		if ($this->pembagian3_id->VirtualValue <> "") {
+			$this->pembagian3_id->ViewValue = $this->pembagian3_id->VirtualValue;
+		} else {
+		if (strval($this->pembagian3_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pembagian3_id`" . ew_SearchString("=", $this->pembagian3_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pembagian3_id`, `pembagian3_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pembagian3`";
+		$sWhereWrk = "";
+		$this->pembagian3_id->LookupFilters = array("dx1" => '`pembagian3_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pembagian3_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pembagian3_id->ViewValue = $this->pembagian3_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pembagian3_id->ViewValue = $this->pembagian3_id->CurrentValue;
+			}
+		} else {
+			$this->pembagian3_id->ViewValue = NULL;
+		}
+		}
 		$this->pembagian3_id->ViewCustomAttributes = "";
 
 		// tgl_mulai_kerja
@@ -1921,7 +2890,11 @@ class cpegawai_list extends cpegawai {
 		$this->tgl_resign->ViewCustomAttributes = "";
 
 		// gender
-		$this->gender->ViewValue = $this->gender->CurrentValue;
+		if (strval($this->gender->CurrentValue) <> "") {
+			$this->gender->ViewValue = $this->gender->OptionCaption($this->gender->CurrentValue);
+		} else {
+			$this->gender->ViewValue = NULL;
+		}
 		$this->gender->ViewCustomAttributes = "";
 
 		// tgl_masuk_pertama
@@ -1945,11 +2918,6 @@ class cpegawai_list extends cpegawai {
 		$this->no_rek->ViewValue = $this->no_rek->CurrentValue;
 		$this->no_rek->ViewCustomAttributes = "";
 
-			// pegawai_id
-			$this->pegawai_id->LinkCustomAttributes = "";
-			$this->pegawai_id->HrefValue = "";
-			$this->pegawai_id->TooltipValue = "";
-
 			// pegawai_pin
 			$this->pegawai_pin->LinkCustomAttributes = "";
 			$this->pegawai_pin->HrefValue = "";
@@ -1964,41 +2932,6 @@ class cpegawai_list extends cpegawai {
 			$this->pegawai_nama->LinkCustomAttributes = "";
 			$this->pegawai_nama->HrefValue = "";
 			$this->pegawai_nama->TooltipValue = "";
-
-			// pegawai_pwd
-			$this->pegawai_pwd->LinkCustomAttributes = "";
-			$this->pegawai_pwd->HrefValue = "";
-			$this->pegawai_pwd->TooltipValue = "";
-
-			// pegawai_rfid
-			$this->pegawai_rfid->LinkCustomAttributes = "";
-			$this->pegawai_rfid->HrefValue = "";
-			$this->pegawai_rfid->TooltipValue = "";
-
-			// pegawai_privilege
-			$this->pegawai_privilege->LinkCustomAttributes = "";
-			$this->pegawai_privilege->HrefValue = "";
-			$this->pegawai_privilege->TooltipValue = "";
-
-			// pegawai_telp
-			$this->pegawai_telp->LinkCustomAttributes = "";
-			$this->pegawai_telp->HrefValue = "";
-			$this->pegawai_telp->TooltipValue = "";
-
-			// pegawai_status
-			$this->pegawai_status->LinkCustomAttributes = "";
-			$this->pegawai_status->HrefValue = "";
-			$this->pegawai_status->TooltipValue = "";
-
-			// tempat_lahir
-			$this->tempat_lahir->LinkCustomAttributes = "";
-			$this->tempat_lahir->HrefValue = "";
-			$this->tempat_lahir->TooltipValue = "";
-
-			// tgl_lahir
-			$this->tgl_lahir->LinkCustomAttributes = "";
-			$this->tgl_lahir->HrefValue = "";
-			$this->tgl_lahir->TooltipValue = "";
 
 			// pembagian1_id
 			$this->pembagian1_id->LinkCustomAttributes = "";
@@ -2015,50 +2948,576 @@ class cpegawai_list extends cpegawai {
 			$this->pembagian3_id->HrefValue = "";
 			$this->pembagian3_id->TooltipValue = "";
 
-			// tgl_mulai_kerja
-			$this->tgl_mulai_kerja->LinkCustomAttributes = "";
-			$this->tgl_mulai_kerja->HrefValue = "";
-			$this->tgl_mulai_kerja->TooltipValue = "";
-
-			// tgl_resign
-			$this->tgl_resign->LinkCustomAttributes = "";
-			$this->tgl_resign->HrefValue = "";
-			$this->tgl_resign->TooltipValue = "";
-
 			// gender
 			$this->gender->LinkCustomAttributes = "";
 			$this->gender->HrefValue = "";
 			$this->gender->TooltipValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
-			// tgl_masuk_pertama
-			$this->tgl_masuk_pertama->LinkCustomAttributes = "";
-			$this->tgl_masuk_pertama->HrefValue = "";
-			$this->tgl_masuk_pertama->TooltipValue = "";
+			// pegawai_pin
+			$this->pegawai_pin->EditAttrs["class"] = "form-control";
+			$this->pegawai_pin->EditCustomAttributes = "";
+			$this->pegawai_pin->EditValue = ew_HtmlEncode($this->pegawai_pin->CurrentValue);
+			$this->pegawai_pin->PlaceHolder = ew_RemoveHtml($this->pegawai_pin->FldCaption());
 
-			// photo_path
-			$this->photo_path->LinkCustomAttributes = "";
-			$this->photo_path->HrefValue = "";
-			$this->photo_path->TooltipValue = "";
+			// pegawai_nip
+			$this->pegawai_nip->EditAttrs["class"] = "form-control";
+			$this->pegawai_nip->EditCustomAttributes = "";
+			$this->pegawai_nip->EditValue = ew_HtmlEncode($this->pegawai_nip->CurrentValue);
+			$this->pegawai_nip->PlaceHolder = ew_RemoveHtml($this->pegawai_nip->FldCaption());
 
-			// nama_bank
-			$this->nama_bank->LinkCustomAttributes = "";
-			$this->nama_bank->HrefValue = "";
-			$this->nama_bank->TooltipValue = "";
+			// pegawai_nama
+			$this->pegawai_nama->EditAttrs["class"] = "form-control";
+			$this->pegawai_nama->EditCustomAttributes = "";
+			$this->pegawai_nama->EditValue = ew_HtmlEncode($this->pegawai_nama->CurrentValue);
+			$this->pegawai_nama->PlaceHolder = ew_RemoveHtml($this->pegawai_nama->FldCaption());
 
-			// nama_rek
-			$this->nama_rek->LinkCustomAttributes = "";
-			$this->nama_rek->HrefValue = "";
-			$this->nama_rek->TooltipValue = "";
+			// pembagian1_id
+			$this->pembagian1_id->EditCustomAttributes = "";
+			if (trim(strval($this->pembagian1_id->CurrentValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`pembagian1_id`" . ew_SearchString("=", $this->pembagian1_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+			}
+			$sSqlWrk = "SELECT `pembagian1_id`, `pembagian1_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pembagian1`";
+			$sWhereWrk = "";
+			$this->pembagian1_id->LookupFilters = array("dx1" => '`pembagian1_nama`');
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->pembagian1_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
+				$this->pembagian1_id->ViewValue = $this->pembagian1_id->DisplayValue($arwrk);
+			} else {
+				$this->pembagian1_id->ViewValue = $Language->Phrase("PleaseSelect");
+			}
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			$this->pembagian1_id->EditValue = $arwrk;
 
-			// no_rek
-			$this->no_rek->LinkCustomAttributes = "";
-			$this->no_rek->HrefValue = "";
-			$this->no_rek->TooltipValue = "";
+			// pembagian2_id
+			$this->pembagian2_id->EditCustomAttributes = "";
+			if (trim(strval($this->pembagian2_id->CurrentValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`pembagian2_id`" . ew_SearchString("=", $this->pembagian2_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+			}
+			$sSqlWrk = "SELECT `pembagian2_id`, `pembagian2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pembagian2`";
+			$sWhereWrk = "";
+			$this->pembagian2_id->LookupFilters = array("dx1" => '`pembagian2_nama`');
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->pembagian2_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
+				$this->pembagian2_id->ViewValue = $this->pembagian2_id->DisplayValue($arwrk);
+			} else {
+				$this->pembagian2_id->ViewValue = $Language->Phrase("PleaseSelect");
+			}
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			$this->pembagian2_id->EditValue = $arwrk;
+
+			// pembagian3_id
+			$this->pembagian3_id->EditCustomAttributes = "";
+			if (trim(strval($this->pembagian3_id->CurrentValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`pembagian3_id`" . ew_SearchString("=", $this->pembagian3_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+			}
+			$sSqlWrk = "SELECT `pembagian3_id`, `pembagian3_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pembagian3`";
+			$sWhereWrk = "";
+			$this->pembagian3_id->LookupFilters = array("dx1" => '`pembagian3_nama`');
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->pembagian3_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
+				$this->pembagian3_id->ViewValue = $this->pembagian3_id->DisplayValue($arwrk);
+			} else {
+				$this->pembagian3_id->ViewValue = $Language->Phrase("PleaseSelect");
+			}
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			$this->pembagian3_id->EditValue = $arwrk;
+
+			// gender
+			$this->gender->EditCustomAttributes = "";
+			$this->gender->EditValue = $this->gender->Options(FALSE);
+
+			// Add refer script
+			// pegawai_pin
+
+			$this->pegawai_pin->LinkCustomAttributes = "";
+			$this->pegawai_pin->HrefValue = "";
+
+			// pegawai_nip
+			$this->pegawai_nip->LinkCustomAttributes = "";
+			$this->pegawai_nip->HrefValue = "";
+
+			// pegawai_nama
+			$this->pegawai_nama->LinkCustomAttributes = "";
+			$this->pegawai_nama->HrefValue = "";
+
+			// pembagian1_id
+			$this->pembagian1_id->LinkCustomAttributes = "";
+			$this->pembagian1_id->HrefValue = "";
+
+			// pembagian2_id
+			$this->pembagian2_id->LinkCustomAttributes = "";
+			$this->pembagian2_id->HrefValue = "";
+
+			// pembagian3_id
+			$this->pembagian3_id->LinkCustomAttributes = "";
+			$this->pembagian3_id->HrefValue = "";
+
+			// gender
+			$this->gender->LinkCustomAttributes = "";
+			$this->gender->HrefValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
+
+			// pegawai_pin
+			$this->pegawai_pin->EditAttrs["class"] = "form-control";
+			$this->pegawai_pin->EditCustomAttributes = "";
+			$this->pegawai_pin->EditValue = ew_HtmlEncode($this->pegawai_pin->CurrentValue);
+			$this->pegawai_pin->PlaceHolder = ew_RemoveHtml($this->pegawai_pin->FldCaption());
+
+			// pegawai_nip
+			$this->pegawai_nip->EditAttrs["class"] = "form-control";
+			$this->pegawai_nip->EditCustomAttributes = "";
+			$this->pegawai_nip->EditValue = ew_HtmlEncode($this->pegawai_nip->CurrentValue);
+			$this->pegawai_nip->PlaceHolder = ew_RemoveHtml($this->pegawai_nip->FldCaption());
+
+			// pegawai_nama
+			$this->pegawai_nama->EditAttrs["class"] = "form-control";
+			$this->pegawai_nama->EditCustomAttributes = "";
+			$this->pegawai_nama->EditValue = ew_HtmlEncode($this->pegawai_nama->CurrentValue);
+			$this->pegawai_nama->PlaceHolder = ew_RemoveHtml($this->pegawai_nama->FldCaption());
+
+			// pembagian1_id
+			$this->pembagian1_id->EditCustomAttributes = "";
+			if (trim(strval($this->pembagian1_id->CurrentValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`pembagian1_id`" . ew_SearchString("=", $this->pembagian1_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+			}
+			$sSqlWrk = "SELECT `pembagian1_id`, `pembagian1_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pembagian1`";
+			$sWhereWrk = "";
+			$this->pembagian1_id->LookupFilters = array("dx1" => '`pembagian1_nama`');
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->pembagian1_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
+				$this->pembagian1_id->ViewValue = $this->pembagian1_id->DisplayValue($arwrk);
+			} else {
+				$this->pembagian1_id->ViewValue = $Language->Phrase("PleaseSelect");
+			}
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			$this->pembagian1_id->EditValue = $arwrk;
+
+			// pembagian2_id
+			$this->pembagian2_id->EditCustomAttributes = "";
+			if (trim(strval($this->pembagian2_id->CurrentValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`pembagian2_id`" . ew_SearchString("=", $this->pembagian2_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+			}
+			$sSqlWrk = "SELECT `pembagian2_id`, `pembagian2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pembagian2`";
+			$sWhereWrk = "";
+			$this->pembagian2_id->LookupFilters = array("dx1" => '`pembagian2_nama`');
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->pembagian2_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
+				$this->pembagian2_id->ViewValue = $this->pembagian2_id->DisplayValue($arwrk);
+			} else {
+				$this->pembagian2_id->ViewValue = $Language->Phrase("PleaseSelect");
+			}
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			$this->pembagian2_id->EditValue = $arwrk;
+
+			// pembagian3_id
+			$this->pembagian3_id->EditCustomAttributes = "";
+			if (trim(strval($this->pembagian3_id->CurrentValue)) == "") {
+				$sFilterWrk = "0=1";
+			} else {
+				$sFilterWrk = "`pembagian3_id`" . ew_SearchString("=", $this->pembagian3_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+			}
+			$sSqlWrk = "SELECT `pembagian3_id`, `pembagian3_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `pembagian3`";
+			$sWhereWrk = "";
+			$this->pembagian3_id->LookupFilters = array("dx1" => '`pembagian3_nama`');
+			ew_AddFilter($sWhereWrk, $sFilterWrk);
+			$this->Lookup_Selecting($this->pembagian3_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
+				$this->pembagian3_id->ViewValue = $this->pembagian3_id->DisplayValue($arwrk);
+			} else {
+				$this->pembagian3_id->ViewValue = $Language->Phrase("PleaseSelect");
+			}
+			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
+			if ($rswrk) $rswrk->Close();
+			$this->pembagian3_id->EditValue = $arwrk;
+
+			// gender
+			$this->gender->EditCustomAttributes = "";
+			$this->gender->EditValue = $this->gender->Options(FALSE);
+
+			// Edit refer script
+			// pegawai_pin
+
+			$this->pegawai_pin->LinkCustomAttributes = "";
+			$this->pegawai_pin->HrefValue = "";
+
+			// pegawai_nip
+			$this->pegawai_nip->LinkCustomAttributes = "";
+			$this->pegawai_nip->HrefValue = "";
+
+			// pegawai_nama
+			$this->pegawai_nama->LinkCustomAttributes = "";
+			$this->pegawai_nama->HrefValue = "";
+
+			// pembagian1_id
+			$this->pembagian1_id->LinkCustomAttributes = "";
+			$this->pembagian1_id->HrefValue = "";
+
+			// pembagian2_id
+			$this->pembagian2_id->LinkCustomAttributes = "";
+			$this->pembagian2_id->HrefValue = "";
+
+			// pembagian3_id
+			$this->pembagian3_id->LinkCustomAttributes = "";
+			$this->pembagian3_id->HrefValue = "";
+
+			// gender
+			$this->gender->LinkCustomAttributes = "";
+			$this->gender->HrefValue = "";
+		}
+		if ($this->RowType == EW_ROWTYPE_ADD ||
+			$this->RowType == EW_ROWTYPE_EDIT ||
+			$this->RowType == EW_ROWTYPE_SEARCH) { // Add / Edit / Search row
+			$this->SetupFieldTitles();
 		}
 
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
+	}
+
+	// Validate form
+	function ValidateForm() {
+		global $Language, $gsFormError;
+
+		// Initialize form error message
+		$gsFormError = "";
+
+		// Check if validation required
+		if (!EW_SERVER_VALIDATE)
+			return ($gsFormError == "");
+		if (!$this->pegawai_pin->FldIsDetailKey && !is_null($this->pegawai_pin->FormValue) && $this->pegawai_pin->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->pegawai_pin->FldCaption(), $this->pegawai_pin->ReqErrMsg));
+		}
+		if (!$this->pegawai_nama->FldIsDetailKey && !is_null($this->pegawai_nama->FormValue) && $this->pegawai_nama->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->pegawai_nama->FldCaption(), $this->pegawai_nama->ReqErrMsg));
+		}
+		if ($this->gender->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->gender->FldCaption(), $this->gender->ReqErrMsg));
+		}
+
+		// Return validate result
+		$ValidateForm = ($gsFormError == "");
+
+		// Call Form_CustomValidate event
+		$sFormCustomError = "";
+		$ValidateForm = $ValidateForm && $this->Form_CustomValidate($sFormCustomError);
+		if ($sFormCustomError <> "") {
+			ew_AddMessage($gsFormError, $sFormCustomError);
+		}
+		return $ValidateForm;
+	}
+
+	//
+	// Delete records based on current filter
+	//
+	function DeleteRows() {
+		global $Language, $Security;
+		if (!$Security->CanDelete()) {
+			$this->setFailureMessage($Language->Phrase("NoDeletePermission")); // No delete permission
+			return FALSE;
+		}
+		$DeleteRows = TRUE;
+		$sSql = $this->SQL();
+		$conn = &$this->Connection();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE) {
+			return FALSE;
+		} elseif ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
+			$rs->Close();
+			return FALSE;
+
+		//} else {
+		//	$this->LoadRowValues($rs); // Load row values
+
+		}
+		$rows = ($rs) ? $rs->GetRows() : array();
+		if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteBegin")); // Batch delete begin
+
+		// Clone old rows
+		$rsold = $rows;
+		if ($rs)
+			$rs->Close();
+
+		// Call row deleting event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$DeleteRows = $this->Row_Deleting($row);
+				if (!$DeleteRows) break;
+			}
+		}
+		if ($DeleteRows) {
+			$sKey = "";
+			foreach ($rsold as $row) {
+				$sThisKey = "";
+				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+				$sThisKey .= $row['pegawai_id'];
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+				$DeleteRows = $this->Delete($row); // Delete
+				$conn->raiseErrorFn = '';
+				if ($DeleteRows === FALSE)
+					break;
+				if ($sKey <> "") $sKey .= ", ";
+				$sKey .= $sThisKey;
+			}
+		} else {
+
+			// Set up error message
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("DeleteCancelled"));
+			}
+		}
+		if ($DeleteRows) {
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
+		} else {
+		}
+
+		// Call Row Deleted event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$this->Row_Deleted($row);
+			}
+		}
+		return $DeleteRows;
+	}
+
+	// Update record based on key values
+	function EditRow() {
+		global $Security, $Language;
+		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
+		if ($this->pegawai_pin->CurrentValue <> "") { // Check field with unique index
+			$sFilterChk = "(`pegawai_pin` = '" . ew_AdjustSql($this->pegawai_pin->CurrentValue, $this->DBID) . "')";
+			$sFilterChk .= " AND NOT (" . $sFilter . ")";
+			$this->CurrentFilter = $sFilterChk;
+			$sSqlChk = $this->SQL();
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			$rsChk = $conn->Execute($sSqlChk);
+			$conn->raiseErrorFn = '';
+			if ($rsChk === FALSE) {
+				return FALSE;
+			} elseif (!$rsChk->EOF) {
+				$sIdxErrMsg = str_replace("%f", $this->pegawai_pin->FldCaption(), $Language->Phrase("DupIndex"));
+				$sIdxErrMsg = str_replace("%v", $this->pegawai_pin->CurrentValue, $sIdxErrMsg);
+				$this->setFailureMessage($sIdxErrMsg);
+				$rsChk->Close();
+				return FALSE;
+			}
+			$rsChk->Close();
+		}
+		$this->CurrentFilter = $sFilter;
+		$sSql = $this->SQL();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE)
+			return FALSE;
+		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
+			$EditRow = FALSE; // Update Failed
+		} else {
+
+			// Save old values
+			$rsold = &$rs->fields;
+			$this->LoadDbValues($rsold);
+			$rsnew = array();
+
+			// pegawai_pin
+			$this->pegawai_pin->SetDbValueDef($rsnew, $this->pegawai_pin->CurrentValue, "", $this->pegawai_pin->ReadOnly);
+
+			// pegawai_nip
+			$this->pegawai_nip->SetDbValueDef($rsnew, $this->pegawai_nip->CurrentValue, NULL, $this->pegawai_nip->ReadOnly);
+
+			// pegawai_nama
+			$this->pegawai_nama->SetDbValueDef($rsnew, $this->pegawai_nama->CurrentValue, "", $this->pegawai_nama->ReadOnly);
+
+			// pembagian1_id
+			$this->pembagian1_id->SetDbValueDef($rsnew, $this->pembagian1_id->CurrentValue, NULL, $this->pembagian1_id->ReadOnly);
+
+			// pembagian2_id
+			$this->pembagian2_id->SetDbValueDef($rsnew, $this->pembagian2_id->CurrentValue, NULL, $this->pembagian2_id->ReadOnly);
+
+			// pembagian3_id
+			$this->pembagian3_id->SetDbValueDef($rsnew, $this->pembagian3_id->CurrentValue, NULL, $this->pembagian3_id->ReadOnly);
+
+			// gender
+			$this->gender->SetDbValueDef($rsnew, $this->gender->CurrentValue, 0, $this->gender->ReadOnly);
+
+			// Call Row Updating event
+			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
+			if ($bUpdateRow) {
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+				if (count($rsnew) > 0)
+					$EditRow = $this->Update($rsnew, "", $rsold);
+				else
+					$EditRow = TRUE; // No field to update
+				$conn->raiseErrorFn = '';
+				if ($EditRow) {
+				}
+			} else {
+				if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+					// Use the message, do nothing
+				} elseif ($this->CancelMessage <> "") {
+					$this->setFailureMessage($this->CancelMessage);
+					$this->CancelMessage = "";
+				} else {
+					$this->setFailureMessage($Language->Phrase("UpdateCancelled"));
+				}
+				$EditRow = FALSE;
+			}
+		}
+
+		// Call Row_Updated event
+		if ($EditRow)
+			$this->Row_Updated($rsold, $rsnew);
+		$rs->Close();
+		return $EditRow;
+	}
+
+	// Add record
+	function AddRow($rsold = NULL) {
+		global $Language, $Security;
+		if ($this->pegawai_pin->CurrentValue <> "") { // Check field with unique index
+			$sFilter = "(pegawai_pin = '" . ew_AdjustSql($this->pegawai_pin->CurrentValue, $this->DBID) . "')";
+			$rsChk = $this->LoadRs($sFilter);
+			if ($rsChk && !$rsChk->EOF) {
+				$sIdxErrMsg = str_replace("%f", $this->pegawai_pin->FldCaption(), $Language->Phrase("DupIndex"));
+				$sIdxErrMsg = str_replace("%v", $this->pegawai_pin->CurrentValue, $sIdxErrMsg);
+				$this->setFailureMessage($sIdxErrMsg);
+				$rsChk->Close();
+				return FALSE;
+			}
+		}
+		$conn = &$this->Connection();
+
+		// Load db values from rsold
+		if ($rsold) {
+			$this->LoadDbValues($rsold);
+		}
+		$rsnew = array();
+
+		// pegawai_pin
+		$this->pegawai_pin->SetDbValueDef($rsnew, $this->pegawai_pin->CurrentValue, "", FALSE);
+
+		// pegawai_nip
+		$this->pegawai_nip->SetDbValueDef($rsnew, $this->pegawai_nip->CurrentValue, NULL, FALSE);
+
+		// pegawai_nama
+		$this->pegawai_nama->SetDbValueDef($rsnew, $this->pegawai_nama->CurrentValue, "", FALSE);
+
+		// pembagian1_id
+		$this->pembagian1_id->SetDbValueDef($rsnew, $this->pembagian1_id->CurrentValue, NULL, strval($this->pembagian1_id->CurrentValue) == "");
+
+		// pembagian2_id
+		$this->pembagian2_id->SetDbValueDef($rsnew, $this->pembagian2_id->CurrentValue, NULL, strval($this->pembagian2_id->CurrentValue) == "");
+
+		// pembagian3_id
+		$this->pembagian3_id->SetDbValueDef($rsnew, $this->pembagian3_id->CurrentValue, NULL, strval($this->pembagian3_id->CurrentValue) == "");
+
+		// gender
+		$this->gender->SetDbValueDef($rsnew, $this->gender->CurrentValue, 0, strval($this->gender->CurrentValue) == "");
+
+		// Call Row Inserting event
+		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
+
+		// Check if key value entered
+		if ($bInsertRow && $this->ValidateKey && strval($rsnew['pegawai_id']) == "") {
+			$this->setFailureMessage($Language->Phrase("InvalidKeyValue"));
+			$bInsertRow = FALSE;
+		}
+
+		// Check for duplicate key
+		if ($bInsertRow && $this->ValidateKey) {
+			$sFilter = $this->KeyFilter();
+			$rsChk = $this->LoadRs($sFilter);
+			if ($rsChk && !$rsChk->EOF) {
+				$sKeyErrMsg = str_replace("%f", $sFilter, $Language->Phrase("DupKey"));
+				$this->setFailureMessage($sKeyErrMsg);
+				$rsChk->Close();
+				$bInsertRow = FALSE;
+			}
+		}
+		if ($bInsertRow) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			$AddRow = $this->Insert($rsnew);
+			$conn->raiseErrorFn = '';
+			if ($AddRow) {
+			}
+		} else {
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
+			}
+			$AddRow = FALSE;
+		}
+		if ($AddRow) {
+
+			// Call Row Inserted event
+			$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+			$this->Row_Inserted($rs, $rsnew);
+		}
+		return $AddRow;
 	}
 
 	// Set up export options
@@ -2349,6 +3808,42 @@ class cpegawai_list extends cpegawai {
 		global $gsLanguage;
 		$pageId = $pageId ?: $this->PageID;
 		switch ($fld->FldVar) {
+		case "x_pembagian1_id":
+			$sSqlWrk = "";
+			$sSqlWrk = "SELECT `pembagian1_id` AS `LinkFld`, `pembagian1_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pembagian1`";
+			$sWhereWrk = "{filter}";
+			$this->pembagian1_id->LookupFilters = array("dx1" => '`pembagian1_nama`');
+			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "", "f0" => '`pembagian1_id` = {filter_value}', "t0" => "3", "fn0" => "");
+			$sSqlWrk = "";
+			$this->Lookup_Selecting($this->pembagian1_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			if ($sSqlWrk <> "")
+				$fld->LookupFilters["s"] .= $sSqlWrk;
+			break;
+		case "x_pembagian2_id":
+			$sSqlWrk = "";
+			$sSqlWrk = "SELECT `pembagian2_id` AS `LinkFld`, `pembagian2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pembagian2`";
+			$sWhereWrk = "{filter}";
+			$this->pembagian2_id->LookupFilters = array("dx1" => '`pembagian2_nama`');
+			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "", "f0" => '`pembagian2_id` = {filter_value}', "t0" => "3", "fn0" => "");
+			$sSqlWrk = "";
+			$this->Lookup_Selecting($this->pembagian2_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			if ($sSqlWrk <> "")
+				$fld->LookupFilters["s"] .= $sSqlWrk;
+			break;
+		case "x_pembagian3_id":
+			$sSqlWrk = "";
+			$sSqlWrk = "SELECT `pembagian3_id` AS `LinkFld`, `pembagian3_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pembagian3`";
+			$sWhereWrk = "{filter}";
+			$this->pembagian3_id->LookupFilters = array("dx1" => '`pembagian3_nama`');
+			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "", "f0" => '`pembagian3_id` = {filter_value}', "t0" => "3", "fn0" => "");
+			$sSqlWrk = "";
+			$this->Lookup_Selecting($this->pembagian3_id, $sWhereWrk); // Call Lookup selecting
+			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			if ($sSqlWrk <> "")
+				$fld->LookupFilters["s"] .= $sSqlWrk;
+			break;
 		}
 	}
 
@@ -2507,6 +4002,59 @@ var CurrentPageID = EW_PAGE_ID = "list";
 var CurrentForm = fpegawailist = new ew_Form("fpegawailist", "list");
 fpegawailist.FormKeyCountName = '<?php echo $pegawai_list->FormKeyCountName ?>';
 
+// Validate form
+fpegawailist.Validate = function() {
+	if (!this.ValidateRequired)
+		return true; // Ignore validation
+	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
+	if ($fobj.find("#a_confirm").val() == "F")
+		return true;
+	var elm, felm, uelm, addcnt = 0;
+	var $k = $fobj.find("#" + this.FormKeyCountName); // Get key_count
+	var rowcnt = ($k[0]) ? parseInt($k.val(), 10) : 1;
+	var startcnt = (rowcnt == 0) ? 0 : 1; // Check rowcnt == 0 => Inline-Add
+	var gridinsert = $fobj.find("#a_list").val() == "gridinsert";
+	for (var i = startcnt; i <= rowcnt; i++) {
+		var infix = ($k[0]) ? String(i) : "";
+		$fobj.data("rowindex", infix);
+		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
+		if (checkrow) {
+			addcnt++;
+			elm = this.GetElements("x" + infix + "_pegawai_pin");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $pegawai->pegawai_pin->FldCaption(), $pegawai->pegawai_pin->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_pegawai_nama");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $pegawai->pegawai_nama->FldCaption(), $pegawai->pegawai_nama->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_gender");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $pegawai->gender->FldCaption(), $pegawai->gender->ReqErrMsg)) ?>");
+
+			// Fire Form_CustomValidate event
+			if (!this.Form_CustomValidate(fobj))
+				return false;
+		} // End Grid Add checking
+	}
+	if (gridinsert && addcnt == 0) { // No row added
+		ew_Alert(ewLanguage.Phrase("NoAddRecord"));
+		return false;
+	}
+	return true;
+}
+
+// Check empty row
+fpegawailist.EmptyRow = function(infix) {
+	var fobj = this.Form;
+	if (ew_ValueChanged(fobj, infix, "pegawai_pin", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "pegawai_nip", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "pegawai_nama", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "pembagian1_id", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "pembagian2_id", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "pembagian3_id", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "gender", false)) return false;
+	return true;
+}
+
 // Form_CustomValidate event
 fpegawailist.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
@@ -2523,8 +4071,13 @@ fpegawailist.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+fpegawailist.Lists["x_pembagian1_id"] = {"LinkField":"x_pembagian1_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pembagian1_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pembagian1"};
+fpegawailist.Lists["x_pembagian2_id"] = {"LinkField":"x_pembagian2_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pembagian2_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pembagian2"};
+fpegawailist.Lists["x_pembagian3_id"] = {"LinkField":"x_pembagian3_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pembagian3_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pembagian3"};
+fpegawailist.Lists["x_gender"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+fpegawailist.Lists["x_gender"].Options = <?php echo json_encode($pegawai->gender->Options()) ?>;
 
+// Form object for search
 var CurrentSearchForm = fpegawailistsrch = new ew_Form("fpegawailistsrch");
 </script>
 <script type="text/javascript">
@@ -2553,6 +4106,13 @@ var CurrentSearchForm = fpegawailistsrch = new ew_Form("fpegawailistsrch");
 </div>
 <?php } ?>
 <?php
+if ($pegawai->CurrentAction == "gridadd") {
+	$pegawai->CurrentFilter = "0=1";
+	$pegawai_list->StartRec = 1;
+	$pegawai_list->DisplayRecs = $pegawai->GridAddRowCount;
+	$pegawai_list->TotalRecs = $pegawai_list->DisplayRecs;
+	$pegawai_list->StopRec = $pegawai_list->DisplayRecs;
+} else {
 	$bSelectLimit = $pegawai_list->UseSelectLimit;
 	if ($bSelectLimit) {
 		if ($pegawai_list->TotalRecs <= 0)
@@ -2578,6 +4138,14 @@ var CurrentSearchForm = fpegawailistsrch = new ew_Form("fpegawailistsrch");
 		else
 			$pegawai_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
+
+	// Audit trail on search
+	if ($pegawai_list->AuditTrailOnSearch && $pegawai_list->Command == "search" && !$pegawai_list->RestoreSearch) {
+		$searchparm = ew_ServerVar("QUERY_STRING");
+		$searchsql = $pegawai_list->getSessionWhere();
+		$pegawai_list->WriteAuditTrailOnSearch($searchparm, $searchsql);
+	}
+}
 $pegawai_list->RenderOtherOptions();
 ?>
 <?php if ($Security->CanSearch()) { ?>
@@ -2619,26 +4187,44 @@ $pegawai_list->ShowMessage();
 <div class="panel-heading ewGridUpperPanel">
 <?php if ($pegawai->CurrentAction <> "gridadd" && $pegawai->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="form-inline ewForm ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($pegawai_list->Pager)) $pegawai_list->Pager = new cNumericPager($pegawai_list->StartRec, $pegawai_list->DisplayRecs, $pegawai_list->TotalRecs, $pegawai_list->RecRange) ?>
+<?php if (!isset($pegawai_list->Pager)) $pegawai_list->Pager = new cPrevNextPager($pegawai_list->StartRec, $pegawai_list->DisplayRecs, $pegawai_list->TotalRecs) ?>
 <?php if ($pegawai_list->Pager->RecordCount > 0 && $pegawai_list->Pager->Visible) { ?>
 <div class="ewPager">
-<div class="ewNumericPage"><ul class="pagination">
+<span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
+<div class="ewPrevNext"><div class="input-group">
+<div class="input-group-btn">
+<!--first page button-->
 	<?php if ($pegawai_list->Pager->FirstButton->Enabled) { ?>
-	<li><a href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
+<!--previous page button-->
 	<?php if ($pegawai_list->Pager->PrevButton->Enabled) { ?>
-	<li><a href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
-	<?php foreach ($pegawai_list->Pager->Items as $PagerItem) { ?>
-		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $pegawai_list->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
-	<?php } ?>
+</div>
+<!--current page number-->
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $pegawai_list->Pager->CurrentPage ?>">
+<div class="input-group-btn">
+<!--next page button-->
 	<?php if ($pegawai_list->Pager->NextButton->Enabled) { ?>
-	<li><a href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
+<!--last page button-->
 	<?php if ($pegawai_list->Pager->LastButton->Enabled) { ?>
-	<li><a href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
-</ul></div>
+</div>
+</div>
+</div>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $pegawai_list->Pager->PageCount ?></span>
 </div>
 <div class="ewPager ewRec">
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $pegawai_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $pegawai_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $pegawai_list->Pager->RecordCount ?></span>
@@ -2674,7 +4260,7 @@ $pegawai_list->ShowMessage();
 <?php } ?>
 <input type="hidden" name="t" value="pegawai">
 <div id="gmp_pegawai" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
-<?php if ($pegawai_list->TotalRecs > 0 || $pegawai->CurrentAction == "gridedit") { ?>
+<?php if ($pegawai_list->TotalRecs > 0 || $pegawai->CurrentAction == "add" || $pegawai->CurrentAction == "copy" || $pegawai->CurrentAction == "gridedit") { ?>
 <table id="tbl_pegawailist" class="table ewTable">
 <?php echo $pegawai->TableCustomInnerHtml ?>
 <thead><!-- Table header -->
@@ -2690,15 +4276,6 @@ $pegawai_list->RenderListOptions();
 // Render list options (header, left)
 $pegawai_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($pegawai->pegawai_id->Visible) { // pegawai_id ?>
-	<?php if ($pegawai->SortUrl($pegawai->pegawai_id) == "") { ?>
-		<th data-name="pegawai_id"><div id="elh_pegawai_pegawai_id" class="pegawai_pegawai_id"><div class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_id->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="pegawai_id"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->pegawai_id) ?>',2);"><div id="elh_pegawai_pegawai_id" class="pegawai_pegawai_id">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->pegawai_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->pegawai_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($pegawai->pegawai_pin->Visible) { // pegawai_pin ?>
 	<?php if ($pegawai->SortUrl($pegawai->pegawai_pin) == "") { ?>
 		<th data-name="pegawai_pin"><div id="elh_pegawai_pegawai_pin" class="pegawai_pegawai_pin"><div class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_pin->FldCaption() ?></div></div></th>
@@ -2723,69 +4300,6 @@ $pegawai_list->ListOptions->Render("header", "left");
 	<?php } else { ?>
 		<th data-name="pegawai_nama"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->pegawai_nama) ?>',2);"><div id="elh_pegawai_pegawai_nama" class="pegawai_pegawai_nama">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_nama->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->pegawai_nama->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->pegawai_nama->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->pegawai_pwd->Visible) { // pegawai_pwd ?>
-	<?php if ($pegawai->SortUrl($pegawai->pegawai_pwd) == "") { ?>
-		<th data-name="pegawai_pwd"><div id="elh_pegawai_pegawai_pwd" class="pegawai_pegawai_pwd"><div class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_pwd->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="pegawai_pwd"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->pegawai_pwd) ?>',2);"><div id="elh_pegawai_pegawai_pwd" class="pegawai_pegawai_pwd">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_pwd->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->pegawai_pwd->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->pegawai_pwd->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->pegawai_rfid->Visible) { // pegawai_rfid ?>
-	<?php if ($pegawai->SortUrl($pegawai->pegawai_rfid) == "") { ?>
-		<th data-name="pegawai_rfid"><div id="elh_pegawai_pegawai_rfid" class="pegawai_pegawai_rfid"><div class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_rfid->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="pegawai_rfid"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->pegawai_rfid) ?>',2);"><div id="elh_pegawai_pegawai_rfid" class="pegawai_pegawai_rfid">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_rfid->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->pegawai_rfid->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->pegawai_rfid->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->pegawai_privilege->Visible) { // pegawai_privilege ?>
-	<?php if ($pegawai->SortUrl($pegawai->pegawai_privilege) == "") { ?>
-		<th data-name="pegawai_privilege"><div id="elh_pegawai_pegawai_privilege" class="pegawai_pegawai_privilege"><div class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_privilege->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="pegawai_privilege"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->pegawai_privilege) ?>',2);"><div id="elh_pegawai_pegawai_privilege" class="pegawai_pegawai_privilege">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_privilege->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->pegawai_privilege->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->pegawai_privilege->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->pegawai_telp->Visible) { // pegawai_telp ?>
-	<?php if ($pegawai->SortUrl($pegawai->pegawai_telp) == "") { ?>
-		<th data-name="pegawai_telp"><div id="elh_pegawai_pegawai_telp" class="pegawai_pegawai_telp"><div class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_telp->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="pegawai_telp"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->pegawai_telp) ?>',2);"><div id="elh_pegawai_pegawai_telp" class="pegawai_pegawai_telp">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_telp->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->pegawai_telp->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->pegawai_telp->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->pegawai_status->Visible) { // pegawai_status ?>
-	<?php if ($pegawai->SortUrl($pegawai->pegawai_status) == "") { ?>
-		<th data-name="pegawai_status"><div id="elh_pegawai_pegawai_status" class="pegawai_pegawai_status"><div class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_status->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="pegawai_status"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->pegawai_status) ?>',2);"><div id="elh_pegawai_pegawai_status" class="pegawai_pegawai_status">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->pegawai_status->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->pegawai_status->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->pegawai_status->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->tempat_lahir->Visible) { // tempat_lahir ?>
-	<?php if ($pegawai->SortUrl($pegawai->tempat_lahir) == "") { ?>
-		<th data-name="tempat_lahir"><div id="elh_pegawai_tempat_lahir" class="pegawai_tempat_lahir"><div class="ewTableHeaderCaption"><?php echo $pegawai->tempat_lahir->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="tempat_lahir"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->tempat_lahir) ?>',2);"><div id="elh_pegawai_tempat_lahir" class="pegawai_tempat_lahir">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->tempat_lahir->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->tempat_lahir->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->tempat_lahir->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->tgl_lahir->Visible) { // tgl_lahir ?>
-	<?php if ($pegawai->SortUrl($pegawai->tgl_lahir) == "") { ?>
-		<th data-name="tgl_lahir"><div id="elh_pegawai_tgl_lahir" class="pegawai_tgl_lahir"><div class="ewTableHeaderCaption"><?php echo $pegawai->tgl_lahir->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="tgl_lahir"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->tgl_lahir) ?>',2);"><div id="elh_pegawai_tgl_lahir" class="pegawai_tgl_lahir">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->tgl_lahir->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->tgl_lahir->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->tgl_lahir->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2816,75 +4330,12 @@ $pegawai_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($pegawai->tgl_mulai_kerja->Visible) { // tgl_mulai_kerja ?>
-	<?php if ($pegawai->SortUrl($pegawai->tgl_mulai_kerja) == "") { ?>
-		<th data-name="tgl_mulai_kerja"><div id="elh_pegawai_tgl_mulai_kerja" class="pegawai_tgl_mulai_kerja"><div class="ewTableHeaderCaption"><?php echo $pegawai->tgl_mulai_kerja->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="tgl_mulai_kerja"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->tgl_mulai_kerja) ?>',2);"><div id="elh_pegawai_tgl_mulai_kerja" class="pegawai_tgl_mulai_kerja">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->tgl_mulai_kerja->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->tgl_mulai_kerja->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->tgl_mulai_kerja->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->tgl_resign->Visible) { // tgl_resign ?>
-	<?php if ($pegawai->SortUrl($pegawai->tgl_resign) == "") { ?>
-		<th data-name="tgl_resign"><div id="elh_pegawai_tgl_resign" class="pegawai_tgl_resign"><div class="ewTableHeaderCaption"><?php echo $pegawai->tgl_resign->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="tgl_resign"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->tgl_resign) ?>',2);"><div id="elh_pegawai_tgl_resign" class="pegawai_tgl_resign">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->tgl_resign->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->tgl_resign->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->tgl_resign->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($pegawai->gender->Visible) { // gender ?>
 	<?php if ($pegawai->SortUrl($pegawai->gender) == "") { ?>
 		<th data-name="gender"><div id="elh_pegawai_gender" class="pegawai_gender"><div class="ewTableHeaderCaption"><?php echo $pegawai->gender->FldCaption() ?></div></div></th>
 	<?php } else { ?>
 		<th data-name="gender"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->gender) ?>',2);"><div id="elh_pegawai_gender" class="pegawai_gender">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->gender->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->gender->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->gender->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->tgl_masuk_pertama->Visible) { // tgl_masuk_pertama ?>
-	<?php if ($pegawai->SortUrl($pegawai->tgl_masuk_pertama) == "") { ?>
-		<th data-name="tgl_masuk_pertama"><div id="elh_pegawai_tgl_masuk_pertama" class="pegawai_tgl_masuk_pertama"><div class="ewTableHeaderCaption"><?php echo $pegawai->tgl_masuk_pertama->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="tgl_masuk_pertama"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->tgl_masuk_pertama) ?>',2);"><div id="elh_pegawai_tgl_masuk_pertama" class="pegawai_tgl_masuk_pertama">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->tgl_masuk_pertama->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->tgl_masuk_pertama->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->tgl_masuk_pertama->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->photo_path->Visible) { // photo_path ?>
-	<?php if ($pegawai->SortUrl($pegawai->photo_path) == "") { ?>
-		<th data-name="photo_path"><div id="elh_pegawai_photo_path" class="pegawai_photo_path"><div class="ewTableHeaderCaption"><?php echo $pegawai->photo_path->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="photo_path"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->photo_path) ?>',2);"><div id="elh_pegawai_photo_path" class="pegawai_photo_path">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->photo_path->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->photo_path->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->photo_path->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->nama_bank->Visible) { // nama_bank ?>
-	<?php if ($pegawai->SortUrl($pegawai->nama_bank) == "") { ?>
-		<th data-name="nama_bank"><div id="elh_pegawai_nama_bank" class="pegawai_nama_bank"><div class="ewTableHeaderCaption"><?php echo $pegawai->nama_bank->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="nama_bank"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->nama_bank) ?>',2);"><div id="elh_pegawai_nama_bank" class="pegawai_nama_bank">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->nama_bank->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->nama_bank->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->nama_bank->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->nama_rek->Visible) { // nama_rek ?>
-	<?php if ($pegawai->SortUrl($pegawai->nama_rek) == "") { ?>
-		<th data-name="nama_rek"><div id="elh_pegawai_nama_rek" class="pegawai_nama_rek"><div class="ewTableHeaderCaption"><?php echo $pegawai->nama_rek->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="nama_rek"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->nama_rek) ?>',2);"><div id="elh_pegawai_nama_rek" class="pegawai_nama_rek">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->nama_rek->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->nama_rek->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->nama_rek->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
-<?php if ($pegawai->no_rek->Visible) { // no_rek ?>
-	<?php if ($pegawai->SortUrl($pegawai->no_rek) == "") { ?>
-		<th data-name="no_rek"><div id="elh_pegawai_no_rek" class="pegawai_no_rek"><div class="ewTableHeaderCaption"><?php echo $pegawai->no_rek->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="no_rek"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pegawai->SortUrl($pegawai->no_rek) ?>',2);"><div id="elh_pegawai_no_rek" class="pegawai_no_rek">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pegawai->no_rek->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($pegawai->no_rek->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pegawai->no_rek->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -2897,6 +4348,121 @@ $pegawai_list->ListOptions->Render("header", "right");
 </thead>
 <tbody>
 <?php
+	if ($pegawai->CurrentAction == "add" || $pegawai->CurrentAction == "copy") {
+		$pegawai_list->RowIndex = 0;
+		$pegawai_list->KeyCount = $pegawai_list->RowIndex;
+		if ($pegawai->CurrentAction == "copy" && !$pegawai_list->LoadRow())
+				$pegawai->CurrentAction = "add";
+		if ($pegawai->CurrentAction == "add")
+			$pegawai_list->LoadDefaultValues();
+		if ($pegawai->EventCancelled) // Insert failed
+			$pegawai_list->RestoreFormValues(); // Restore form values
+
+		// Set row properties
+		$pegawai->ResetAttrs();
+		$pegawai->RowAttrs = array_merge($pegawai->RowAttrs, array('data-rowindex'=>0, 'id'=>'r0_pegawai', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		$pegawai->RowType = EW_ROWTYPE_ADD;
+
+		// Render row
+		$pegawai_list->RenderRow();
+
+		// Render list options
+		$pegawai_list->RenderListOptions();
+		$pegawai_list->StartRowCnt = 0;
+?>
+	<tr<?php echo $pegawai->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$pegawai_list->ListOptions->Render("body", "left", $pegawai_list->RowCnt);
+?>
+	<?php if ($pegawai->pegawai_pin->Visible) { // pegawai_pin ?>
+		<td data-name="pegawai_pin">
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_pin" class="form-group pegawai_pegawai_pin">
+<input type="text" data-table="pegawai" data-field="x_pegawai_pin" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" size="30" maxlength="32" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_pin->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_pin->EditValue ?>"<?php echo $pegawai->pegawai_pin->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_pin" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" value="<?php echo ew_HtmlEncode($pegawai->pegawai_pin->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pegawai_nip->Visible) { // pegawai_nip ?>
+		<td data-name="pegawai_nip">
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_nip" class="form-group pegawai_pegawai_nip">
+<input type="text" data-table="pegawai" data-field="x_pegawai_nip" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" size="30" maxlength="30" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_nip->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_nip->EditValue ?>"<?php echo $pegawai->pegawai_nip->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_nip" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" value="<?php echo ew_HtmlEncode($pegawai->pegawai_nip->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pegawai_nama->Visible) { // pegawai_nama ?>
+		<td data-name="pegawai_nama">
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_nama" class="form-group pegawai_pegawai_nama">
+<input type="text" data-table="pegawai" data-field="x_pegawai_nama" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_nama->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_nama->EditValue ?>"<?php echo $pegawai->pegawai_nama->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_nama" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" value="<?php echo ew_HtmlEncode($pegawai->pegawai_nama->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pembagian1_id->Visible) { // pembagian1_id ?>
+		<td data-name="pembagian1_id">
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian1_id" class="form-group pegawai_pembagian1_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id"><?php echo (strval($pegawai->pembagian1_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian1_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian1_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian1_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian1_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo $pegawai->pembagian1_id->CurrentValue ?>"<?php echo $pegawai->pembagian1_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo $pegawai->pembagian1_id->LookupFilterQuery() ?>">
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian1_id" name="o<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="o<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo ew_HtmlEncode($pegawai->pembagian1_id->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pembagian2_id->Visible) { // pembagian2_id ?>
+		<td data-name="pembagian2_id">
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian2_id" class="form-group pegawai_pembagian2_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id"><?php echo (strval($pegawai->pembagian2_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian2_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian2_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian2_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian2_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo $pegawai->pembagian2_id->CurrentValue ?>"<?php echo $pegawai->pembagian2_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo $pegawai->pembagian2_id->LookupFilterQuery() ?>">
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian2_id" name="o<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="o<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo ew_HtmlEncode($pegawai->pembagian2_id->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pembagian3_id->Visible) { // pembagian3_id ?>
+		<td data-name="pembagian3_id">
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian3_id" class="form-group pegawai_pembagian3_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id"><?php echo (strval($pegawai->pembagian3_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian3_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian3_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian3_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian3_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo $pegawai->pembagian3_id->CurrentValue ?>"<?php echo $pegawai->pembagian3_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo $pegawai->pembagian3_id->LookupFilterQuery() ?>">
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian3_id" name="o<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="o<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo ew_HtmlEncode($pegawai->pembagian3_id->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->gender->Visible) { // gender ?>
+		<td data-name="gender">
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_gender" class="form-group pegawai_gender">
+<div id="tp_x<?php echo $pegawai_list->RowIndex ?>_gender" class="ewTemplate"><input type="radio" data-table="pegawai" data-field="x_gender" data-value-separator="<?php echo $pegawai->gender->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_gender" id="x<?php echo $pegawai_list->RowIndex ?>_gender" value="{value}"<?php echo $pegawai->gender->EditAttributes() ?>></div>
+<div id="dsl_x<?php echo $pegawai_list->RowIndex ?>_gender" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
+<?php echo $pegawai->gender->RadioButtonListHtml(FALSE, "x{$pegawai_list->RowIndex}_gender") ?>
+</div></div>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_gender" name="o<?php echo $pegawai_list->RowIndex ?>_gender" id="o<?php echo $pegawai_list->RowIndex ?>_gender" value="<?php echo ew_HtmlEncode($pegawai->gender->OldValue) ?>">
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$pegawai_list->ListOptions->Render("body", "right", $pegawai_list->RowCnt);
+?>
+<script type="text/javascript">
+fpegawailist.UpdateOpts(<?php echo $pegawai_list->RowIndex ?>);
+</script>
+	</tr>
+<?php
+}
+?>
+<?php
 if ($pegawai->ExportAll && $pegawai->Export <> "") {
 	$pegawai_list->StopRec = $pegawai_list->TotalRecs;
 } else {
@@ -2906,6 +4472,15 @@ if ($pegawai->ExportAll && $pegawai->Export <> "") {
 		$pegawai_list->StopRec = $pegawai_list->StartRec + $pegawai_list->DisplayRecs - 1;
 	else
 		$pegawai_list->StopRec = $pegawai_list->TotalRecs;
+}
+
+// Restore number of post back records
+if ($objForm) {
+	$objForm->Index = -1;
+	if ($objForm->HasValue($pegawai_list->FormKeyCountName) && ($pegawai->CurrentAction == "gridadd" || $pegawai->CurrentAction == "gridedit" || $pegawai->CurrentAction == "F")) {
+		$pegawai_list->KeyCount = $objForm->GetValue($pegawai_list->FormKeyCountName);
+		$pegawai_list->StopRec = $pegawai_list->StartRec + $pegawai_list->KeyCount - 1;
+	}
 }
 $pegawai_list->RecCnt = $pegawai_list->StartRec - 1;
 if ($pegawai_list->Recordset && !$pegawai_list->Recordset->EOF) {
@@ -2921,10 +4496,27 @@ if ($pegawai_list->Recordset && !$pegawai_list->Recordset->EOF) {
 $pegawai->RowType = EW_ROWTYPE_AGGREGATEINIT;
 $pegawai->ResetAttrs();
 $pegawai_list->RenderRow();
+$pegawai_list->EditRowCnt = 0;
+if ($pegawai->CurrentAction == "edit")
+	$pegawai_list->RowIndex = 1;
+if ($pegawai->CurrentAction == "gridadd")
+	$pegawai_list->RowIndex = 0;
+if ($pegawai->CurrentAction == "gridedit")
+	$pegawai_list->RowIndex = 0;
 while ($pegawai_list->RecCnt < $pegawai_list->StopRec) {
 	$pegawai_list->RecCnt++;
 	if (intval($pegawai_list->RecCnt) >= intval($pegawai_list->StartRec)) {
 		$pegawai_list->RowCnt++;
+		if ($pegawai->CurrentAction == "gridadd" || $pegawai->CurrentAction == "gridedit" || $pegawai->CurrentAction == "F") {
+			$pegawai_list->RowIndex++;
+			$objForm->Index = $pegawai_list->RowIndex;
+			if ($objForm->HasValue($pegawai_list->FormActionName))
+				$pegawai_list->RowAction = strval($objForm->GetValue($pegawai_list->FormActionName));
+			elseif ($pegawai->CurrentAction == "gridadd")
+				$pegawai_list->RowAction = "insert";
+			else
+				$pegawai_list->RowAction = "";
+		}
 
 		// Set up key count
 		$pegawai_list->KeyCount = $pegawai_list->RowIndex;
@@ -2933,10 +4525,37 @@ while ($pegawai_list->RecCnt < $pegawai_list->StopRec) {
 		$pegawai->ResetAttrs();
 		$pegawai->CssClass = "";
 		if ($pegawai->CurrentAction == "gridadd") {
+			$pegawai_list->LoadDefaultValues(); // Load default values
 		} else {
 			$pegawai_list->LoadRowValues($pegawai_list->Recordset); // Load row values
 		}
 		$pegawai->RowType = EW_ROWTYPE_VIEW; // Render view
+		if ($pegawai->CurrentAction == "gridadd") // Grid add
+			$pegawai->RowType = EW_ROWTYPE_ADD; // Render add
+		if ($pegawai->CurrentAction == "gridadd" && $pegawai->EventCancelled && !$objForm->HasValue("k_blankrow")) // Insert failed
+			$pegawai_list->RestoreCurrentRowFormValues($pegawai_list->RowIndex); // Restore form values
+		if ($pegawai->CurrentAction == "edit") {
+			if ($pegawai_list->CheckInlineEditKey() && $pegawai_list->EditRowCnt == 0) { // Inline edit
+				$pegawai->RowType = EW_ROWTYPE_EDIT; // Render edit
+			}
+		}
+		if ($pegawai->CurrentAction == "gridedit") { // Grid edit
+			if ($pegawai->EventCancelled) {
+				$pegawai_list->RestoreCurrentRowFormValues($pegawai_list->RowIndex); // Restore form values
+			}
+			if ($pegawai_list->RowAction == "insert")
+				$pegawai->RowType = EW_ROWTYPE_ADD; // Render add
+			else
+				$pegawai->RowType = EW_ROWTYPE_EDIT; // Render edit
+		}
+		if ($pegawai->CurrentAction == "edit" && $pegawai->RowType == EW_ROWTYPE_EDIT && $pegawai->EventCancelled) { // Update failed
+			$objForm->Index = 1;
+			$pegawai_list->RestoreFormValues(); // Restore form values
+		}
+		if ($pegawai->CurrentAction == "gridedit" && ($pegawai->RowType == EW_ROWTYPE_EDIT || $pegawai->RowType == EW_ROWTYPE_ADD) && $pegawai->EventCancelled) // Update failed
+			$pegawai_list->RestoreCurrentRowFormValues($pegawai_list->RowIndex); // Restore form values
+		if ($pegawai->RowType == EW_ROWTYPE_EDIT) // Edit row
+			$pegawai_list->EditRowCnt++;
 
 		// Set up row id / data-rowindex
 		$pegawai->RowAttrs = array_merge($pegawai->RowAttrs, array('data-rowindex'=>$pegawai_list->RowCnt, 'id'=>'r' . $pegawai_list->RowCnt . '_pegawai', 'data-rowtype'=>$pegawai->RowType));
@@ -2946,6 +4565,9 @@ while ($pegawai_list->RecCnt < $pegawai_list->StopRec) {
 
 		// Render list options
 		$pegawai_list->RenderListOptions();
+
+		// Skip delete row / empty row for confirm page
+		if ($pegawai_list->RowAction <> "delete" && $pegawai_list->RowAction <> "insertdelete" && !($pegawai_list->RowAction == "insert" && $pegawai->CurrentAction == "F" && $pegawai_list->EmptyRow())) {
 ?>
 	<tr<?php echo $pegawai->RowAttributes() ?>>
 <?php
@@ -2953,180 +4575,194 @@ while ($pegawai_list->RecCnt < $pegawai_list->StopRec) {
 // Render list options (body, left)
 $pegawai_list->ListOptions->Render("body", "left", $pegawai_list->RowCnt);
 ?>
-	<?php if ($pegawai->pegawai_id->Visible) { // pegawai_id ?>
-		<td data-name="pegawai_id"<?php echo $pegawai->pegawai_id->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_id" class="pegawai_pegawai_id">
-<span<?php echo $pegawai->pegawai_id->ViewAttributes() ?>>
-<?php echo $pegawai->pegawai_id->ListViewValue() ?></span>
-</span>
-<a id="<?php echo $pegawai_list->PageObjName . "_row_" . $pegawai_list->RowCnt ?>"></a></td>
-	<?php } ?>
 	<?php if ($pegawai->pegawai_pin->Visible) { // pegawai_pin ?>
 		<td data-name="pegawai_pin"<?php echo $pegawai->pegawai_pin->CellAttributes() ?>>
+<?php if ($pegawai->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_pin" class="form-group pegawai_pegawai_pin">
+<input type="text" data-table="pegawai" data-field="x_pegawai_pin" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" size="30" maxlength="32" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_pin->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_pin->EditValue ?>"<?php echo $pegawai->pegawai_pin->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_pin" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" value="<?php echo ew_HtmlEncode($pegawai->pegawai_pin->OldValue) ?>">
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_pin" class="form-group pegawai_pegawai_pin">
+<input type="text" data-table="pegawai" data-field="x_pegawai_pin" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" size="30" maxlength="32" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_pin->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_pin->EditValue ?>"<?php echo $pegawai->pegawai_pin->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_pin" class="pegawai_pegawai_pin">
 <span<?php echo $pegawai->pegawai_pin->ViewAttributes() ?>>
 <?php echo $pegawai->pegawai_pin->ListViewValue() ?></span>
 </span>
-</td>
+<?php } ?>
+<a id="<?php echo $pegawai_list->PageObjName . "_row_" . $pegawai_list->RowCnt ?>"></a></td>
 	<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_id" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_id" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($pegawai->pegawai_id->CurrentValue) ?>">
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_id" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_id" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($pegawai->pegawai_id->OldValue) ?>">
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_EDIT || $pegawai->CurrentMode == "edit") { ?>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_id" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_id" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($pegawai->pegawai_id->CurrentValue) ?>">
+<?php } ?>
 	<?php if ($pegawai->pegawai_nip->Visible) { // pegawai_nip ?>
 		<td data-name="pegawai_nip"<?php echo $pegawai->pegawai_nip->CellAttributes() ?>>
+<?php if ($pegawai->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_nip" class="form-group pegawai_pegawai_nip">
+<input type="text" data-table="pegawai" data-field="x_pegawai_nip" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" size="30" maxlength="30" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_nip->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_nip->EditValue ?>"<?php echo $pegawai->pegawai_nip->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_nip" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" value="<?php echo ew_HtmlEncode($pegawai->pegawai_nip->OldValue) ?>">
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_nip" class="form-group pegawai_pegawai_nip">
+<input type="text" data-table="pegawai" data-field="x_pegawai_nip" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" size="30" maxlength="30" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_nip->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_nip->EditValue ?>"<?php echo $pegawai->pegawai_nip->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_nip" class="pegawai_pegawai_nip">
 <span<?php echo $pegawai->pegawai_nip->ViewAttributes() ?>>
 <?php echo $pegawai->pegawai_nip->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($pegawai->pegawai_nama->Visible) { // pegawai_nama ?>
 		<td data-name="pegawai_nama"<?php echo $pegawai->pegawai_nama->CellAttributes() ?>>
+<?php if ($pegawai->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_nama" class="form-group pegawai_pegawai_nama">
+<input type="text" data-table="pegawai" data-field="x_pegawai_nama" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_nama->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_nama->EditValue ?>"<?php echo $pegawai->pegawai_nama->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_nama" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" value="<?php echo ew_HtmlEncode($pegawai->pegawai_nama->OldValue) ?>">
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_nama" class="form-group pegawai_pegawai_nama">
+<input type="text" data-table="pegawai" data-field="x_pegawai_nama" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_nama->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_nama->EditValue ?>"<?php echo $pegawai->pegawai_nama->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_nama" class="pegawai_pegawai_nama">
 <span<?php echo $pegawai->pegawai_nama->ViewAttributes() ?>>
 <?php echo $pegawai->pegawai_nama->ListViewValue() ?></span>
 </span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->pegawai_pwd->Visible) { // pegawai_pwd ?>
-		<td data-name="pegawai_pwd"<?php echo $pegawai->pegawai_pwd->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_pwd" class="pegawai_pegawai_pwd">
-<span<?php echo $pegawai->pegawai_pwd->ViewAttributes() ?>>
-<?php echo $pegawai->pegawai_pwd->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->pegawai_rfid->Visible) { // pegawai_rfid ?>
-		<td data-name="pegawai_rfid"<?php echo $pegawai->pegawai_rfid->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_rfid" class="pegawai_pegawai_rfid">
-<span<?php echo $pegawai->pegawai_rfid->ViewAttributes() ?>>
-<?php echo $pegawai->pegawai_rfid->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->pegawai_privilege->Visible) { // pegawai_privilege ?>
-		<td data-name="pegawai_privilege"<?php echo $pegawai->pegawai_privilege->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_privilege" class="pegawai_pegawai_privilege">
-<span<?php echo $pegawai->pegawai_privilege->ViewAttributes() ?>>
-<?php echo $pegawai->pegawai_privilege->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->pegawai_telp->Visible) { // pegawai_telp ?>
-		<td data-name="pegawai_telp"<?php echo $pegawai->pegawai_telp->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_telp" class="pegawai_pegawai_telp">
-<span<?php echo $pegawai->pegawai_telp->ViewAttributes() ?>>
-<?php echo $pegawai->pegawai_telp->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->pegawai_status->Visible) { // pegawai_status ?>
-		<td data-name="pegawai_status"<?php echo $pegawai->pegawai_status->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pegawai_status" class="pegawai_pegawai_status">
-<span<?php echo $pegawai->pegawai_status->ViewAttributes() ?>>
-<?php echo $pegawai->pegawai_status->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->tempat_lahir->Visible) { // tempat_lahir ?>
-		<td data-name="tempat_lahir"<?php echo $pegawai->tempat_lahir->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_tempat_lahir" class="pegawai_tempat_lahir">
-<span<?php echo $pegawai->tempat_lahir->ViewAttributes() ?>>
-<?php echo $pegawai->tempat_lahir->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->tgl_lahir->Visible) { // tgl_lahir ?>
-		<td data-name="tgl_lahir"<?php echo $pegawai->tgl_lahir->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_tgl_lahir" class="pegawai_tgl_lahir">
-<span<?php echo $pegawai->tgl_lahir->ViewAttributes() ?>>
-<?php echo $pegawai->tgl_lahir->ListViewValue() ?></span>
-</span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($pegawai->pembagian1_id->Visible) { // pembagian1_id ?>
 		<td data-name="pembagian1_id"<?php echo $pegawai->pembagian1_id->CellAttributes() ?>>
+<?php if ($pegawai->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian1_id" class="form-group pegawai_pembagian1_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id"><?php echo (strval($pegawai->pembagian1_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian1_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian1_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian1_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian1_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo $pegawai->pembagian1_id->CurrentValue ?>"<?php echo $pegawai->pembagian1_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo $pegawai->pembagian1_id->LookupFilterQuery() ?>">
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian1_id" name="o<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="o<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo ew_HtmlEncode($pegawai->pembagian1_id->OldValue) ?>">
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian1_id" class="form-group pegawai_pembagian1_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id"><?php echo (strval($pegawai->pembagian1_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian1_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian1_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian1_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian1_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo $pegawai->pembagian1_id->CurrentValue ?>"<?php echo $pegawai->pembagian1_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo $pegawai->pembagian1_id->LookupFilterQuery() ?>">
+</span>
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian1_id" class="pegawai_pembagian1_id">
 <span<?php echo $pegawai->pembagian1_id->ViewAttributes() ?>>
 <?php echo $pegawai->pembagian1_id->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($pegawai->pembagian2_id->Visible) { // pembagian2_id ?>
 		<td data-name="pembagian2_id"<?php echo $pegawai->pembagian2_id->CellAttributes() ?>>
+<?php if ($pegawai->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian2_id" class="form-group pegawai_pembagian2_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id"><?php echo (strval($pegawai->pembagian2_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian2_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian2_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian2_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian2_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo $pegawai->pembagian2_id->CurrentValue ?>"<?php echo $pegawai->pembagian2_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo $pegawai->pembagian2_id->LookupFilterQuery() ?>">
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian2_id" name="o<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="o<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo ew_HtmlEncode($pegawai->pembagian2_id->OldValue) ?>">
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian2_id" class="form-group pegawai_pembagian2_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id"><?php echo (strval($pegawai->pembagian2_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian2_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian2_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian2_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian2_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo $pegawai->pembagian2_id->CurrentValue ?>"<?php echo $pegawai->pembagian2_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo $pegawai->pembagian2_id->LookupFilterQuery() ?>">
+</span>
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian2_id" class="pegawai_pembagian2_id">
 <span<?php echo $pegawai->pembagian2_id->ViewAttributes() ?>>
 <?php echo $pegawai->pembagian2_id->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($pegawai->pembagian3_id->Visible) { // pembagian3_id ?>
 		<td data-name="pembagian3_id"<?php echo $pegawai->pembagian3_id->CellAttributes() ?>>
+<?php if ($pegawai->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian3_id" class="form-group pegawai_pembagian3_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id"><?php echo (strval($pegawai->pembagian3_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian3_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian3_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian3_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian3_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo $pegawai->pembagian3_id->CurrentValue ?>"<?php echo $pegawai->pembagian3_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo $pegawai->pembagian3_id->LookupFilterQuery() ?>">
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian3_id" name="o<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="o<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo ew_HtmlEncode($pegawai->pembagian3_id->OldValue) ?>">
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian3_id" class="form-group pegawai_pembagian3_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id"><?php echo (strval($pegawai->pembagian3_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian3_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian3_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian3_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian3_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo $pegawai->pembagian3_id->CurrentValue ?>"<?php echo $pegawai->pembagian3_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo $pegawai->pembagian3_id->LookupFilterQuery() ?>">
+</span>
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_pembagian3_id" class="pegawai_pembagian3_id">
 <span<?php echo $pegawai->pembagian3_id->ViewAttributes() ?>>
 <?php echo $pegawai->pembagian3_id->ListViewValue() ?></span>
 </span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->tgl_mulai_kerja->Visible) { // tgl_mulai_kerja ?>
-		<td data-name="tgl_mulai_kerja"<?php echo $pegawai->tgl_mulai_kerja->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_tgl_mulai_kerja" class="pegawai_tgl_mulai_kerja">
-<span<?php echo $pegawai->tgl_mulai_kerja->ViewAttributes() ?>>
-<?php echo $pegawai->tgl_mulai_kerja->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->tgl_resign->Visible) { // tgl_resign ?>
-		<td data-name="tgl_resign"<?php echo $pegawai->tgl_resign->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_tgl_resign" class="pegawai_tgl_resign">
-<span<?php echo $pegawai->tgl_resign->ViewAttributes() ?>>
-<?php echo $pegawai->tgl_resign->ListViewValue() ?></span>
-</span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($pegawai->gender->Visible) { // gender ?>
 		<td data-name="gender"<?php echo $pegawai->gender->CellAttributes() ?>>
+<?php if ($pegawai->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_gender" class="form-group pegawai_gender">
+<div id="tp_x<?php echo $pegawai_list->RowIndex ?>_gender" class="ewTemplate"><input type="radio" data-table="pegawai" data-field="x_gender" data-value-separator="<?php echo $pegawai->gender->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_gender" id="x<?php echo $pegawai_list->RowIndex ?>_gender" value="{value}"<?php echo $pegawai->gender->EditAttributes() ?>></div>
+<div id="dsl_x<?php echo $pegawai_list->RowIndex ?>_gender" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
+<?php echo $pegawai->gender->RadioButtonListHtml(FALSE, "x{$pegawai_list->RowIndex}_gender") ?>
+</div></div>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_gender" name="o<?php echo $pegawai_list->RowIndex ?>_gender" id="o<?php echo $pegawai_list->RowIndex ?>_gender" value="<?php echo ew_HtmlEncode($pegawai->gender->OldValue) ?>">
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_gender" class="form-group pegawai_gender">
+<div id="tp_x<?php echo $pegawai_list->RowIndex ?>_gender" class="ewTemplate"><input type="radio" data-table="pegawai" data-field="x_gender" data-value-separator="<?php echo $pegawai->gender->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_gender" id="x<?php echo $pegawai_list->RowIndex ?>_gender" value="{value}"<?php echo $pegawai->gender->EditAttributes() ?>></div>
+<div id="dsl_x<?php echo $pegawai_list->RowIndex ?>_gender" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
+<?php echo $pegawai->gender->RadioButtonListHtml(FALSE, "x{$pegawai_list->RowIndex}_gender") ?>
+</div></div>
+</span>
+<?php } ?>
+<?php if ($pegawai->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_gender" class="pegawai_gender">
 <span<?php echo $pegawai->gender->ViewAttributes() ?>>
 <?php echo $pegawai->gender->ListViewValue() ?></span>
 </span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->tgl_masuk_pertama->Visible) { // tgl_masuk_pertama ?>
-		<td data-name="tgl_masuk_pertama"<?php echo $pegawai->tgl_masuk_pertama->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_tgl_masuk_pertama" class="pegawai_tgl_masuk_pertama">
-<span<?php echo $pegawai->tgl_masuk_pertama->ViewAttributes() ?>>
-<?php echo $pegawai->tgl_masuk_pertama->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->photo_path->Visible) { // photo_path ?>
-		<td data-name="photo_path"<?php echo $pegawai->photo_path->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_photo_path" class="pegawai_photo_path">
-<span<?php echo $pegawai->photo_path->ViewAttributes() ?>>
-<?php echo $pegawai->photo_path->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->nama_bank->Visible) { // nama_bank ?>
-		<td data-name="nama_bank"<?php echo $pegawai->nama_bank->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_nama_bank" class="pegawai_nama_bank">
-<span<?php echo $pegawai->nama_bank->ViewAttributes() ?>>
-<?php echo $pegawai->nama_bank->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->nama_rek->Visible) { // nama_rek ?>
-		<td data-name="nama_rek"<?php echo $pegawai->nama_rek->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_nama_rek" class="pegawai_nama_rek">
-<span<?php echo $pegawai->nama_rek->ViewAttributes() ?>>
-<?php echo $pegawai->nama_rek->ListViewValue() ?></span>
-</span>
-</td>
-	<?php } ?>
-	<?php if ($pegawai->no_rek->Visible) { // no_rek ?>
-		<td data-name="no_rek"<?php echo $pegawai->no_rek->CellAttributes() ?>>
-<span id="el<?php echo $pegawai_list->RowCnt ?>_pegawai_no_rek" class="pegawai_no_rek">
-<span<?php echo $pegawai->no_rek->ViewAttributes() ?>>
-<?php echo $pegawai->no_rek->ListViewValue() ?></span>
-</span>
+<?php } ?>
 </td>
 	<?php } ?>
 <?php
@@ -3135,14 +4771,146 @@ $pegawai_list->ListOptions->Render("body", "left", $pegawai_list->RowCnt);
 $pegawai_list->ListOptions->Render("body", "right", $pegawai_list->RowCnt);
 ?>
 	</tr>
+<?php if ($pegawai->RowType == EW_ROWTYPE_ADD || $pegawai->RowType == EW_ROWTYPE_EDIT) { ?>
+<script type="text/javascript">
+fpegawailist.UpdateOpts(<?php echo $pegawai_list->RowIndex ?>);
+</script>
+<?php } ?>
 <?php
 	}
+	} // End delete row checking
 	if ($pegawai->CurrentAction <> "gridadd")
-		$pegawai_list->Recordset->MoveNext();
+		if (!$pegawai_list->Recordset->EOF) $pegawai_list->Recordset->MoveNext();
+}
+?>
+<?php
+	if ($pegawai->CurrentAction == "gridadd" || $pegawai->CurrentAction == "gridedit") {
+		$pegawai_list->RowIndex = '$rowindex$';
+		$pegawai_list->LoadDefaultValues();
+
+		// Set row properties
+		$pegawai->ResetAttrs();
+		$pegawai->RowAttrs = array_merge($pegawai->RowAttrs, array('data-rowindex'=>$pegawai_list->RowIndex, 'id'=>'r0_pegawai', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		ew_AppendClass($pegawai->RowAttrs["class"], "ewTemplate");
+		$pegawai->RowType = EW_ROWTYPE_ADD;
+
+		// Render row
+		$pegawai_list->RenderRow();
+
+		// Render list options
+		$pegawai_list->RenderListOptions();
+		$pegawai_list->StartRowCnt = 0;
+?>
+	<tr<?php echo $pegawai->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$pegawai_list->ListOptions->Render("body", "left", $pegawai_list->RowIndex);
+?>
+	<?php if ($pegawai->pegawai_pin->Visible) { // pegawai_pin ?>
+		<td data-name="pegawai_pin">
+<span id="el$rowindex$_pegawai_pegawai_pin" class="form-group pegawai_pegawai_pin">
+<input type="text" data-table="pegawai" data-field="x_pegawai_pin" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" size="30" maxlength="32" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_pin->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_pin->EditValue ?>"<?php echo $pegawai->pegawai_pin->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_pin" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_pin" value="<?php echo ew_HtmlEncode($pegawai->pegawai_pin->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pegawai_nip->Visible) { // pegawai_nip ?>
+		<td data-name="pegawai_nip">
+<span id="el$rowindex$_pegawai_pegawai_nip" class="form-group pegawai_pegawai_nip">
+<input type="text" data-table="pegawai" data-field="x_pegawai_nip" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" size="30" maxlength="30" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_nip->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_nip->EditValue ?>"<?php echo $pegawai->pegawai_nip->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_nip" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nip" value="<?php echo ew_HtmlEncode($pegawai->pegawai_nip->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pegawai_nama->Visible) { // pegawai_nama ?>
+		<td data-name="pegawai_nama">
+<span id="el$rowindex$_pegawai_pegawai_nama" class="form-group pegawai_pegawai_nama">
+<input type="text" data-table="pegawai" data-field="x_pegawai_nama" name="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" id="x<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($pegawai->pegawai_nama->getPlaceHolder()) ?>" value="<?php echo $pegawai->pegawai_nama->EditValue ?>"<?php echo $pegawai->pegawai_nama->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pegawai_nama" name="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" id="o<?php echo $pegawai_list->RowIndex ?>_pegawai_nama" value="<?php echo ew_HtmlEncode($pegawai->pegawai_nama->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pembagian1_id->Visible) { // pembagian1_id ?>
+		<td data-name="pembagian1_id">
+<span id="el$rowindex$_pegawai_pembagian1_id" class="form-group pegawai_pembagian1_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id"><?php echo (strval($pegawai->pembagian1_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian1_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian1_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian1_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian1_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo $pegawai->pembagian1_id->CurrentValue ?>"<?php echo $pegawai->pembagian1_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo $pegawai->pembagian1_id->LookupFilterQuery() ?>">
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian1_id" name="o<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" id="o<?php echo $pegawai_list->RowIndex ?>_pembagian1_id" value="<?php echo ew_HtmlEncode($pegawai->pembagian1_id->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pembagian2_id->Visible) { // pembagian2_id ?>
+		<td data-name="pembagian2_id">
+<span id="el$rowindex$_pegawai_pembagian2_id" class="form-group pegawai_pembagian2_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id"><?php echo (strval($pegawai->pembagian2_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian2_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian2_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian2_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian2_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo $pegawai->pembagian2_id->CurrentValue ?>"<?php echo $pegawai->pembagian2_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo $pegawai->pembagian2_id->LookupFilterQuery() ?>">
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian2_id" name="o<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" id="o<?php echo $pegawai_list->RowIndex ?>_pembagian2_id" value="<?php echo ew_HtmlEncode($pegawai->pembagian2_id->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->pembagian3_id->Visible) { // pembagian3_id ?>
+		<td data-name="pembagian3_id">
+<span id="el$rowindex$_pegawai_pembagian3_id" class="form-group pegawai_pembagian3_id">
+<span class="ewLookupList">
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id"><?php echo (strval($pegawai->pembagian3_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $pegawai->pembagian3_id->ViewValue); ?></span>
+</span>
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($pegawai->pembagian3_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian3_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $pegawai->pembagian3_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo $pegawai->pembagian3_id->CurrentValue ?>"<?php echo $pegawai->pembagian3_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="s_x<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo $pegawai->pembagian3_id->LookupFilterQuery() ?>">
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_pembagian3_id" name="o<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" id="o<?php echo $pegawai_list->RowIndex ?>_pembagian3_id" value="<?php echo ew_HtmlEncode($pegawai->pembagian3_id->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pegawai->gender->Visible) { // gender ?>
+		<td data-name="gender">
+<span id="el$rowindex$_pegawai_gender" class="form-group pegawai_gender">
+<div id="tp_x<?php echo $pegawai_list->RowIndex ?>_gender" class="ewTemplate"><input type="radio" data-table="pegawai" data-field="x_gender" data-value-separator="<?php echo $pegawai->gender->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $pegawai_list->RowIndex ?>_gender" id="x<?php echo $pegawai_list->RowIndex ?>_gender" value="{value}"<?php echo $pegawai->gender->EditAttributes() ?>></div>
+<div id="dsl_x<?php echo $pegawai_list->RowIndex ?>_gender" data-repeatcolumn="5" class="ewItemList" style="display: none;"><div>
+<?php echo $pegawai->gender->RadioButtonListHtml(FALSE, "x{$pegawai_list->RowIndex}_gender") ?>
+</div></div>
+</span>
+<input type="hidden" data-table="pegawai" data-field="x_gender" name="o<?php echo $pegawai_list->RowIndex ?>_gender" id="o<?php echo $pegawai_list->RowIndex ?>_gender" value="<?php echo ew_HtmlEncode($pegawai->gender->OldValue) ?>">
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$pegawai_list->ListOptions->Render("body", "right", $pegawai_list->RowCnt);
+?>
+<script type="text/javascript">
+fpegawailist.UpdateOpts(<?php echo $pegawai_list->RowIndex ?>);
+</script>
+	</tr>
+<?php
 }
 ?>
 </tbody>
 </table>
+<?php } ?>
+<?php if ($pegawai->CurrentAction == "add" || $pegawai->CurrentAction == "copy") { ?>
+<input type="hidden" name="<?php echo $pegawai_list->FormKeyCountName ?>" id="<?php echo $pegawai_list->FormKeyCountName ?>" value="<?php echo $pegawai_list->KeyCount ?>">
+<?php } ?>
+<?php if ($pegawai->CurrentAction == "gridadd") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridinsert">
+<input type="hidden" name="<?php echo $pegawai_list->FormKeyCountName ?>" id="<?php echo $pegawai_list->FormKeyCountName ?>" value="<?php echo $pegawai_list->KeyCount ?>">
+<?php echo $pegawai_list->MultiSelectKey ?>
+<?php } ?>
+<?php if ($pegawai->CurrentAction == "edit") { ?>
+<input type="hidden" name="<?php echo $pegawai_list->FormKeyCountName ?>" id="<?php echo $pegawai_list->FormKeyCountName ?>" value="<?php echo $pegawai_list->KeyCount ?>">
+<?php } ?>
+<?php if ($pegawai->CurrentAction == "gridedit") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridupdate">
+<input type="hidden" name="<?php echo $pegawai_list->FormKeyCountName ?>" id="<?php echo $pegawai_list->FormKeyCountName ?>" value="<?php echo $pegawai_list->KeyCount ?>">
+<?php echo $pegawai_list->MultiSelectKey ?>
 <?php } ?>
 <?php if ($pegawai->CurrentAction == "") { ?>
 <input type="hidden" name="a_list" id="a_list" value="">
@@ -3159,26 +4927,44 @@ if ($pegawai_list->Recordset)
 <div class="panel-footer ewGridLowerPanel">
 <?php if ($pegawai->CurrentAction <> "gridadd" && $pegawai->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($pegawai_list->Pager)) $pegawai_list->Pager = new cNumericPager($pegawai_list->StartRec, $pegawai_list->DisplayRecs, $pegawai_list->TotalRecs, $pegawai_list->RecRange) ?>
+<?php if (!isset($pegawai_list->Pager)) $pegawai_list->Pager = new cPrevNextPager($pegawai_list->StartRec, $pegawai_list->DisplayRecs, $pegawai_list->TotalRecs) ?>
 <?php if ($pegawai_list->Pager->RecordCount > 0 && $pegawai_list->Pager->Visible) { ?>
 <div class="ewPager">
-<div class="ewNumericPage"><ul class="pagination">
+<span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
+<div class="ewPrevNext"><div class="input-group">
+<div class="input-group-btn">
+<!--first page button-->
 	<?php if ($pegawai_list->Pager->FirstButton->Enabled) { ?>
-	<li><a href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->FirstButton->Start ?>"><?php echo $Language->Phrase("PagerFirst") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
+<!--previous page button-->
 	<?php if ($pegawai_list->Pager->PrevButton->Enabled) { ?>
-	<li><a href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->PrevButton->Start ?>"><?php echo $Language->Phrase("PagerPrevious") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
-	<?php foreach ($pegawai_list->Pager->Items as $PagerItem) { ?>
-		<li<?php if (!$PagerItem->Enabled) { echo " class=\" active\""; } ?>><a href="<?php if ($PagerItem->Enabled) { echo $pegawai_list->PageUrl() . "start=" . $PagerItem->Start; } else { echo "#"; } ?>"><?php echo $PagerItem->Text ?></a></li>
-	<?php } ?>
+</div>
+<!--current page number-->
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $pegawai_list->Pager->CurrentPage ?>">
+<div class="input-group-btn">
+<!--next page button-->
 	<?php if ($pegawai_list->Pager->NextButton->Enabled) { ?>
-	<li><a href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->NextButton->Start ?>"><?php echo $Language->Phrase("PagerNext") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
+<!--last page button-->
 	<?php if ($pegawai_list->Pager->LastButton->Enabled) { ?>
-	<li><a href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->LastButton->Start ?>"><?php echo $Language->Phrase("PagerLast") ?></a></li>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $pegawai_list->PageUrl() ?>start=<?php echo $pegawai_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php } else { ?>
+	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
-</ul></div>
+</div>
+</div>
+</div>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $pegawai_list->Pager->PageCount ?></span>
 </div>
 <div class="ewPager ewRec">
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $pegawai_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $pegawai_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $pegawai_list->Pager->RecordCount ?></span>
