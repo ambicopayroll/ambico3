@@ -424,7 +424,7 @@ class ct_rumus_peg_delete extends ct_rumus_peg {
 		if ($this->UseSelectLimit) {
 			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			if ($dbtype == "MSSQL") {
-				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderBy())));
+				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset, array("_hasOrderBy" => trim($this->getOrderBy()) || trim($this->getSessionOrderByList())));
 			} else {
 				$rs = $conn->SelectLimit($sSql, $rowcnt, $offset);
 			}
@@ -469,7 +469,17 @@ class ct_rumus_peg_delete extends ct_rumus_peg {
 		$this->Row_Selected($row);
 		$this->rumus_peg_id->setDbValue($rs->fields('rumus_peg_id'));
 		$this->pegawai_id->setDbValue($rs->fields('pegawai_id'));
+		if (array_key_exists('EV__pegawai_id', $rs->fields)) {
+			$this->pegawai_id->VirtualValue = $rs->fields('EV__pegawai_id'); // Set up virtual field value
+		} else {
+			$this->pegawai_id->VirtualValue = ""; // Clear value
+		}
 		$this->rumus_id->setDbValue($rs->fields('rumus_id'));
+		if (array_key_exists('EV__rumus_id', $rs->fields)) {
+			$this->rumus_id->VirtualValue = $rs->fields('EV__rumus_id'); // Set up virtual field value
+		} else {
+			$this->rumus_id->VirtualValue = ""; // Clear value
+		}
 	}
 
 	// Load DbValue from recordset
@@ -502,11 +512,58 @@ class ct_rumus_peg_delete extends ct_rumus_peg {
 		$this->rumus_peg_id->ViewCustomAttributes = "";
 
 		// pegawai_id
-		$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+		if ($this->pegawai_id->VirtualValue <> "") {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
+		} else {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+		if (strval($this->pegawai_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
+		$sWhereWrk = "";
+		$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pegawai_id->ViewValue = $this->pegawai_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+			}
+		} else {
+			$this->pegawai_id->ViewValue = NULL;
+		}
+		}
 		$this->pegawai_id->ViewCustomAttributes = "";
 
 		// rumus_id
-		$this->rumus_id->ViewValue = $this->rumus_id->CurrentValue;
+		if ($this->rumus_id->VirtualValue <> "") {
+			$this->rumus_id->ViewValue = $this->rumus_id->VirtualValue;
+		} else {
+		if (strval($this->rumus_id->CurrentValue) <> "") {
+			$sFilterWrk = "`rumus_id`" . ew_SearchString("=", $this->rumus_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `rumus_id`, `rumus_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `t_rumus`";
+		$sWhereWrk = "";
+		$this->rumus_id->LookupFilters = array("dx1" => '`rumus_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->rumus_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->rumus_id->ViewValue = $this->rumus_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->rumus_id->ViewValue = $this->rumus_id->CurrentValue;
+			}
+		} else {
+			$this->rumus_id->ViewValue = NULL;
+		}
+		}
 		$this->rumus_id->ViewCustomAttributes = "";
 
 			// rumus_peg_id
@@ -558,6 +615,7 @@ class ct_rumus_peg_delete extends ct_rumus_peg {
 		}
 		$rows = ($rs) ? $rs->GetRows() : array();
 		$conn->BeginTrans();
+		if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteBegin")); // Batch delete begin
 
 		// Clone old rows
 		$rsold = $rows;
@@ -600,8 +658,10 @@ class ct_rumus_peg_delete extends ct_rumus_peg {
 		}
 		if ($DeleteRows) {
 			$conn->CommitTrans(); // Commit the changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
 		} else {
 			$conn->RollbackTrans(); // Rollback changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteRollback")); // Batch delete rollback
 		}
 
 		// Call Row Deleted event
@@ -801,8 +861,10 @@ ft_rumus_pegdelete.ValidateRequired = false;
 <?php } ?>
 
 // Dynamic selection lists
-// Form object for search
+ft_rumus_pegdelete.Lists["x_pegawai_id"] = {"LinkField":"x_pegawai_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pegawai_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pegawai"};
+ft_rumus_pegdelete.Lists["x_rumus_id"] = {"LinkField":"x_rumus_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_rumus_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"t_rumus"};
 
+// Form object for search
 </script>
 <script type="text/javascript">
 

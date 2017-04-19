@@ -3812,7 +3812,7 @@ $t_jdw_krj_peg_list->RenderRow();
 <?php if ($t_jdw_krj_peg->pegawai_id->Visible) { // pegawai_id ?>
 	<div id="xsc_pegawai_id" class="ewCell form-group">
 		<label class="ewSearchCaption ewLabel"><?php echo $t_jdw_krj_peg->pegawai_id->FldCaption() ?></label>
-		<span class="ewSearchOperator"><?php echo $Language->Phrase("LIKE") ?><input type="hidden" name="z_pegawai_id" id="z_pegawai_id" value="LIKE"></span>
+		<span class="ewSearchOperator"><?php echo $Language->Phrase("=") ?><input type="hidden" name="z_pegawai_id" id="z_pegawai_id" value="="></span>
 		<span class="ewSearchField">
 <?php
 $wrkonchange = trim(" " . @$t_jdw_krj_peg->pegawai_id->EditAttrs["onchange"]);
