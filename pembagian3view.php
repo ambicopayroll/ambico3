@@ -383,8 +383,6 @@ class cpembagian3_view extends cpembagian3 {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->pembagian3_id->SetVisibility();
-		$this->pembagian3_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pembagian3_nama->SetVisibility();
 		$this->pembagian3_ket->SetVisibility();
 
@@ -702,6 +700,7 @@ class cpembagian3_view extends cpembagian3 {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
+		if ($this->AuditTrailOnView) $this->WriteAuditTrailOnView($row);
 		$this->pembagian3_id->setDbValue($rs->fields('pembagian3_id'));
 		$this->pembagian3_nama->setDbValue($rs->fields('pembagian3_nama'));
 		$this->pembagian3_ket->setDbValue($rs->fields('pembagian3_ket'));
@@ -749,11 +748,6 @@ class cpembagian3_view extends cpembagian3 {
 		// pembagian3_ket
 		$this->pembagian3_ket->ViewValue = $this->pembagian3_ket->CurrentValue;
 		$this->pembagian3_ket->ViewCustomAttributes = "";
-
-			// pembagian3_id
-			$this->pembagian3_id->LinkCustomAttributes = "";
-			$this->pembagian3_id->HrefValue = "";
-			$this->pembagian3_id->TooltipValue = "";
 
 			// pembagian3_nama
 			$this->pembagian3_nama->LinkCustomAttributes = "";
@@ -1261,17 +1255,6 @@ $pembagian3_view->ShowMessage();
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($pembagian3->pembagian3_id->Visible) { // pembagian3_id ?>
-	<tr id="r_pembagian3_id">
-		<td><span id="elh_pembagian3_pembagian3_id"><?php echo $pembagian3->pembagian3_id->FldCaption() ?></span></td>
-		<td data-name="pembagian3_id"<?php echo $pembagian3->pembagian3_id->CellAttributes() ?>>
-<span id="el_pembagian3_pembagian3_id">
-<span<?php echo $pembagian3->pembagian3_id->ViewAttributes() ?>>
-<?php echo $pembagian3->pembagian3_id->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($pembagian3->pembagian3_nama->Visible) { // pembagian3_nama ?>
 	<tr id="r_pembagian3_nama">
 		<td><span id="elh_pembagian3_pembagian3_nama"><?php echo $pembagian3->pembagian3_nama->FldCaption() ?></span></td>

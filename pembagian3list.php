@@ -362,6 +362,9 @@ class cpembagian3_list extends cpembagian3 {
 			$Security->UserID_Loaded();
 		}
 
+		// Create form object
+		$objForm = new cFormObj();
+
 		// Get export parameters
 		$custom = "";
 		if (@$_GET["export"] <> "") {
@@ -410,8 +413,6 @@ class cpembagian3_list extends cpembagian3 {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->pembagian3_id->SetVisibility();
-		$this->pembagian3_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pembagian3_nama->SetVisibility();
 		$this->pembagian3_ket->SetVisibility();
 
@@ -576,6 +577,71 @@ class cpembagian3_list extends cpembagian3 {
 			if ($this->Export == "")
 				$this->SetupBreadcrumb();
 
+			// Check QueryString parameters
+			if (@$_GET["a"] <> "") {
+				$this->CurrentAction = $_GET["a"];
+
+				// Clear inline mode
+				if ($this->CurrentAction == "cancel")
+					$this->ClearInlineMode();
+
+				// Switch to grid edit mode
+				if ($this->CurrentAction == "gridedit")
+					$this->GridEditMode();
+
+				// Switch to inline edit mode
+				if ($this->CurrentAction == "edit")
+					$this->InlineEditMode();
+
+				// Switch to inline add mode
+				if ($this->CurrentAction == "add" || $this->CurrentAction == "copy")
+					$this->InlineAddMode();
+
+				// Switch to grid add mode
+				if ($this->CurrentAction == "gridadd")
+					$this->GridAddMode();
+			} else {
+				if (@$_POST["a_list"] <> "") {
+					$this->CurrentAction = $_POST["a_list"]; // Get action
+
+					// Grid Update
+					if (($this->CurrentAction == "gridupdate" || $this->CurrentAction == "gridoverwrite") && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridedit") {
+						if ($this->ValidateGridForm()) {
+							$bGridUpdate = $this->GridUpdate();
+						} else {
+							$bGridUpdate = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridUpdate) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridedit"; // Stay in Grid Edit mode
+						}
+					}
+
+					// Inline Update
+					if (($this->CurrentAction == "update" || $this->CurrentAction == "overwrite") && @$_SESSION[EW_SESSION_INLINE_MODE] == "edit")
+						$this->InlineUpdate();
+
+					// Insert Inline
+					if ($this->CurrentAction == "insert" && @$_SESSION[EW_SESSION_INLINE_MODE] == "add")
+						$this->InlineInsert();
+
+					// Grid Insert
+					if ($this->CurrentAction == "gridinsert" && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridadd") {
+						if ($this->ValidateGridForm()) {
+							$bGridInsert = $this->GridInsert();
+						} else {
+							$bGridInsert = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridInsert) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridadd"; // Stay in Grid Add mode
+						}
+					}
+				}
+			}
+
 			// Hide list options
 			if ($this->Export <> "") {
 				$this->ListOptions->HideAllOptions(array("sequence"));
@@ -597,6 +663,14 @@ class cpembagian3_list extends cpembagian3 {
 			if ($this->Export <> "") {
 				foreach ($this->OtherOptions as &$option)
 					$option->HideAllOptions();
+			}
+
+			// Show grid delete link for grid add / grid edit
+			if ($this->AllowAddDeleteRow) {
+				if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+					$item = $this->ListOptions->GetItem("griddelete");
+					if ($item) $item->Visible = TRUE;
+				}
 			}
 
 			// Get default search criteria
@@ -712,6 +786,234 @@ class cpembagian3_list extends cpembagian3 {
 		}
 	}
 
+	//  Exit inline mode
+	function ClearInlineMode() {
+		$this->setKey("pembagian3_id", ""); // Clear inline edit key
+		$this->LastAction = $this->CurrentAction; // Save last action
+		$this->CurrentAction = ""; // Clear action
+		$_SESSION[EW_SESSION_INLINE_MODE] = ""; // Clear inline mode
+	}
+
+	// Switch to Grid Add mode
+	function GridAddMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridadd"; // Enabled grid add
+	}
+
+	// Switch to Grid Edit mode
+	function GridEditMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridedit"; // Enable grid edit
+	}
+
+	// Switch to Inline Edit mode
+	function InlineEditMode() {
+		global $Security, $Language;
+		if (!$Security->CanEdit())
+			$this->Page_Terminate("login.php"); // Go to login page
+		$bInlineEdit = TRUE;
+		if (@$_GET["pembagian3_id"] <> "") {
+			$this->pembagian3_id->setQueryStringValue($_GET["pembagian3_id"]);
+		} else {
+			$bInlineEdit = FALSE;
+		}
+		if ($bInlineEdit) {
+			if ($this->LoadRow()) {
+				$this->setKey("pembagian3_id", $this->pembagian3_id->CurrentValue); // Set up inline edit key
+				$_SESSION[EW_SESSION_INLINE_MODE] = "edit"; // Enable inline edit
+			}
+		}
+	}
+
+	// Perform update to Inline Edit record
+	function InlineUpdate() {
+		global $Language, $objForm, $gsFormError;
+		$objForm->Index = 1; 
+		$this->LoadFormValues(); // Get form values
+
+		// Validate form
+		$bInlineUpdate = TRUE;
+		if (!$this->ValidateForm()) {	
+			$bInlineUpdate = FALSE; // Form error, reset action
+			$this->setFailureMessage($gsFormError);
+		} else {
+			$bInlineUpdate = FALSE;
+			$rowkey = strval($objForm->GetValue($this->FormKeyName));
+			if ($this->SetupKeyValues($rowkey)) { // Set up key values
+				if ($this->CheckInlineEditKey()) { // Check key
+					$this->SendEmail = TRUE; // Send email on update success
+					$bInlineUpdate = $this->EditRow(); // Update record
+				} else {
+					$bInlineUpdate = FALSE;
+				}
+			}
+		}
+		if ($bInlineUpdate) { // Update success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Set up success message
+			$this->ClearInlineMode(); // Clear inline edit mode
+		} else {
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("UpdateFailed")); // Set update failed message
+			$this->EventCancelled = TRUE; // Cancel event
+			$this->CurrentAction = "edit"; // Stay in edit mode
+		}
+	}
+
+	// Check Inline Edit key
+	function CheckInlineEditKey() {
+
+		//CheckInlineEditKey = True
+		if (strval($this->getKey("pembagian3_id")) <> strval($this->pembagian3_id->CurrentValue))
+			return FALSE;
+		return TRUE;
+	}
+
+	// Switch to Inline Add mode
+	function InlineAddMode() {
+		global $Security, $Language;
+		if (!$Security->CanAdd())
+			$this->Page_Terminate("login.php"); // Return to login page
+		if ($this->CurrentAction == "copy") {
+			if (@$_GET["pembagian3_id"] <> "") {
+				$this->pembagian3_id->setQueryStringValue($_GET["pembagian3_id"]);
+				$this->setKey("pembagian3_id", $this->pembagian3_id->CurrentValue); // Set up key
+			} else {
+				$this->setKey("pembagian3_id", ""); // Clear key
+				$this->CurrentAction = "add";
+			}
+		}
+		$_SESSION[EW_SESSION_INLINE_MODE] = "add"; // Enable inline add
+	}
+
+	// Perform update to Inline Add/Copy record
+	function InlineInsert() {
+		global $Language, $objForm, $gsFormError;
+		$this->LoadOldRecord(); // Load old recordset
+		$objForm->Index = 0;
+		$this->LoadFormValues(); // Get form values
+
+		// Validate form
+		if (!$this->ValidateForm()) {
+			$this->setFailureMessage($gsFormError); // Set validation error message
+			$this->EventCancelled = TRUE; // Set event cancelled
+			$this->CurrentAction = "add"; // Stay in add mode
+			return;
+		}
+		$this->SendEmail = TRUE; // Send email on add success
+		if ($this->AddRow($this->OldRecordset)) { // Add record
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up add success message
+			$this->ClearInlineMode(); // Clear inline add mode
+		} else { // Add failed
+			$this->EventCancelled = TRUE; // Set event cancelled
+			$this->CurrentAction = "add"; // Stay in add mode
+		}
+	}
+
+	// Perform update to grid
+	function GridUpdate() {
+		global $Language, $objForm, $gsFormError;
+		$bGridUpdate = TRUE;
+
+		// Get old recordset
+		$this->CurrentFilter = $this->BuildKeyFilter();
+		if ($this->CurrentFilter == "")
+			$this->CurrentFilter = "0=1";
+		$sSql = $this->SQL();
+		$conn = &$this->Connection();
+		if ($rs = $conn->Execute($sSql)) {
+			$rsold = $rs->GetRows();
+			$rs->Close();
+		}
+
+		// Call Grid Updating event
+		if (!$this->Grid_Updating($rsold)) {
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("GridEditCancelled")); // Set grid edit cancelled message
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+		if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateBegin")); // Batch update begin
+		$sKey = "";
+
+		// Update row index and get row key
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Update all rows based on key
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+			$objForm->Index = $rowindex;
+			$rowkey = strval($objForm->GetValue($this->FormKeyName));
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+
+			// Load all values and keys
+			if ($rowaction <> "insertdelete") { // Skip insert then deleted rows
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "" || $rowaction == "edit" || $rowaction == "delete") {
+					$bGridUpdate = $this->SetupKeyValues($rowkey); // Set up key values
+				} else {
+					$bGridUpdate = TRUE;
+				}
+
+				// Skip empty row
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// No action required
+				// Validate form and insert/update/delete record
+
+				} elseif ($bGridUpdate) {
+					if ($rowaction == "delete") {
+						$this->CurrentFilter = $this->KeyFilter();
+						$bGridUpdate = $this->DeleteRows(); // Delete this row
+					} else if (!$this->ValidateForm()) {
+						$bGridUpdate = FALSE; // Form error, reset action
+						$this->setFailureMessage($gsFormError);
+					} else {
+						if ($rowaction == "insert") {
+							$bGridUpdate = $this->AddRow(); // Insert this row
+						} else {
+							if ($rowkey <> "") {
+								$this->SendEmail = FALSE; // Do not send email on update success
+								$bGridUpdate = $this->EditRow(); // Update this row
+							}
+						} // End update
+					}
+				}
+				if ($bGridUpdate) {
+					if ($sKey <> "") $sKey .= ", ";
+					$sKey .= $rowkey;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($bGridUpdate) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Updated event
+			$this->Grid_Updated($rsold, $rsnew);
+			if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateSuccess")); // Batch update success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Set up update success message
+			$this->ClearInlineMode(); // Clear inline edit mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateRollback")); // Batch update rollback
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("UpdateFailed")); // Set update failed message
+		}
+		return $bGridUpdate;
+	}
+
 	// Build filter for all keys
 	function BuildKeyFilter() {
 		global $objForm;
@@ -748,6 +1050,178 @@ class cpembagian3_list extends cpembagian3 {
 				return FALSE;
 		}
 		return TRUE;
+	}
+
+	// Perform Grid Add
+	function GridInsert() {
+		global $Language, $objForm, $gsFormError;
+		$rowindex = 1;
+		$bGridInsert = FALSE;
+		$conn = &$this->Connection();
+
+		// Call Grid Inserting event
+		if (!$this->Grid_Inserting()) {
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("GridAddCancelled")); // Set grid add cancelled message
+			}
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+
+		// Init key filter
+		$sWrkFilter = "";
+		$addcnt = 0;
+		if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertBegin")); // Batch insert begin
+		$sKey = "";
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Insert all rows
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "" && $rowaction <> "insert")
+				continue; // Skip
+			$this->LoadFormValues(); // Get form values
+			if (!$this->EmptyRow()) {
+				$addcnt++;
+				$this->SendEmail = FALSE; // Do not send email on insert success
+
+				// Validate form
+				if (!$this->ValidateForm()) {
+					$bGridInsert = FALSE; // Form error, reset action
+					$this->setFailureMessage($gsFormError);
+				} else {
+					$bGridInsert = $this->AddRow($this->OldRecordset); // Insert this row
+				}
+				if ($bGridInsert) {
+					if ($sKey <> "") $sKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+					$sKey .= $this->pembagian3_id->CurrentValue;
+
+					// Add filter for this record
+					$sFilter = $this->KeyFilter();
+					if ($sWrkFilter <> "") $sWrkFilter .= " OR ";
+					$sWrkFilter .= $sFilter;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($addcnt == 0) { // No record inserted
+			$this->setFailureMessage($Language->Phrase("NoAddRecord"));
+			$bGridInsert = FALSE;
+		}
+		if ($bGridInsert) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			$this->CurrentFilter = $sWrkFilter;
+			$sSql = $this->SQL();
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Inserted event
+			$this->Grid_Inserted($rsnew);
+			if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertSuccess")); // Batch insert success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("InsertSuccess")); // Set up insert success message
+			$this->ClearInlineMode(); // Clear grid add mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertRollback")); // Batch insert rollback
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("InsertFailed")); // Set insert failed message
+			}
+		}
+		return $bGridInsert;
+	}
+
+	// Check if empty row
+	function EmptyRow() {
+		global $objForm;
+		if ($objForm->HasValue("x_pembagian3_nama") && $objForm->HasValue("o_pembagian3_nama") && $this->pembagian3_nama->CurrentValue <> $this->pembagian3_nama->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_pembagian3_ket") && $objForm->HasValue("o_pembagian3_ket") && $this->pembagian3_ket->CurrentValue <> $this->pembagian3_ket->OldValue)
+			return FALSE;
+		return TRUE;
+	}
+
+	// Validate grid form
+	function ValidateGridForm() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Validate all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else if (!$this->ValidateForm()) {
+					return FALSE;
+				}
+			}
+		}
+		return TRUE;
+	}
+
+	// Get all form values of the grid
+	function GetGridFormValues() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+		$rows = array();
+
+		// Loop through all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else {
+					$rows[] = $this->GetFieldValues("FormValue"); // Return row as array
+				}
+			}
+		}
+		return $rows; // Return as array of array
+	}
+
+	// Restore form values for current row
+	function RestoreCurrentRowFormValues($idx) {
+		global $objForm;
+
+		// Get row based on current index
+		$objForm->Index = $idx;
+		$this->LoadFormValues(); // Load form values
 	}
 
 	// Get list of filters
@@ -1010,7 +1484,6 @@ class cpembagian3_list extends cpembagian3 {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->pembagian3_id, $bCtrl); // pembagian3_id
 			$this->UpdateSort($this->pembagian3_nama, $bCtrl); // pembagian3_nama
 			$this->UpdateSort($this->pembagian3_ket, $bCtrl); // pembagian3_ket
 			$this->setStartRecordNumber(1); // Reset start position
@@ -1045,7 +1518,6 @@ class cpembagian3_list extends cpembagian3 {
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->pembagian3_id->setSort("");
 				$this->pembagian3_nama->setSort("");
 				$this->pembagian3_ket->setSort("");
 			}
@@ -1059,6 +1531,14 @@ class cpembagian3_list extends cpembagian3 {
 	// Set up list options
 	function SetupListOptions() {
 		global $Security, $Language;
+
+		// "griddelete"
+		if ($this->AllowAddDeleteRow) {
+			$item = &$this->ListOptions->Add("griddelete");
+			$item->CssStyle = "white-space: nowrap;";
+			$item->OnLeft = TRUE;
+			$item->Visible = FALSE; // Default hidden
+		}
 
 		// Add group option item
 		$item = &$this->ListOptions->Add($this->ListOptions->GroupOptionName);
@@ -1101,6 +1581,14 @@ class cpembagian3_list extends cpembagian3 {
 		$item->ShowInDropDown = FALSE;
 		$item->ShowInButtonGroup = FALSE;
 
+		// "sequence"
+		$item = &$this->ListOptions->Add("sequence");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = TRUE;
+		$item->OnLeft = TRUE; // Always on left
+		$item->ShowInDropDown = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+
 		// Drop down button for ListOptions
 		$this->ListOptions->UseImageAndText = TRUE;
 		$this->ListOptions->UseDropDownButton = TRUE;
@@ -1122,6 +1610,67 @@ class cpembagian3_list extends cpembagian3 {
 		global $Security, $Language, $objForm;
 		$this->ListOptions->LoadDefault();
 
+		// Set up row action and key
+		if (is_numeric($this->RowIndex) && $this->CurrentMode <> "view") {
+			$objForm->Index = $this->RowIndex;
+			$ActionName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormActionName);
+			$OldKeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormOldKeyName);
+			$KeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormKeyName);
+			$BlankRowName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormBlankRowName);
+			if ($this->RowAction <> "")
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $ActionName . "\" id=\"" . $ActionName . "\" value=\"" . $this->RowAction . "\">";
+			if ($this->RowAction == "delete") {
+				$rowkey = $objForm->GetValue($this->FormKeyName);
+				$this->SetupKeyValues($rowkey);
+			}
+			if ($this->RowAction == "insert" && $this->CurrentAction == "F" && $this->EmptyRow())
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $BlankRowName . "\" id=\"" . $BlankRowName . "\" value=\"1\">";
+		}
+
+		// "delete"
+		if ($this->AllowAddDeleteRow) {
+			if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+				$option = &$this->ListOptions;
+				$option->UseButtonGroup = TRUE; // Use button group for grid delete button
+				$option->UseImageAndText = TRUE; // Use image and text for grid delete button
+				$oListOpt = &$option->Items["griddelete"];
+				if (!$Security->CanDelete() && is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
+					$oListOpt->Body = "&nbsp;";
+				} else {
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" onclick=\"return ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+				}
+			}
+		}
+
+		// "sequence"
+		$oListOpt = &$this->ListOptions->Items["sequence"];
+		$oListOpt->Body = ew_FormatSeqNo($this->RecCnt);
+
+		// "copy"
+		$oListOpt = &$this->ListOptions->Items["copy"];
+		if (($this->CurrentAction == "add" || $this->CurrentAction == "copy") && $this->RowType == EW_ROWTYPE_ADD) { // Inline Add/Copy
+			$this->ListOptions->CustomItem = "copy"; // Show copy column only
+			$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+			$oListOpt->Body = "<div" . (($oListOpt->OnLeft) ? " style=\"text-align: right\"" : "") . ">" .
+				"<a class=\"ewGridLink ewInlineInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("InsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("InsertLink") . "</a>&nbsp;" .
+				"<a class=\"ewGridLink ewInlineCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("CancelLink") . "</a>" .
+				"<input type=\"hidden\" name=\"a_list\" id=\"a_list\" value=\"insert\"></div>";
+			return;
+		}
+
+		// "edit"
+		$oListOpt = &$this->ListOptions->Items["edit"];
+		if ($this->CurrentAction == "edit" && $this->RowType == EW_ROWTYPE_EDIT) { // Inline-Edit
+			$this->ListOptions->CustomItem = "edit"; // Show edit column only
+			$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+				$oListOpt->Body = "<div" . (($oListOpt->OnLeft) ? " style=\"text-align: right\"" : "") . ">" .
+					"<a class=\"ewGridLink ewInlineUpdate\" title=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . ew_GetHashUrl($this->PageName(), $this->PageObjName . "_row_" . $this->RowCnt) . "');\">" . $Language->Phrase("UpdateLink") . "</a>&nbsp;" .
+					"<a class=\"ewGridLink ewInlineCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("CancelLink") . "</a>" .
+					"<input type=\"hidden\" name=\"a_list\" id=\"a_list\" value=\"update\"></div>";
+			$oListOpt->Body .= "<input type=\"hidden\" name=\"k" . $this->RowIndex . "_key\" id=\"k" . $this->RowIndex . "_key\" value=\"" . ew_HtmlEncode($this->pembagian3_id->CurrentValue) . "\">";
+			return;
+		}
+
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
 		$viewcaption = ew_HtmlTitle($Language->Phrase("ViewLink"));
@@ -1136,6 +1685,7 @@ class cpembagian3_list extends cpembagian3 {
 		$editcaption = ew_HtmlTitle($Language->Phrase("EditLink"));
 		if ($Security->CanEdit()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
+			$oListOpt->Body .= "<a class=\"ewRowLink ewInlineEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineEditLink")) . "\" href=\"" . ew_HtmlEncode(ew_GetHashUrl($this->InlineEditUrl, $this->PageObjName . "_row_" . $this->RowCnt)) . "\">" . $Language->Phrase("InlineEditLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
@@ -1145,6 +1695,7 @@ class cpembagian3_list extends cpembagian3 {
 		$copycaption = ew_HtmlTitle($Language->Phrase("CopyLink"));
 		if ($Security->CanAdd()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . $copycaption . "\" data-caption=\"" . $copycaption . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
+			$oListOpt->Body .= "<a class=\"ewRowLink ewInlineCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->InlineCopyUrl) . "\">" . $Language->Phrase("InlineCopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
@@ -1181,6 +1732,9 @@ class cpembagian3_list extends cpembagian3 {
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
 		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->pembagian3_id->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
+		if ($this->CurrentAction == "gridedit" && is_numeric($this->RowIndex)) {
+			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->pembagian3_id->CurrentValue . "\">";
+		}
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -1198,6 +1752,20 @@ class cpembagian3_list extends cpembagian3 {
 		$addcaption = ew_HtmlTitle($Language->Phrase("AddLink"));
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . $addcaption . "\" data-caption=\"" . $addcaption . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
 		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+
+		// Inline Add
+		$item = &$option->Add("inlineadd");
+		$item->Body = "<a class=\"ewAddEdit ewInlineAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineAddLink")) . "\" href=\"" . ew_HtmlEncode($this->InlineAddUrl) . "\">" .$Language->Phrase("InlineAddLink") . "</a>";
+		$item->Visible = ($this->InlineAddUrl <> "" && $Security->CanAdd());
+		$item = &$option->Add("gridadd");
+		$item->Body = "<a class=\"ewAddEdit ewGridAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" href=\"" . ew_HtmlEncode($this->GridAddUrl) . "\">" . $Language->Phrase("GridAddLink") . "</a>";
+		$item->Visible = ($this->GridAddUrl <> "" && $Security->CanAdd());
+
+		// Add grid edit
+		$option = $options["addedit"];
+		$item = &$option->Add("gridedit");
+		$item->Body = "<a class=\"ewAddEdit ewGridEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GridEditUrl) . "\">" . $Language->Phrase("GridEditLink") . "</a>";
+		$item->Visible = ($this->GridEditUrl <> "" && $Security->CanEdit());
 		$option = $options["action"];
 
 		// Add multi delete
@@ -1240,6 +1808,7 @@ class cpembagian3_list extends cpembagian3 {
 	function RenderOtherOptions() {
 		global $Language, $Security;
 		$options = &$this->OtherOptions;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "gridedit") { // Not grid add/edit mode
 			$option = &$options["action"];
 
 			// Set up list action buttons
@@ -1261,6 +1830,56 @@ class cpembagian3_list extends cpembagian3 {
 				$option = &$options["action"];
 				$option->HideAllOptions();
 			}
+		} else { // Grid add/edit mode
+
+			// Hide all options first
+			foreach ($options as &$option)
+				$option->HideAllOptions();
+			if ($this->CurrentAction == "gridadd") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = $Security->CanAdd();
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+
+				// Add grid insert
+				$item = &$option->Add("gridinsert");
+				$item->Body = "<a class=\"ewAction ewGridInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridInsertLink") . "</a>";
+
+				// Add grid cancel
+				$item = &$option->Add("gridcancel");
+				$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+				$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+			if ($this->CurrentAction == "gridedit") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = $Security->CanAdd();
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+					$item = &$option->Add("gridsave");
+					$item->Body = "<a class=\"ewAction ewGridSave\" title=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridSaveLink") . "</a>";
+					$item = &$option->Add("gridcancel");
+					$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+					$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+		}
 	}
 
 	// Process list action
@@ -1425,11 +2044,45 @@ class cpembagian3_list extends cpembagian3 {
 		}
 	}
 
+	// Load default values
+	function LoadDefaultValues() {
+		$this->pembagian3_nama->CurrentValue = NULL;
+		$this->pembagian3_nama->OldValue = $this->pembagian3_nama->CurrentValue;
+		$this->pembagian3_ket->CurrentValue = NULL;
+		$this->pembagian3_ket->OldValue = $this->pembagian3_ket->CurrentValue;
+	}
+
 	// Load basic search values
 	function LoadBasicSearchValues() {
 		$this->BasicSearch->Keyword = @$_GET[EW_TABLE_BASIC_SEARCH];
 		if ($this->BasicSearch->Keyword <> "") $this->Command = "search";
 		$this->BasicSearch->Type = @$_GET[EW_TABLE_BASIC_SEARCH_TYPE];
+	}
+
+	// Load form values
+	function LoadFormValues() {
+
+		// Load from form
+		global $objForm;
+		if (!$this->pembagian3_nama->FldIsDetailKey) {
+			$this->pembagian3_nama->setFormValue($objForm->GetValue("x_pembagian3_nama"));
+		}
+		$this->pembagian3_nama->setOldValue($objForm->GetValue("o_pembagian3_nama"));
+		if (!$this->pembagian3_ket->FldIsDetailKey) {
+			$this->pembagian3_ket->setFormValue($objForm->GetValue("x_pembagian3_ket"));
+		}
+		$this->pembagian3_ket->setOldValue($objForm->GetValue("o_pembagian3_ket"));
+		if (!$this->pembagian3_id->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->pembagian3_id->setFormValue($objForm->GetValue("x_pembagian3_id"));
+	}
+
+	// Restore form values
+	function RestoreFormValues() {
+		global $objForm;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->pembagian3_id->CurrentValue = $this->pembagian3_id->FormValue;
+		$this->pembagian3_nama->CurrentValue = $this->pembagian3_nama->FormValue;
+		$this->pembagian3_ket->CurrentValue = $this->pembagian3_ket->FormValue;
 	}
 
 	// Load recordset
@@ -1558,11 +2211,6 @@ class cpembagian3_list extends cpembagian3 {
 		$this->pembagian3_ket->ViewValue = $this->pembagian3_ket->CurrentValue;
 		$this->pembagian3_ket->ViewCustomAttributes = "";
 
-			// pembagian3_id
-			$this->pembagian3_id->LinkCustomAttributes = "";
-			$this->pembagian3_id->HrefValue = "";
-			$this->pembagian3_id->TooltipValue = "";
-
 			// pembagian3_nama
 			$this->pembagian3_nama->LinkCustomAttributes = "";
 			$this->pembagian3_nama->HrefValue = "";
@@ -1572,11 +2220,275 @@ class cpembagian3_list extends cpembagian3 {
 			$this->pembagian3_ket->LinkCustomAttributes = "";
 			$this->pembagian3_ket->HrefValue = "";
 			$this->pembagian3_ket->TooltipValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
+
+			// pembagian3_nama
+			$this->pembagian3_nama->EditAttrs["class"] = "form-control";
+			$this->pembagian3_nama->EditCustomAttributes = "";
+			$this->pembagian3_nama->EditValue = ew_HtmlEncode($this->pembagian3_nama->CurrentValue);
+			$this->pembagian3_nama->PlaceHolder = ew_RemoveHtml($this->pembagian3_nama->FldCaption());
+
+			// pembagian3_ket
+			$this->pembagian3_ket->EditAttrs["class"] = "form-control";
+			$this->pembagian3_ket->EditCustomAttributes = "";
+			$this->pembagian3_ket->EditValue = ew_HtmlEncode($this->pembagian3_ket->CurrentValue);
+			$this->pembagian3_ket->PlaceHolder = ew_RemoveHtml($this->pembagian3_ket->FldCaption());
+
+			// Add refer script
+			// pembagian3_nama
+
+			$this->pembagian3_nama->LinkCustomAttributes = "";
+			$this->pembagian3_nama->HrefValue = "";
+
+			// pembagian3_ket
+			$this->pembagian3_ket->LinkCustomAttributes = "";
+			$this->pembagian3_ket->HrefValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
+
+			// pembagian3_nama
+			$this->pembagian3_nama->EditAttrs["class"] = "form-control";
+			$this->pembagian3_nama->EditCustomAttributes = "";
+			$this->pembagian3_nama->EditValue = ew_HtmlEncode($this->pembagian3_nama->CurrentValue);
+			$this->pembagian3_nama->PlaceHolder = ew_RemoveHtml($this->pembagian3_nama->FldCaption());
+
+			// pembagian3_ket
+			$this->pembagian3_ket->EditAttrs["class"] = "form-control";
+			$this->pembagian3_ket->EditCustomAttributes = "";
+			$this->pembagian3_ket->EditValue = ew_HtmlEncode($this->pembagian3_ket->CurrentValue);
+			$this->pembagian3_ket->PlaceHolder = ew_RemoveHtml($this->pembagian3_ket->FldCaption());
+
+			// Edit refer script
+			// pembagian3_nama
+
+			$this->pembagian3_nama->LinkCustomAttributes = "";
+			$this->pembagian3_nama->HrefValue = "";
+
+			// pembagian3_ket
+			$this->pembagian3_ket->LinkCustomAttributes = "";
+			$this->pembagian3_ket->HrefValue = "";
+		}
+		if ($this->RowType == EW_ROWTYPE_ADD ||
+			$this->RowType == EW_ROWTYPE_EDIT ||
+			$this->RowType == EW_ROWTYPE_SEARCH) { // Add / Edit / Search row
+			$this->SetupFieldTitles();
 		}
 
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
+	}
+
+	// Validate form
+	function ValidateForm() {
+		global $Language, $gsFormError;
+
+		// Initialize form error message
+		$gsFormError = "";
+
+		// Check if validation required
+		if (!EW_SERVER_VALIDATE)
+			return ($gsFormError == "");
+
+		// Return validate result
+		$ValidateForm = ($gsFormError == "");
+
+		// Call Form_CustomValidate event
+		$sFormCustomError = "";
+		$ValidateForm = $ValidateForm && $this->Form_CustomValidate($sFormCustomError);
+		if ($sFormCustomError <> "") {
+			ew_AddMessage($gsFormError, $sFormCustomError);
+		}
+		return $ValidateForm;
+	}
+
+	//
+	// Delete records based on current filter
+	//
+	function DeleteRows() {
+		global $Language, $Security;
+		if (!$Security->CanDelete()) {
+			$this->setFailureMessage($Language->Phrase("NoDeletePermission")); // No delete permission
+			return FALSE;
+		}
+		$DeleteRows = TRUE;
+		$sSql = $this->SQL();
+		$conn = &$this->Connection();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE) {
+			return FALSE;
+		} elseif ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
+			$rs->Close();
+			return FALSE;
+
+		//} else {
+		//	$this->LoadRowValues($rs); // Load row values
+
+		}
+		$rows = ($rs) ? $rs->GetRows() : array();
+		if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteBegin")); // Batch delete begin
+
+		// Clone old rows
+		$rsold = $rows;
+		if ($rs)
+			$rs->Close();
+
+		// Call row deleting event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$DeleteRows = $this->Row_Deleting($row);
+				if (!$DeleteRows) break;
+			}
+		}
+		if ($DeleteRows) {
+			$sKey = "";
+			foreach ($rsold as $row) {
+				$sThisKey = "";
+				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+				$sThisKey .= $row['pembagian3_id'];
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+				$DeleteRows = $this->Delete($row); // Delete
+				$conn->raiseErrorFn = '';
+				if ($DeleteRows === FALSE)
+					break;
+				if ($sKey <> "") $sKey .= ", ";
+				$sKey .= $sThisKey;
+			}
+		} else {
+
+			// Set up error message
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("DeleteCancelled"));
+			}
+		}
+		if ($DeleteRows) {
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
+		} else {
+		}
+
+		// Call Row Deleted event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$this->Row_Deleted($row);
+			}
+		}
+		return $DeleteRows;
+	}
+
+	// Update record based on key values
+	function EditRow() {
+		global $Security, $Language;
+		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
+		$this->CurrentFilter = $sFilter;
+		$sSql = $this->SQL();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE)
+			return FALSE;
+		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
+			$EditRow = FALSE; // Update Failed
+		} else {
+
+			// Save old values
+			$rsold = &$rs->fields;
+			$this->LoadDbValues($rsold);
+			$rsnew = array();
+
+			// pembagian3_nama
+			$this->pembagian3_nama->SetDbValueDef($rsnew, $this->pembagian3_nama->CurrentValue, NULL, $this->pembagian3_nama->ReadOnly);
+
+			// pembagian3_ket
+			$this->pembagian3_ket->SetDbValueDef($rsnew, $this->pembagian3_ket->CurrentValue, NULL, $this->pembagian3_ket->ReadOnly);
+
+			// Call Row Updating event
+			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
+			if ($bUpdateRow) {
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+				if (count($rsnew) > 0)
+					$EditRow = $this->Update($rsnew, "", $rsold);
+				else
+					$EditRow = TRUE; // No field to update
+				$conn->raiseErrorFn = '';
+				if ($EditRow) {
+				}
+			} else {
+				if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+					// Use the message, do nothing
+				} elseif ($this->CancelMessage <> "") {
+					$this->setFailureMessage($this->CancelMessage);
+					$this->CancelMessage = "";
+				} else {
+					$this->setFailureMessage($Language->Phrase("UpdateCancelled"));
+				}
+				$EditRow = FALSE;
+			}
+		}
+
+		// Call Row_Updated event
+		if ($EditRow)
+			$this->Row_Updated($rsold, $rsnew);
+		$rs->Close();
+		return $EditRow;
+	}
+
+	// Add record
+	function AddRow($rsold = NULL) {
+		global $Language, $Security;
+		$conn = &$this->Connection();
+
+		// Load db values from rsold
+		if ($rsold) {
+			$this->LoadDbValues($rsold);
+		}
+		$rsnew = array();
+
+		// pembagian3_nama
+		$this->pembagian3_nama->SetDbValueDef($rsnew, $this->pembagian3_nama->CurrentValue, NULL, FALSE);
+
+		// pembagian3_ket
+		$this->pembagian3_ket->SetDbValueDef($rsnew, $this->pembagian3_ket->CurrentValue, NULL, FALSE);
+
+		// Call Row Inserting event
+		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
+		if ($bInsertRow) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			$AddRow = $this->Insert($rsnew);
+			$conn->raiseErrorFn = '';
+			if ($AddRow) {
+			}
+		} else {
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
+			}
+			$AddRow = FALSE;
+		}
+		if ($AddRow) {
+
+			// Call Row Inserted event
+			$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+			$this->Row_Inserted($rs, $rsnew);
+		}
+		return $AddRow;
 	}
 
 	// Set up export options
@@ -2025,6 +2937,45 @@ var CurrentPageID = EW_PAGE_ID = "list";
 var CurrentForm = fpembagian3list = new ew_Form("fpembagian3list", "list");
 fpembagian3list.FormKeyCountName = '<?php echo $pembagian3_list->FormKeyCountName ?>';
 
+// Validate form
+fpembagian3list.Validate = function() {
+	if (!this.ValidateRequired)
+		return true; // Ignore validation
+	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
+	if ($fobj.find("#a_confirm").val() == "F")
+		return true;
+	var elm, felm, uelm, addcnt = 0;
+	var $k = $fobj.find("#" + this.FormKeyCountName); // Get key_count
+	var rowcnt = ($k[0]) ? parseInt($k.val(), 10) : 1;
+	var startcnt = (rowcnt == 0) ? 0 : 1; // Check rowcnt == 0 => Inline-Add
+	var gridinsert = $fobj.find("#a_list").val() == "gridinsert";
+	for (var i = startcnt; i <= rowcnt; i++) {
+		var infix = ($k[0]) ? String(i) : "";
+		$fobj.data("rowindex", infix);
+		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
+		if (checkrow) {
+			addcnt++;
+
+			// Fire Form_CustomValidate event
+			if (!this.Form_CustomValidate(fobj))
+				return false;
+		} // End Grid Add checking
+	}
+	if (gridinsert && addcnt == 0) { // No row added
+		ew_Alert(ewLanguage.Phrase("NoAddRecord"));
+		return false;
+	}
+	return true;
+}
+
+// Check empty row
+fpembagian3list.EmptyRow = function(infix) {
+	var fobj = this.Form;
+	if (ew_ValueChanged(fobj, infix, "pembagian3_nama", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "pembagian3_ket", false)) return false;
+	return true;
+}
+
 // Form_CustomValidate event
 fpembagian3list.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
@@ -2071,6 +3022,13 @@ var CurrentSearchForm = fpembagian3listsrch = new ew_Form("fpembagian3listsrch")
 </div>
 <?php } ?>
 <?php
+if ($pembagian3->CurrentAction == "gridadd") {
+	$pembagian3->CurrentFilter = "0=1";
+	$pembagian3_list->StartRec = 1;
+	$pembagian3_list->DisplayRecs = $pembagian3->GridAddRowCount;
+	$pembagian3_list->TotalRecs = $pembagian3_list->DisplayRecs;
+	$pembagian3_list->StopRec = $pembagian3_list->DisplayRecs;
+} else {
 	$bSelectLimit = $pembagian3_list->UseSelectLimit;
 	if ($bSelectLimit) {
 		if ($pembagian3_list->TotalRecs <= 0)
@@ -2096,6 +3054,14 @@ var CurrentSearchForm = fpembagian3listsrch = new ew_Form("fpembagian3listsrch")
 		else
 			$pembagian3_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
+
+	// Audit trail on search
+	if ($pembagian3_list->AuditTrailOnSearch && $pembagian3_list->Command == "search" && !$pembagian3_list->RestoreSearch) {
+		$searchparm = ew_ServerVar("QUERY_STRING");
+		$searchsql = $pembagian3_list->getSessionWhere();
+		$pembagian3_list->WriteAuditTrailOnSearch($searchparm, $searchsql);
+	}
+}
 $pembagian3_list->RenderOtherOptions();
 ?>
 <?php if ($Security->CanSearch()) { ?>
@@ -2210,7 +3176,7 @@ $pembagian3_list->ShowMessage();
 <?php } ?>
 <input type="hidden" name="t" value="pembagian3">
 <div id="gmp_pembagian3" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
-<?php if ($pembagian3_list->TotalRecs > 0 || $pembagian3->CurrentAction == "gridedit") { ?>
+<?php if ($pembagian3_list->TotalRecs > 0 || $pembagian3->CurrentAction == "add" || $pembagian3->CurrentAction == "copy" || $pembagian3->CurrentAction == "gridedit") { ?>
 <table id="tbl_pembagian3list" class="table ewTable">
 <?php echo $pembagian3->TableCustomInnerHtml ?>
 <thead><!-- Table header -->
@@ -2226,15 +3192,6 @@ $pembagian3_list->RenderListOptions();
 // Render list options (header, left)
 $pembagian3_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($pembagian3->pembagian3_id->Visible) { // pembagian3_id ?>
-	<?php if ($pembagian3->SortUrl($pembagian3->pembagian3_id) == "") { ?>
-		<th data-name="pembagian3_id"><div id="elh_pembagian3_pembagian3_id" class="pembagian3_pembagian3_id"><div class="ewTableHeaderCaption"><?php echo $pembagian3->pembagian3_id->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="pembagian3_id"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pembagian3->SortUrl($pembagian3->pembagian3_id) ?>',2);"><div id="elh_pembagian3_pembagian3_id" class="pembagian3_pembagian3_id">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pembagian3->pembagian3_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($pembagian3->pembagian3_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pembagian3->pembagian3_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($pembagian3->pembagian3_nama->Visible) { // pembagian3_nama ?>
 	<?php if ($pembagian3->SortUrl($pembagian3->pembagian3_nama) == "") { ?>
 		<th data-name="pembagian3_nama"><div id="elh_pembagian3_pembagian3_nama" class="pembagian3_pembagian3_nama"><div class="ewTableHeaderCaption"><?php echo $pembagian3->pembagian3_nama->FldCaption() ?></div></div></th>
@@ -2262,6 +3219,63 @@ $pembagian3_list->ListOptions->Render("header", "right");
 </thead>
 <tbody>
 <?php
+	if ($pembagian3->CurrentAction == "add" || $pembagian3->CurrentAction == "copy") {
+		$pembagian3_list->RowIndex = 0;
+		$pembagian3_list->KeyCount = $pembagian3_list->RowIndex;
+		if ($pembagian3->CurrentAction == "copy" && !$pembagian3_list->LoadRow())
+				$pembagian3->CurrentAction = "add";
+		if ($pembagian3->CurrentAction == "add")
+			$pembagian3_list->LoadDefaultValues();
+		if ($pembagian3->EventCancelled) // Insert failed
+			$pembagian3_list->RestoreFormValues(); // Restore form values
+
+		// Set row properties
+		$pembagian3->ResetAttrs();
+		$pembagian3->RowAttrs = array_merge($pembagian3->RowAttrs, array('data-rowindex'=>0, 'id'=>'r0_pembagian3', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		$pembagian3->RowType = EW_ROWTYPE_ADD;
+
+		// Render row
+		$pembagian3_list->RenderRow();
+
+		// Render list options
+		$pembagian3_list->RenderListOptions();
+		$pembagian3_list->StartRowCnt = 0;
+?>
+	<tr<?php echo $pembagian3->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$pembagian3_list->ListOptions->Render("body", "left", $pembagian3_list->RowCnt);
+?>
+	<?php if ($pembagian3->pembagian3_nama->Visible) { // pembagian3_nama ?>
+		<td data-name="pembagian3_nama">
+<span id="el<?php echo $pembagian3_list->RowCnt ?>_pembagian3_pembagian3_nama" class="form-group pembagian3_pembagian3_nama">
+<input type="text" data-table="pembagian3" data-field="x_pembagian3_nama" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($pembagian3->pembagian3_nama->getPlaceHolder()) ?>" value="<?php echo $pembagian3->pembagian3_nama->EditValue ?>"<?php echo $pembagian3->pembagian3_nama->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pembagian3" data-field="x_pembagian3_nama" name="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" id="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" value="<?php echo ew_HtmlEncode($pembagian3->pembagian3_nama->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pembagian3->pembagian3_ket->Visible) { // pembagian3_ket ?>
+		<td data-name="pembagian3_ket">
+<span id="el<?php echo $pembagian3_list->RowCnt ?>_pembagian3_pembagian3_ket" class="form-group pembagian3_pembagian3_ket">
+<input type="text" data-table="pembagian3" data-field="x_pembagian3_ket" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($pembagian3->pembagian3_ket->getPlaceHolder()) ?>" value="<?php echo $pembagian3->pembagian3_ket->EditValue ?>"<?php echo $pembagian3->pembagian3_ket->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pembagian3" data-field="x_pembagian3_ket" name="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" id="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" value="<?php echo ew_HtmlEncode($pembagian3->pembagian3_ket->OldValue) ?>">
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$pembagian3_list->ListOptions->Render("body", "right", $pembagian3_list->RowCnt);
+?>
+<script type="text/javascript">
+fpembagian3list.UpdateOpts(<?php echo $pembagian3_list->RowIndex ?>);
+</script>
+	</tr>
+<?php
+}
+?>
+<?php
 if ($pembagian3->ExportAll && $pembagian3->Export <> "") {
 	$pembagian3_list->StopRec = $pembagian3_list->TotalRecs;
 } else {
@@ -2271,6 +3285,15 @@ if ($pembagian3->ExportAll && $pembagian3->Export <> "") {
 		$pembagian3_list->StopRec = $pembagian3_list->StartRec + $pembagian3_list->DisplayRecs - 1;
 	else
 		$pembagian3_list->StopRec = $pembagian3_list->TotalRecs;
+}
+
+// Restore number of post back records
+if ($objForm) {
+	$objForm->Index = -1;
+	if ($objForm->HasValue($pembagian3_list->FormKeyCountName) && ($pembagian3->CurrentAction == "gridadd" || $pembagian3->CurrentAction == "gridedit" || $pembagian3->CurrentAction == "F")) {
+		$pembagian3_list->KeyCount = $objForm->GetValue($pembagian3_list->FormKeyCountName);
+		$pembagian3_list->StopRec = $pembagian3_list->StartRec + $pembagian3_list->KeyCount - 1;
+	}
 }
 $pembagian3_list->RecCnt = $pembagian3_list->StartRec - 1;
 if ($pembagian3_list->Recordset && !$pembagian3_list->Recordset->EOF) {
@@ -2286,10 +3309,27 @@ if ($pembagian3_list->Recordset && !$pembagian3_list->Recordset->EOF) {
 $pembagian3->RowType = EW_ROWTYPE_AGGREGATEINIT;
 $pembagian3->ResetAttrs();
 $pembagian3_list->RenderRow();
+$pembagian3_list->EditRowCnt = 0;
+if ($pembagian3->CurrentAction == "edit")
+	$pembagian3_list->RowIndex = 1;
+if ($pembagian3->CurrentAction == "gridadd")
+	$pembagian3_list->RowIndex = 0;
+if ($pembagian3->CurrentAction == "gridedit")
+	$pembagian3_list->RowIndex = 0;
 while ($pembagian3_list->RecCnt < $pembagian3_list->StopRec) {
 	$pembagian3_list->RecCnt++;
 	if (intval($pembagian3_list->RecCnt) >= intval($pembagian3_list->StartRec)) {
 		$pembagian3_list->RowCnt++;
+		if ($pembagian3->CurrentAction == "gridadd" || $pembagian3->CurrentAction == "gridedit" || $pembagian3->CurrentAction == "F") {
+			$pembagian3_list->RowIndex++;
+			$objForm->Index = $pembagian3_list->RowIndex;
+			if ($objForm->HasValue($pembagian3_list->FormActionName))
+				$pembagian3_list->RowAction = strval($objForm->GetValue($pembagian3_list->FormActionName));
+			elseif ($pembagian3->CurrentAction == "gridadd")
+				$pembagian3_list->RowAction = "insert";
+			else
+				$pembagian3_list->RowAction = "";
+		}
 
 		// Set up key count
 		$pembagian3_list->KeyCount = $pembagian3_list->RowIndex;
@@ -2298,10 +3338,37 @@ while ($pembagian3_list->RecCnt < $pembagian3_list->StopRec) {
 		$pembagian3->ResetAttrs();
 		$pembagian3->CssClass = "";
 		if ($pembagian3->CurrentAction == "gridadd") {
+			$pembagian3_list->LoadDefaultValues(); // Load default values
 		} else {
 			$pembagian3_list->LoadRowValues($pembagian3_list->Recordset); // Load row values
 		}
 		$pembagian3->RowType = EW_ROWTYPE_VIEW; // Render view
+		if ($pembagian3->CurrentAction == "gridadd") // Grid add
+			$pembagian3->RowType = EW_ROWTYPE_ADD; // Render add
+		if ($pembagian3->CurrentAction == "gridadd" && $pembagian3->EventCancelled && !$objForm->HasValue("k_blankrow")) // Insert failed
+			$pembagian3_list->RestoreCurrentRowFormValues($pembagian3_list->RowIndex); // Restore form values
+		if ($pembagian3->CurrentAction == "edit") {
+			if ($pembagian3_list->CheckInlineEditKey() && $pembagian3_list->EditRowCnt == 0) { // Inline edit
+				$pembagian3->RowType = EW_ROWTYPE_EDIT; // Render edit
+			}
+		}
+		if ($pembagian3->CurrentAction == "gridedit") { // Grid edit
+			if ($pembagian3->EventCancelled) {
+				$pembagian3_list->RestoreCurrentRowFormValues($pembagian3_list->RowIndex); // Restore form values
+			}
+			if ($pembagian3_list->RowAction == "insert")
+				$pembagian3->RowType = EW_ROWTYPE_ADD; // Render add
+			else
+				$pembagian3->RowType = EW_ROWTYPE_EDIT; // Render edit
+		}
+		if ($pembagian3->CurrentAction == "edit" && $pembagian3->RowType == EW_ROWTYPE_EDIT && $pembagian3->EventCancelled) { // Update failed
+			$objForm->Index = 1;
+			$pembagian3_list->RestoreFormValues(); // Restore form values
+		}
+		if ($pembagian3->CurrentAction == "gridedit" && ($pembagian3->RowType == EW_ROWTYPE_EDIT || $pembagian3->RowType == EW_ROWTYPE_ADD) && $pembagian3->EventCancelled) // Update failed
+			$pembagian3_list->RestoreCurrentRowFormValues($pembagian3_list->RowIndex); // Restore form values
+		if ($pembagian3->RowType == EW_ROWTYPE_EDIT) // Edit row
+			$pembagian3_list->EditRowCnt++;
 
 		// Set up row id / data-rowindex
 		$pembagian3->RowAttrs = array_merge($pembagian3->RowAttrs, array('data-rowindex'=>$pembagian3_list->RowCnt, 'id'=>'r' . $pembagian3_list->RowCnt . '_pembagian3', 'data-rowtype'=>$pembagian3->RowType));
@@ -2311,6 +3378,9 @@ while ($pembagian3_list->RecCnt < $pembagian3_list->StopRec) {
 
 		// Render list options
 		$pembagian3_list->RenderListOptions();
+
+		// Skip delete row / empty row for confirm page
+		if ($pembagian3_list->RowAction <> "delete" && $pembagian3_list->RowAction <> "insertdelete" && !($pembagian3_list->RowAction == "insert" && $pembagian3->CurrentAction == "F" && $pembagian3_list->EmptyRow())) {
 ?>
 	<tr<?php echo $pembagian3->RowAttributes() ?>>
 <?php
@@ -2318,28 +3388,53 @@ while ($pembagian3_list->RecCnt < $pembagian3_list->StopRec) {
 // Render list options (body, left)
 $pembagian3_list->ListOptions->Render("body", "left", $pembagian3_list->RowCnt);
 ?>
-	<?php if ($pembagian3->pembagian3_id->Visible) { // pembagian3_id ?>
-		<td data-name="pembagian3_id"<?php echo $pembagian3->pembagian3_id->CellAttributes() ?>>
-<span id="el<?php echo $pembagian3_list->RowCnt ?>_pembagian3_pembagian3_id" class="pembagian3_pembagian3_id">
-<span<?php echo $pembagian3->pembagian3_id->ViewAttributes() ?>>
-<?php echo $pembagian3->pembagian3_id->ListViewValue() ?></span>
-</span>
-<a id="<?php echo $pembagian3_list->PageObjName . "_row_" . $pembagian3_list->RowCnt ?>"></a></td>
-	<?php } ?>
 	<?php if ($pembagian3->pembagian3_nama->Visible) { // pembagian3_nama ?>
 		<td data-name="pembagian3_nama"<?php echo $pembagian3->pembagian3_nama->CellAttributes() ?>>
+<?php if ($pembagian3->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $pembagian3_list->RowCnt ?>_pembagian3_pembagian3_nama" class="form-group pembagian3_pembagian3_nama">
+<input type="text" data-table="pembagian3" data-field="x_pembagian3_nama" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($pembagian3->pembagian3_nama->getPlaceHolder()) ?>" value="<?php echo $pembagian3->pembagian3_nama->EditValue ?>"<?php echo $pembagian3->pembagian3_nama->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pembagian3" data-field="x_pembagian3_nama" name="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" id="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" value="<?php echo ew_HtmlEncode($pembagian3->pembagian3_nama->OldValue) ?>">
+<?php } ?>
+<?php if ($pembagian3->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $pembagian3_list->RowCnt ?>_pembagian3_pembagian3_nama" class="form-group pembagian3_pembagian3_nama">
+<input type="text" data-table="pembagian3" data-field="x_pembagian3_nama" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($pembagian3->pembagian3_nama->getPlaceHolder()) ?>" value="<?php echo $pembagian3->pembagian3_nama->EditValue ?>"<?php echo $pembagian3->pembagian3_nama->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($pembagian3->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $pembagian3_list->RowCnt ?>_pembagian3_pembagian3_nama" class="pembagian3_pembagian3_nama">
 <span<?php echo $pembagian3->pembagian3_nama->ViewAttributes() ?>>
 <?php echo $pembagian3->pembagian3_nama->ListViewValue() ?></span>
 </span>
-</td>
+<?php } ?>
+<a id="<?php echo $pembagian3_list->PageObjName . "_row_" . $pembagian3_list->RowCnt ?>"></a></td>
 	<?php } ?>
+<?php if ($pembagian3->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<input type="hidden" data-table="pembagian3" data-field="x_pembagian3_id" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_id" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_id" value="<?php echo ew_HtmlEncode($pembagian3->pembagian3_id->CurrentValue) ?>">
+<input type="hidden" data-table="pembagian3" data-field="x_pembagian3_id" name="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_id" id="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_id" value="<?php echo ew_HtmlEncode($pembagian3->pembagian3_id->OldValue) ?>">
+<?php } ?>
+<?php if ($pembagian3->RowType == EW_ROWTYPE_EDIT || $pembagian3->CurrentMode == "edit") { ?>
+<input type="hidden" data-table="pembagian3" data-field="x_pembagian3_id" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_id" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_id" value="<?php echo ew_HtmlEncode($pembagian3->pembagian3_id->CurrentValue) ?>">
+<?php } ?>
 	<?php if ($pembagian3->pembagian3_ket->Visible) { // pembagian3_ket ?>
 		<td data-name="pembagian3_ket"<?php echo $pembagian3->pembagian3_ket->CellAttributes() ?>>
+<?php if ($pembagian3->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $pembagian3_list->RowCnt ?>_pembagian3_pembagian3_ket" class="form-group pembagian3_pembagian3_ket">
+<input type="text" data-table="pembagian3" data-field="x_pembagian3_ket" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($pembagian3->pembagian3_ket->getPlaceHolder()) ?>" value="<?php echo $pembagian3->pembagian3_ket->EditValue ?>"<?php echo $pembagian3->pembagian3_ket->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pembagian3" data-field="x_pembagian3_ket" name="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" id="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" value="<?php echo ew_HtmlEncode($pembagian3->pembagian3_ket->OldValue) ?>">
+<?php } ?>
+<?php if ($pembagian3->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $pembagian3_list->RowCnt ?>_pembagian3_pembagian3_ket" class="form-group pembagian3_pembagian3_ket">
+<input type="text" data-table="pembagian3" data-field="x_pembagian3_ket" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($pembagian3->pembagian3_ket->getPlaceHolder()) ?>" value="<?php echo $pembagian3->pembagian3_ket->EditValue ?>"<?php echo $pembagian3->pembagian3_ket->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($pembagian3->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $pembagian3_list->RowCnt ?>_pembagian3_pembagian3_ket" class="pembagian3_pembagian3_ket">
 <span<?php echo $pembagian3->pembagian3_ket->ViewAttributes() ?>>
 <?php echo $pembagian3->pembagian3_ket->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 <?php
@@ -2348,14 +3443,88 @@ $pembagian3_list->ListOptions->Render("body", "left", $pembagian3_list->RowCnt);
 $pembagian3_list->ListOptions->Render("body", "right", $pembagian3_list->RowCnt);
 ?>
 	</tr>
+<?php if ($pembagian3->RowType == EW_ROWTYPE_ADD || $pembagian3->RowType == EW_ROWTYPE_EDIT) { ?>
+<script type="text/javascript">
+fpembagian3list.UpdateOpts(<?php echo $pembagian3_list->RowIndex ?>);
+</script>
+<?php } ?>
 <?php
 	}
+	} // End delete row checking
 	if ($pembagian3->CurrentAction <> "gridadd")
-		$pembagian3_list->Recordset->MoveNext();
+		if (!$pembagian3_list->Recordset->EOF) $pembagian3_list->Recordset->MoveNext();
+}
+?>
+<?php
+	if ($pembagian3->CurrentAction == "gridadd" || $pembagian3->CurrentAction == "gridedit") {
+		$pembagian3_list->RowIndex = '$rowindex$';
+		$pembagian3_list->LoadDefaultValues();
+
+		// Set row properties
+		$pembagian3->ResetAttrs();
+		$pembagian3->RowAttrs = array_merge($pembagian3->RowAttrs, array('data-rowindex'=>$pembagian3_list->RowIndex, 'id'=>'r0_pembagian3', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		ew_AppendClass($pembagian3->RowAttrs["class"], "ewTemplate");
+		$pembagian3->RowType = EW_ROWTYPE_ADD;
+
+		// Render row
+		$pembagian3_list->RenderRow();
+
+		// Render list options
+		$pembagian3_list->RenderListOptions();
+		$pembagian3_list->StartRowCnt = 0;
+?>
+	<tr<?php echo $pembagian3->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$pembagian3_list->ListOptions->Render("body", "left", $pembagian3_list->RowIndex);
+?>
+	<?php if ($pembagian3->pembagian3_nama->Visible) { // pembagian3_nama ?>
+		<td data-name="pembagian3_nama">
+<span id="el$rowindex$_pembagian3_pembagian3_nama" class="form-group pembagian3_pembagian3_nama">
+<input type="text" data-table="pembagian3" data-field="x_pembagian3_nama" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($pembagian3->pembagian3_nama->getPlaceHolder()) ?>" value="<?php echo $pembagian3->pembagian3_nama->EditValue ?>"<?php echo $pembagian3->pembagian3_nama->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pembagian3" data-field="x_pembagian3_nama" name="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" id="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_nama" value="<?php echo ew_HtmlEncode($pembagian3->pembagian3_nama->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($pembagian3->pembagian3_ket->Visible) { // pembagian3_ket ?>
+		<td data-name="pembagian3_ket">
+<span id="el$rowindex$_pembagian3_pembagian3_ket" class="form-group pembagian3_pembagian3_ket">
+<input type="text" data-table="pembagian3" data-field="x_pembagian3_ket" name="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" id="x<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" size="30" maxlength="255" placeholder="<?php echo ew_HtmlEncode($pembagian3->pembagian3_ket->getPlaceHolder()) ?>" value="<?php echo $pembagian3->pembagian3_ket->EditValue ?>"<?php echo $pembagian3->pembagian3_ket->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="pembagian3" data-field="x_pembagian3_ket" name="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" id="o<?php echo $pembagian3_list->RowIndex ?>_pembagian3_ket" value="<?php echo ew_HtmlEncode($pembagian3->pembagian3_ket->OldValue) ?>">
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$pembagian3_list->ListOptions->Render("body", "right", $pembagian3_list->RowCnt);
+?>
+<script type="text/javascript">
+fpembagian3list.UpdateOpts(<?php echo $pembagian3_list->RowIndex ?>);
+</script>
+	</tr>
+<?php
 }
 ?>
 </tbody>
 </table>
+<?php } ?>
+<?php if ($pembagian3->CurrentAction == "add" || $pembagian3->CurrentAction == "copy") { ?>
+<input type="hidden" name="<?php echo $pembagian3_list->FormKeyCountName ?>" id="<?php echo $pembagian3_list->FormKeyCountName ?>" value="<?php echo $pembagian3_list->KeyCount ?>">
+<?php } ?>
+<?php if ($pembagian3->CurrentAction == "gridadd") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridinsert">
+<input type="hidden" name="<?php echo $pembagian3_list->FormKeyCountName ?>" id="<?php echo $pembagian3_list->FormKeyCountName ?>" value="<?php echo $pembagian3_list->KeyCount ?>">
+<?php echo $pembagian3_list->MultiSelectKey ?>
+<?php } ?>
+<?php if ($pembagian3->CurrentAction == "edit") { ?>
+<input type="hidden" name="<?php echo $pembagian3_list->FormKeyCountName ?>" id="<?php echo $pembagian3_list->FormKeyCountName ?>" value="<?php echo $pembagian3_list->KeyCount ?>">
+<?php } ?>
+<?php if ($pembagian3->CurrentAction == "gridedit") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridupdate">
+<input type="hidden" name="<?php echo $pembagian3_list->FormKeyCountName ?>" id="<?php echo $pembagian3_list->FormKeyCountName ?>" value="<?php echo $pembagian3_list->KeyCount ?>">
+<?php echo $pembagian3_list->MultiSelectKey ?>
 <?php } ?>
 <?php if ($pembagian3->CurrentAction == "") { ?>
 <input type="hidden" name="a_list" id="a_list" value="">

@@ -282,8 +282,6 @@ class cpembagian3_delete extends cpembagian3 {
 			$Security->UserID_Loaded();
 		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->pembagian3_id->SetVisibility();
-		$this->pembagian3_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pembagian3_nama->SetVisibility();
 		$this->pembagian3_ket->SetVisibility();
 
@@ -502,11 +500,6 @@ class cpembagian3_delete extends cpembagian3 {
 		$this->pembagian3_ket->ViewValue = $this->pembagian3_ket->CurrentValue;
 		$this->pembagian3_ket->ViewCustomAttributes = "";
 
-			// pembagian3_id
-			$this->pembagian3_id->LinkCustomAttributes = "";
-			$this->pembagian3_id->HrefValue = "";
-			$this->pembagian3_id->TooltipValue = "";
-
 			// pembagian3_nama
 			$this->pembagian3_nama->LinkCustomAttributes = "";
 			$this->pembagian3_nama->HrefValue = "";
@@ -551,6 +544,7 @@ class cpembagian3_delete extends cpembagian3 {
 		}
 		$rows = ($rs) ? $rs->GetRows() : array();
 		$conn->BeginTrans();
+		if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteBegin")); // Batch delete begin
 
 		// Clone old rows
 		$rsold = $rows;
@@ -593,8 +587,10 @@ class cpembagian3_delete extends cpembagian3 {
 		}
 		if ($DeleteRows) {
 			$conn->CommitTrans(); // Commit the changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
 		} else {
 			$conn->RollbackTrans(); // Rollback changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteRollback")); // Batch delete rollback
 		}
 
 		// Call Row Deleted event
@@ -766,9 +762,6 @@ $pembagian3_delete->ShowMessage();
 <?php echo $pembagian3->TableCustomInnerHtml ?>
 	<thead>
 	<tr class="ewTableHeader">
-<?php if ($pembagian3->pembagian3_id->Visible) { // pembagian3_id ?>
-		<th><span id="elh_pembagian3_pembagian3_id" class="pembagian3_pembagian3_id"><?php echo $pembagian3->pembagian3_id->FldCaption() ?></span></th>
-<?php } ?>
 <?php if ($pembagian3->pembagian3_nama->Visible) { // pembagian3_nama ?>
 		<th><span id="elh_pembagian3_pembagian3_nama" class="pembagian3_pembagian3_nama"><?php echo $pembagian3->pembagian3_nama->FldCaption() ?></span></th>
 <?php } ?>
@@ -796,14 +789,6 @@ while (!$pembagian3_delete->Recordset->EOF) {
 	$pembagian3_delete->RenderRow();
 ?>
 	<tr<?php echo $pembagian3->RowAttributes() ?>>
-<?php if ($pembagian3->pembagian3_id->Visible) { // pembagian3_id ?>
-		<td<?php echo $pembagian3->pembagian3_id->CellAttributes() ?>>
-<span id="el<?php echo $pembagian3_delete->RowCnt ?>_pembagian3_pembagian3_id" class="pembagian3_pembagian3_id">
-<span<?php echo $pembagian3->pembagian3_id->ViewAttributes() ?>>
-<?php echo $pembagian3->pembagian3_id->ListViewValue() ?></span>
-</span>
-</td>
-<?php } ?>
 <?php if ($pembagian3->pembagian3_nama->Visible) { // pembagian3_nama ?>
 		<td<?php echo $pembagian3->pembagian3_nama->CellAttributes() ?>>
 <span id="el<?php echo $pembagian3_delete->RowCnt ?>_pembagian3_pembagian3_nama" class="pembagian3_pembagian3_nama">

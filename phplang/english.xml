@@ -589,18 +589,6 @@
     <menu id="71">
       <phrase id="menutext" value="Setup" />
     </menu>
-    <menu id="30">
-      <phrase id="menutext" value="Pegawai" />
-    </menu>
-    <menu id="42">
-      <phrase id="menutext" value="Jadwal Kerja (Periode)" />
-    </menu>
-    <menu id="41">
-      <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
-    </menu>
-    <menu id="45">
-      <phrase id="menutext" value="Setup Gaji" />
-    </menu>
     <menu id="32">
       <phrase id="menutext" value="Jabatan" />
     </menu>
@@ -615,6 +603,18 @@
     </menu>
     <menu id="44">
       <phrase id="menutext" value="Komponen Gaji" />
+    </menu>
+    <menu id="30">
+      <phrase id="menutext" value="Pegawai" />
+    </menu>
+    <menu id="42">
+      <phrase id="menutext" value="Jadwal Kerja (Periode)" />
+    </menu>
+    <menu id="41">
+      <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
+    </menu>
+    <menu id="45">
+      <phrase id="menutext" value="Setup Gaji" />
     </menu>
     <menu id="46">
       <phrase id="menutext" value="User" />
@@ -1652,13 +1652,13 @@
     <table id="pembagian3">
       <phrase id="tblcaption" value="Status" />
       <field id="pembagian3_id">
-        <phrase id="fldcaption" value="pembagian 3 id" />
+        <phrase id="fldcaption" value="ID" />
       </field>
       <field id="pembagian3_nama">
-        <phrase id="fldcaption" value="pembagian 3 nama" />
+        <phrase id="fldcaption" value="Nama" />
       </field>
       <field id="pembagian3_ket">
-        <phrase id="fldcaption" value="pembagian 3 ket" />
+        <phrase id="fldcaption" value="Keterangan" />
       </field>
     </table>
     <table id="pendidikan">

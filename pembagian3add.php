@@ -444,7 +444,7 @@ class cpembagian3_add extends cpembagian3 {
 				if ($this->AddRow($this->OldRecordset)) { // Add successful
 					if ($this->getSuccessMessage() == "")
 						$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up success message
-					$sReturnUrl = $this->getReturnUrl();
+					$sReturnUrl = $this->GetAddUrl();
 					if (ew_GetPageName($sReturnUrl) == "pembagian3list.php")
 						$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
 					elseif (ew_GetPageName($sReturnUrl) == "pembagian3view.php")
