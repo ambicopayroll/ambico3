@@ -7,7 +7,7 @@ $RootMenu->AddMenuItem(70, "mmi_dashboard_php", $Language->MenuPhrase("70", "Men
 $RootMenu->AddMenuItem(71, "mmci_Setup", $Language->MenuPhrase("71", "MenuText"), "", -1, "", TRUE, FALSE, TRUE);
 $RootMenu->AddMenuItem(30, "mmi_pegawai", $Language->MenuPhrase("30", "MenuText"), "pegawailist.php", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}pegawai'), FALSE, FALSE);
 $RootMenu->AddMenuItem(42, "mmi_t_jdw_krj_peg", $Language->MenuPhrase("42", "MenuText"), "t_jdw_krj_peglist.php?cmd=resetall", 30, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_jdw_krj_peg'), FALSE, FALSE);
-$RootMenu->AddMenuItem(41, "mmi_t_jdw_krj_def", $Language->MenuPhrase("41", "MenuText"), "t_jdw_krj_deflist.php?cmd=resetall", 30, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_jdw_krj_def'), FALSE, FALSE);
+$RootMenu->AddMenuItem(41, "mmi_t_jdw_krj_def", $Language->MenuPhrase("41", "MenuText"), "t_jdw_krj_deflist.php", 30, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_jdw_krj_def'), FALSE, FALSE);
 $RootMenu->AddMenuItem(45, "mmi_t_rumus_peg", $Language->MenuPhrase("45", "MenuText"), "t_rumus_peglist.php?cmd=resetall", 30, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_rumus_peg'), FALSE, FALSE);
 $RootMenu->AddMenuItem(32, "mmi_pembagian1", $Language->MenuPhrase("32", "MenuText"), "pembagian1list.php", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}pembagian1'), FALSE, FALSE);
 $RootMenu->AddMenuItem(33, "mmi_pembagian2", $Language->MenuPhrase("33", "MenuText"), "pembagian2list.php", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}pembagian2'), FALSE, FALSE);

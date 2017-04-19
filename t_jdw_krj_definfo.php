@@ -42,9 +42,9 @@ class ct_jdw_krj_def extends cTable {
 		$this->ExportPageSize = "a4"; // Page size (PDF only)
 		$this->ExportExcelPageOrientation = ""; // Page orientation (PHPExcel only)
 		$this->ExportExcelPageSize = ""; // Page size (PHPExcel only)
-		$this->DetailAdd = TRUE; // Allow detail add
-		$this->DetailEdit = TRUE; // Allow detail edit
-		$this->DetailView = TRUE; // Allow detail view
+		$this->DetailAdd = FALSE; // Allow detail add
+		$this->DetailEdit = FALSE; // Allow detail edit
+		$this->DetailView = FALSE; // Allow detail view
 		$this->ShowMultipleDetails = FALSE; // Show multiple details
 		$this->GridAddRowCount = 5;
 		$this->AllowAddDeleteRow = ew_AllowAddDeleteRow(); // Allow add/delete row
@@ -151,53 +151,6 @@ class ct_jdw_krj_def extends cTable {
 
 	function setSessionOrderByList($v) {
 		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_ORDER_BY_LIST] = $v;
-	}
-
-	// Current master table name
-	function getCurrentMasterTable() {
-		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE];
-	}
-
-	function setCurrentMasterTable($v) {
-		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE] = $v;
-	}
-
-	// Session master WHERE clause
-	function GetMasterFilter() {
-
-		// Master filter
-		$sMasterFilter = "";
-		if ($this->getCurrentMasterTable() == "pegawai") {
-			if ($this->pegawai_id->getSessionValue() <> "")
-				$sMasterFilter .= "`pegawai_id`=" . ew_QuotedValue($this->pegawai_id->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
-			else
-				return "";
-		}
-		return $sMasterFilter;
-	}
-
-	// Session detail WHERE clause
-	function GetDetailFilter() {
-
-		// Detail filter
-		$sDetailFilter = "";
-		if ($this->getCurrentMasterTable() == "pegawai") {
-			if ($this->pegawai_id->getSessionValue() <> "")
-				$sDetailFilter .= "`pegawai_id`=" . ew_QuotedValue($this->pegawai_id->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
-			else
-				return "";
-		}
-		return $sDetailFilter;
-	}
-
-	// Master filter
-	function SqlMasterFilter_pegawai() {
-		return "`pegawai_id`=@pegawai_id@";
-	}
-
-	// Detail filter
-	function SqlDetailFilter_pegawai() {
-		return "`pegawai_id`=@pegawai_id@";
 	}
 
 	// Table level SQL
@@ -626,10 +579,6 @@ class ct_jdw_krj_def extends cTable {
 
 	// Add master url
 	function AddMasterUrl($url) {
-		if ($this->getCurrentMasterTable() == "pegawai" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
-			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
-			$url .= "&fk_pegawai_id=" . urlencode($this->pegawai_id->CurrentValue);
-		}
 		return $url;
 	}
 
@@ -888,38 +837,8 @@ class ct_jdw_krj_def extends cTable {
 		// pegawai_id
 		$this->pegawai_id->EditAttrs["class"] = "form-control";
 		$this->pegawai_id->EditCustomAttributes = "";
-		if ($this->pegawai_id->getSessionValue() <> "") {
-			$this->pegawai_id->CurrentValue = $this->pegawai_id->getSessionValue();
-		if ($this->pegawai_id->VirtualValue <> "") {
-			$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
-		} else {
-			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
-		if (strval($this->pegawai_id->CurrentValue) <> "") {
-			$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
-		$sWhereWrk = "";
-		$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
-		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-			$rswrk = Conn()->Execute($sSqlWrk);
-			if ($rswrk && !$rswrk->EOF) { // Lookup values found
-				$arwrk = array();
-				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->pegawai_id->ViewValue = $this->pegawai_id->DisplayValue($arwrk);
-				$rswrk->Close();
-			} else {
-				$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
-			}
-		} else {
-			$this->pegawai_id->ViewValue = NULL;
-		}
-		}
-		$this->pegawai_id->ViewCustomAttributes = "";
-		} else {
 		$this->pegawai_id->EditValue = $this->pegawai_id->CurrentValue;
 		$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
-		}
 
 		// tgl
 		$this->tgl->EditAttrs["class"] = "form-control";

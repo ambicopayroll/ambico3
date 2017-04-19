@@ -6,7 +6,6 @@ ob_start(); // Turn on output buffering
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql13.php") ?>
 <?php include_once "phpfn13.php" ?>
 <?php include_once "t_jdw_krj_definfo.php" ?>
-<?php include_once "pegawaiinfo.php" ?>
 <?php include_once "t_userinfo.php" ?>
 <?php include_once "userfn13.php" ?>
 <?php
@@ -288,9 +287,6 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 		$this->MultiDeleteUrl = "t_jdw_krj_defdelete.php";
 		$this->MultiUpdateUrl = "t_jdw_krj_defupdate.php";
 
-		// Table object (pegawai)
-		if (!isset($GLOBALS['pegawai'])) $GLOBALS['pegawai'] = new cpegawai();
-
 		// Table object (t_user)
 		if (!isset($GLOBALS['t_user'])) $GLOBALS['t_user'] = new ct_user();
 
@@ -451,9 +447,6 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 
 		// Create Token
 		$this->CreateToken();
-
-		// Set up master detail parameters
-		$this->SetUpMasterParms();
 
 		// Setup other options
 		$this->SetupOtherOptions();
@@ -747,28 +740,8 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 		$sFilter = "";
 		if (!$Security->CanList())
 			$sFilter = "(0=1)"; // Filter all records
-
-		// Restore master/detail filter
-		$this->DbMasterFilter = $this->GetMasterFilter(); // Restore master filter
-		$this->DbDetailFilter = $this->GetDetailFilter(); // Restore detail filter
 		ew_AddFilter($sFilter, $this->DbDetailFilter);
 		ew_AddFilter($sFilter, $this->SearchWhere);
-
-		// Load master record
-		if ($this->CurrentMode <> "add" && $this->GetMasterFilter() <> "" && $this->getCurrentMasterTable() == "pegawai") {
-			global $pegawai;
-			$rsmaster = $pegawai->LoadRs($this->DbMasterFilter);
-			$this->MasterRecordExists = ($rsmaster && !$rsmaster->EOF);
-			if (!$this->MasterRecordExists) {
-				$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record found
-				$this->Page_Terminate("pegawailist.php"); // Return to master page
-			} else {
-				$pegawai->LoadListRowValues($rsmaster);
-				$pegawai->RowType = EW_ROWTYPE_MASTER; // Master row
-				$pegawai->RenderListRow();
-				$rsmaster->Close();
-			}
-		}
 
 		// Set up filter in session
 		$this->setSessionWhere($sFilter);
@@ -1556,14 +1529,6 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 			// Reset search criteria
 			if ($this->Command == "reset" || $this->Command == "resetall")
 				$this->ResetSearchParms();
-
-			// Reset master/detail keys
-			if ($this->Command == "resetall") {
-				$this->setCurrentMasterTable(""); // Clear master table
-				$this->DbMasterFilter = "";
-				$this->DbDetailFilter = "";
-				$this->pegawai_id->setSessionValue("");
-			}
 
 			// Reset sorting order
 			if ($this->Command == "resetsort") {
@@ -2436,36 +2401,6 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 			// pegawai_id
 			$this->pegawai_id->EditAttrs["class"] = "form-control";
 			$this->pegawai_id->EditCustomAttributes = "";
-			if ($this->pegawai_id->getSessionValue() <> "") {
-				$this->pegawai_id->CurrentValue = $this->pegawai_id->getSessionValue();
-				$this->pegawai_id->OldValue = $this->pegawai_id->CurrentValue;
-			if ($this->pegawai_id->VirtualValue <> "") {
-				$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
-			} else {
-				$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
-			if (strval($this->pegawai_id->CurrentValue) <> "") {
-				$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
-			$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
-			$sWhereWrk = "";
-			$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = Conn()->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$arwrk = array();
-					$arwrk[1] = $rswrk->fields('DispFld');
-					$this->pegawai_id->ViewValue = $this->pegawai_id->DisplayValue($arwrk);
-					$rswrk->Close();
-				} else {
-					$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
-				}
-			} else {
-				$this->pegawai_id->ViewValue = NULL;
-			}
-			}
-			$this->pegawai_id->ViewCustomAttributes = "";
-			} else {
 			$this->pegawai_id->EditValue = ew_HtmlEncode($this->pegawai_id->CurrentValue);
 			if (strval($this->pegawai_id->CurrentValue) <> "") {
 				$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
@@ -2488,7 +2423,6 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 				$this->pegawai_id->EditValue = NULL;
 			}
 			$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
-			}
 
 			// tgl
 			$this->tgl->EditAttrs["class"] = "form-control";
@@ -2547,36 +2481,6 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 			// pegawai_id
 			$this->pegawai_id->EditAttrs["class"] = "form-control";
 			$this->pegawai_id->EditCustomAttributes = "";
-			if ($this->pegawai_id->getSessionValue() <> "") {
-				$this->pegawai_id->CurrentValue = $this->pegawai_id->getSessionValue();
-				$this->pegawai_id->OldValue = $this->pegawai_id->CurrentValue;
-			if ($this->pegawai_id->VirtualValue <> "") {
-				$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
-			} else {
-				$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
-			if (strval($this->pegawai_id->CurrentValue) <> "") {
-				$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
-			$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
-			$sWhereWrk = "";
-			$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
-			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
-			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-				$rswrk = Conn()->Execute($sSqlWrk);
-				if ($rswrk && !$rswrk->EOF) { // Lookup values found
-					$arwrk = array();
-					$arwrk[1] = $rswrk->fields('DispFld');
-					$this->pegawai_id->ViewValue = $this->pegawai_id->DisplayValue($arwrk);
-					$rswrk->Close();
-				} else {
-					$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
-				}
-			} else {
-				$this->pegawai_id->ViewValue = NULL;
-			}
-			}
-			$this->pegawai_id->ViewCustomAttributes = "";
-			} else {
 			$this->pegawai_id->EditValue = ew_HtmlEncode($this->pegawai_id->CurrentValue);
 			if (strval($this->pegawai_id->CurrentValue) <> "") {
 				$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
@@ -2599,7 +2503,6 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 				$this->pegawai_id->EditValue = NULL;
 			}
 			$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
-			}
 
 			// tgl
 			$this->tgl->EditAttrs["class"] = "form-control";
@@ -3086,25 +2989,6 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 		// Call Page Exporting server event
 		$this->ExportDoc->ExportCustom = !$this->Page_Exporting();
 		$ParentTable = "";
-
-		// Export master record
-		if (EW_EXPORT_MASTER_RECORD && $this->GetMasterFilter() <> "" && $this->getCurrentMasterTable() == "pegawai") {
-			global $pegawai;
-			if (!isset($pegawai)) $pegawai = new cpegawai;
-			$rsmaster = $pegawai->LoadRs($this->DbMasterFilter); // Load master record
-			if ($rsmaster && !$rsmaster->EOF) {
-				$ExportStyle = $Doc->Style;
-				$Doc->SetStyle("v"); // Change to vertical
-				if ($this->Export <> "csv" || EW_EXPORT_MASTER_RECORD_FOR_CSV) {
-					$Doc->Table = &$pegawai;
-					$pegawai->ExportDocument($Doc, $rsmaster, 1, 1);
-					$Doc->ExportEmptyRow();
-					$Doc->Table = &$this;
-				}
-				$Doc->SetStyle($ExportStyle); // Restore
-				$rsmaster->Close();
-			}
-		}
 		$sHeader = $this->PageHeader;
 		$this->Page_DataRendering($sHeader);
 		$Doc->Text .= $sHeader;
@@ -3267,72 +3151,6 @@ class ct_jdw_krj_def_list extends ct_jdw_krj_def {
 				"&y_" . $FldParm . "=" . urlencode($FldSearchValue2) .
 				"&w_" . $FldParm . "=" . urlencode($Fld->AdvancedSearch->getValue("w"));
 		}
-	}
-
-	// Set up master/detail based on QueryString
-	function SetUpMasterParms() {
-		$bValidMaster = FALSE;
-
-		// Get the keys for master table
-		if (isset($_GET[EW_TABLE_SHOW_MASTER])) {
-			$sMasterTblVar = $_GET[EW_TABLE_SHOW_MASTER];
-			if ($sMasterTblVar == "") {
-				$bValidMaster = TRUE;
-				$this->DbMasterFilter = "";
-				$this->DbDetailFilter = "";
-			}
-			if ($sMasterTblVar == "pegawai") {
-				$bValidMaster = TRUE;
-				if (@$_GET["fk_pegawai_id"] <> "") {
-					$GLOBALS["pegawai"]->pegawai_id->setQueryStringValue($_GET["fk_pegawai_id"]);
-					$this->pegawai_id->setQueryStringValue($GLOBALS["pegawai"]->pegawai_id->QueryStringValue);
-					$this->pegawai_id->setSessionValue($this->pegawai_id->QueryStringValue);
-					if (!is_numeric($GLOBALS["pegawai"]->pegawai_id->QueryStringValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
-				}
-			}
-		} elseif (isset($_POST[EW_TABLE_SHOW_MASTER])) {
-			$sMasterTblVar = $_POST[EW_TABLE_SHOW_MASTER];
-			if ($sMasterTblVar == "") {
-				$bValidMaster = TRUE;
-				$this->DbMasterFilter = "";
-				$this->DbDetailFilter = "";
-			}
-			if ($sMasterTblVar == "pegawai") {
-				$bValidMaster = TRUE;
-				if (@$_POST["fk_pegawai_id"] <> "") {
-					$GLOBALS["pegawai"]->pegawai_id->setFormValue($_POST["fk_pegawai_id"]);
-					$this->pegawai_id->setFormValue($GLOBALS["pegawai"]->pegawai_id->FormValue);
-					$this->pegawai_id->setSessionValue($this->pegawai_id->FormValue);
-					if (!is_numeric($GLOBALS["pegawai"]->pegawai_id->FormValue)) $bValidMaster = FALSE;
-				} else {
-					$bValidMaster = FALSE;
-				}
-			}
-		}
-		if ($bValidMaster) {
-
-			// Update URL
-			$this->AddUrl = $this->AddMasterUrl($this->AddUrl);
-			$this->InlineAddUrl = $this->AddMasterUrl($this->InlineAddUrl);
-			$this->GridAddUrl = $this->AddMasterUrl($this->GridAddUrl);
-			$this->GridEditUrl = $this->AddMasterUrl($this->GridEditUrl);
-
-			// Save current master table
-			$this->setCurrentMasterTable($sMasterTblVar);
-
-			// Reset start record counter (new master key)
-			$this->StartRec = 1;
-			$this->setStartRecordNumber($this->StartRec);
-
-			// Clear previous master key from Session
-			if ($sMasterTblVar <> "pegawai") {
-				if ($this->pegawai_id->CurrentValue == "") $this->pegawai_id->setSessionValue("");
-			}
-		}
-		$this->DbMasterFilter = $this->GetMasterFilter(); // Get master filter
-		$this->DbDetailFilter = $this->GetDetailFilter(); // Get detail filter
 	}
 
 	// Set up Breadcrumb
@@ -3718,17 +3536,6 @@ ft_jdw_krj_deflistsrch.Lists["x_pegawai_id"] = {"LinkField":"x_pegawai_id","Ajax
 <div class="clearfix"></div>
 </div>
 <?php } ?>
-<?php if (($t_jdw_krj_def->Export == "") || (EW_EXPORT_MASTER_RECORD && $t_jdw_krj_def->Export == "print")) { ?>
-<?php
-if ($t_jdw_krj_def_list->DbMasterFilter <> "" && $t_jdw_krj_def->getCurrentMasterTable() == "pegawai") {
-	if ($t_jdw_krj_def_list->MasterRecordExists) {
-?>
-<?php include_once "pegawaimaster.php" ?>
-<?php
-	}
-}
-?>
-<?php } ?>
 <?php
 if ($t_jdw_krj_def->CurrentAction == "gridadd") {
 	$t_jdw_krj_def->CurrentFilter = "0=1";
@@ -3931,10 +3738,6 @@ $t_jdw_krj_def_list->ShowMessage();
 <input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $t_jdw_krj_def_list->Token ?>">
 <?php } ?>
 <input type="hidden" name="t" value="t_jdw_krj_def">
-<?php if ($t_jdw_krj_def->getCurrentMasterTable() == "pegawai" && $t_jdw_krj_def->CurrentAction <> "") { ?>
-<input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="pegawai">
-<input type="hidden" name="fk_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->getSessionValue() ?>">
-<?php } ?>
 <div id="gmp_t_jdw_krj_def" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <?php if ($t_jdw_krj_def_list->TotalRecs > 0 || $t_jdw_krj_def->CurrentAction == "add" || $t_jdw_krj_def->CurrentAction == "copy" || $t_jdw_krj_def->CurrentAction == "gridedit") { ?>
 <table id="tbl_t_jdw_krj_deflist" class="table ewTable">
@@ -4027,13 +3830,6 @@ $t_jdw_krj_def_list->ListOptions->Render("body", "left", $t_jdw_krj_def_list->Ro
 ?>
 	<?php if ($t_jdw_krj_def->pegawai_id->Visible) { // pegawai_id ?>
 		<td data-name="pegawai_id">
-<?php if ($t_jdw_krj_def->pegawai_id->getSessionValue() <> "") { ?>
-<span id="el<?php echo $t_jdw_krj_def_list->RowCnt ?>_t_jdw_krj_def_pegawai_id" class="form-group t_jdw_krj_def_pegawai_id">
-<span<?php echo $t_jdw_krj_def->pegawai_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_jdw_krj_def->pegawai_id->ViewValue ?></p></span>
-</span>
-<input type="hidden" id="x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->CurrentValue) ?>">
-<?php } else { ?>
 <span id="el<?php echo $t_jdw_krj_def_list->RowCnt ?>_t_jdw_krj_def_pegawai_id" class="form-group t_jdw_krj_def_pegawai_id">
 <?php
 $wrkonchange = trim(" " . @$t_jdw_krj_def->pegawai_id->EditAttrs["onchange"]);
@@ -4051,7 +3847,6 @@ ft_jdw_krj_deflist.CreateAutoSuggest({"id":"x<?php echo $t_jdw_krj_def_list->Row
 <button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_jdw_krj_def->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
 <input type="hidden" name="s_x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->LookupFilterQuery(false) ?>">
 </span>
-<?php } ?>
 <input type="hidden" data-table="t_jdw_krj_def" data-field="x_pegawai_id" name="o<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" id="o<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->OldValue) ?>">
 </td>
 	<?php } ?>
@@ -4220,13 +4015,6 @@ $t_jdw_krj_def_list->ListOptions->Render("body", "left", $t_jdw_krj_def_list->Ro
 	<?php if ($t_jdw_krj_def->pegawai_id->Visible) { // pegawai_id ?>
 		<td data-name="pegawai_id"<?php echo $t_jdw_krj_def->pegawai_id->CellAttributes() ?>>
 <?php if ($t_jdw_krj_def->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<?php if ($t_jdw_krj_def->pegawai_id->getSessionValue() <> "") { ?>
-<span id="el<?php echo $t_jdw_krj_def_list->RowCnt ?>_t_jdw_krj_def_pegawai_id" class="form-group t_jdw_krj_def_pegawai_id">
-<span<?php echo $t_jdw_krj_def->pegawai_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_jdw_krj_def->pegawai_id->ViewValue ?></p></span>
-</span>
-<input type="hidden" id="x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->CurrentValue) ?>">
-<?php } else { ?>
 <span id="el<?php echo $t_jdw_krj_def_list->RowCnt ?>_t_jdw_krj_def_pegawai_id" class="form-group t_jdw_krj_def_pegawai_id">
 <?php
 $wrkonchange = trim(" " . @$t_jdw_krj_def->pegawai_id->EditAttrs["onchange"]);
@@ -4244,17 +4032,9 @@ ft_jdw_krj_deflist.CreateAutoSuggest({"id":"x<?php echo $t_jdw_krj_def_list->Row
 <button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_jdw_krj_def->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
 <input type="hidden" name="s_x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->LookupFilterQuery(false) ?>">
 </span>
-<?php } ?>
 <input type="hidden" data-table="t_jdw_krj_def" data-field="x_pegawai_id" name="o<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" id="o<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->OldValue) ?>">
 <?php } ?>
 <?php if ($t_jdw_krj_def->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<?php if ($t_jdw_krj_def->pegawai_id->getSessionValue() <> "") { ?>
-<span id="el<?php echo $t_jdw_krj_def_list->RowCnt ?>_t_jdw_krj_def_pegawai_id" class="form-group t_jdw_krj_def_pegawai_id">
-<span<?php echo $t_jdw_krj_def->pegawai_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_jdw_krj_def->pegawai_id->ViewValue ?></p></span>
-</span>
-<input type="hidden" id="x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->CurrentValue) ?>">
-<?php } else { ?>
 <span id="el<?php echo $t_jdw_krj_def_list->RowCnt ?>_t_jdw_krj_def_pegawai_id" class="form-group t_jdw_krj_def_pegawai_id">
 <?php
 $wrkonchange = trim(" " . @$t_jdw_krj_def->pegawai_id->EditAttrs["onchange"]);
@@ -4272,7 +4052,6 @@ ft_jdw_krj_deflist.CreateAutoSuggest({"id":"x<?php echo $t_jdw_krj_def_list->Row
 <button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_jdw_krj_def->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
 <input type="hidden" name="s_x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->LookupFilterQuery(false) ?>">
 </span>
-<?php } ?>
 <?php } ?>
 <?php if ($t_jdw_krj_def->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_jdw_krj_def_list->RowCnt ?>_t_jdw_krj_def_pegawai_id" class="t_jdw_krj_def_pegawai_id">
@@ -4422,13 +4201,6 @@ $t_jdw_krj_def_list->ListOptions->Render("body", "left", $t_jdw_krj_def_list->Ro
 ?>
 	<?php if ($t_jdw_krj_def->pegawai_id->Visible) { // pegawai_id ?>
 		<td data-name="pegawai_id">
-<?php if ($t_jdw_krj_def->pegawai_id->getSessionValue() <> "") { ?>
-<span id="el$rowindex$_t_jdw_krj_def_pegawai_id" class="form-group t_jdw_krj_def_pegawai_id">
-<span<?php echo $t_jdw_krj_def->pegawai_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_jdw_krj_def->pegawai_id->ViewValue ?></p></span>
-</span>
-<input type="hidden" id="x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->CurrentValue) ?>">
-<?php } else { ?>
 <span id="el$rowindex$_t_jdw_krj_def_pegawai_id" class="form-group t_jdw_krj_def_pegawai_id">
 <?php
 $wrkonchange = trim(" " . @$t_jdw_krj_def->pegawai_id->EditAttrs["onchange"]);
@@ -4446,7 +4218,6 @@ ft_jdw_krj_deflist.CreateAutoSuggest({"id":"x<?php echo $t_jdw_krj_def_list->Row
 <button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_jdw_krj_def->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
 <input type="hidden" name="s_x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo $t_jdw_krj_def->pegawai_id->LookupFilterQuery(false) ?>">
 </span>
-<?php } ?>
 <input type="hidden" data-table="t_jdw_krj_def" data-field="x_pegawai_id" name="o<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" id="o<?php echo $t_jdw_krj_def_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_jdw_krj_def->pegawai_id->OldValue) ?>">
 </td>
 	<?php } ?>

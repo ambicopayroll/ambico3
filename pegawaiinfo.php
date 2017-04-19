@@ -274,10 +274,6 @@ class cpegawai extends cTable {
 			$sDetailUrl = $GLOBALS["t_jdw_krj_peg"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
 			$sDetailUrl .= "&fk_pegawai_id=" . urlencode($this->pegawai_id->CurrentValue);
 		}
-		if ($this->getCurrentDetailTable() == "t_jdw_krj_def") {
-			$sDetailUrl = $GLOBALS["t_jdw_krj_def"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
-			$sDetailUrl .= "&fk_pegawai_id=" . urlencode($this->pegawai_id->CurrentValue);
-		}
 		if ($this->getCurrentDetailTable() == "t_rumus_peg") {
 			$sDetailUrl = $GLOBALS["t_rumus_peg"]->GetListUrl() . "?" . EW_TABLE_SHOW_MASTER . "=" . $this->TableVar;
 			$sDetailUrl .= "&fk_pegawai_id=" . urlencode($this->pegawai_id->CurrentValue);
@@ -593,6 +589,46 @@ class cpegawai extends cTable {
 	// Update
 	function Update(&$rs, $where = "", $rsold = NULL, $curfilter = TRUE) {
 		$conn = &$this->Connection();
+
+		// Cascade Update detail table 't_jdw_krj_peg'
+		$bCascadeUpdate = FALSE;
+		$rscascade = array();
+		if (!is_null($rsold) && (isset($rs['pegawai_id']) && $rsold['pegawai_id'] <> $rs['pegawai_id'])) { // Update detail field 'pegawai_id'
+			$bCascadeUpdate = TRUE;
+			$rscascade['pegawai_id'] = $rs['pegawai_id']; 
+		}
+		if ($bCascadeUpdate) {
+			if (!isset($GLOBALS["t_jdw_krj_peg"])) $GLOBALS["t_jdw_krj_peg"] = new ct_jdw_krj_peg();
+			$rswrk = $GLOBALS["t_jdw_krj_peg"]->LoadRs("`pegawai_id` = " . ew_QuotedValue($rsold['pegawai_id'], EW_DATATYPE_NUMBER, 'DB')); 
+			while ($rswrk && !$rswrk->EOF) {
+				$rskey = array();
+				$fldname = 'jdw_id';
+				$rskey[$fldname] = $rswrk->fields[$fldname];
+				$bUpdate = $GLOBALS["t_jdw_krj_peg"]->Update($rscascade, $rskey, $rswrk->fields);
+				if (!$bUpdate) return FALSE;
+				$rswrk->MoveNext();
+			}
+		}
+
+		// Cascade Update detail table 't_rumus_peg'
+		$bCascadeUpdate = FALSE;
+		$rscascade = array();
+		if (!is_null($rsold) && (isset($rs['pegawai_id']) && $rsold['pegawai_id'] <> $rs['pegawai_id'])) { // Update detail field 'pegawai_id'
+			$bCascadeUpdate = TRUE;
+			$rscascade['pegawai_id'] = $rs['pegawai_id']; 
+		}
+		if ($bCascadeUpdate) {
+			if (!isset($GLOBALS["t_rumus_peg"])) $GLOBALS["t_rumus_peg"] = new ct_rumus_peg();
+			$rswrk = $GLOBALS["t_rumus_peg"]->LoadRs("`pegawai_id` = " . ew_QuotedValue($rsold['pegawai_id'], EW_DATATYPE_NUMBER, 'DB')); 
+			while ($rswrk && !$rswrk->EOF) {
+				$rskey = array();
+				$fldname = 'rumus_peg_id';
+				$rskey[$fldname] = $rswrk->fields[$fldname];
+				$bUpdate = $GLOBALS["t_rumus_peg"]->Update($rscascade, $rskey, $rswrk->fields);
+				if (!$bUpdate) return FALSE;
+				$rswrk->MoveNext();
+			}
+		}
 		$bUpdate = $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
 		if ($bUpdate && $this->AuditTrailOnEdit) {
 			$rsaudit = $rs;
@@ -624,6 +660,22 @@ class cpegawai extends cTable {
 	// Delete
 	function Delete(&$rs, $where = "", $curfilter = TRUE) {
 		$conn = &$this->Connection();
+
+		// Cascade delete detail table 't_jdw_krj_peg'
+		if (!isset($GLOBALS["t_jdw_krj_peg"])) $GLOBALS["t_jdw_krj_peg"] = new ct_jdw_krj_peg();
+		$rscascade = $GLOBALS["t_jdw_krj_peg"]->LoadRs("`pegawai_id` = " . ew_QuotedValue($rs['pegawai_id'], EW_DATATYPE_NUMBER, "DB")); 
+		while ($rscascade && !$rscascade->EOF) {
+			$GLOBALS["t_jdw_krj_peg"]->Delete($rscascade->fields);
+			$rscascade->MoveNext();
+		}
+
+		// Cascade delete detail table 't_rumus_peg'
+		if (!isset($GLOBALS["t_rumus_peg"])) $GLOBALS["t_rumus_peg"] = new ct_rumus_peg();
+		$rscascade = $GLOBALS["t_rumus_peg"]->LoadRs("`pegawai_id` = " . ew_QuotedValue($rs['pegawai_id'], EW_DATATYPE_NUMBER, "DB")); 
+		while ($rscascade && !$rscascade->EOF) {
+			$GLOBALS["t_rumus_peg"]->Delete($rscascade->fields);
+			$rscascade->MoveNext();
+		}
 		$bDelete = $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
 		if ($bDelete && $this->AuditTrailOnDelete)
 			$this->WriteAuditTrailOnDelete($rs);
