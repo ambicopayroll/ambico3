@@ -285,8 +285,6 @@ class cpembagian1_edit extends cpembagian1 {
 		// Create form object
 		$objForm = new cFormObj();
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->pembagian1_id->SetVisibility();
-		$this->pembagian1_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pembagian1_nama->SetVisibility();
 		$this->pembagian1_ket->SetVisibility();
 
@@ -467,7 +465,7 @@ class cpembagian1_edit extends cpembagian1 {
 				}
 				break;
 			Case "U": // Update
-				$sReturnUrl = $this->getReturnUrl();
+				$sReturnUrl = $this->GetEditUrl();
 				if (ew_GetPageName($sReturnUrl) == "pembagian1list.php")
 					$sReturnUrl = $this->AddMasterUrl($sReturnUrl); // List page, return to list page with correct master key if necessary
 				$this->SendEmail = TRUE; // Send email on update success
@@ -540,14 +538,14 @@ class cpembagian1_edit extends cpembagian1 {
 
 		// Load from form
 		global $objForm;
-		if (!$this->pembagian1_id->FldIsDetailKey)
-			$this->pembagian1_id->setFormValue($objForm->GetValue("x_pembagian1_id"));
 		if (!$this->pembagian1_nama->FldIsDetailKey) {
 			$this->pembagian1_nama->setFormValue($objForm->GetValue("x_pembagian1_nama"));
 		}
 		if (!$this->pembagian1_ket->FldIsDetailKey) {
 			$this->pembagian1_ket->setFormValue($objForm->GetValue("x_pembagian1_ket"));
 		}
+		if (!$this->pembagian1_id->FldIsDetailKey)
+			$this->pembagian1_id->setFormValue($objForm->GetValue("x_pembagian1_id"));
 	}
 
 	// Restore form values
@@ -656,11 +654,6 @@ class cpembagian1_edit extends cpembagian1 {
 		$this->pembagian1_ket->ViewValue = $this->pembagian1_ket->CurrentValue;
 		$this->pembagian1_ket->ViewCustomAttributes = "";
 
-			// pembagian1_id
-			$this->pembagian1_id->LinkCustomAttributes = "";
-			$this->pembagian1_id->HrefValue = "";
-			$this->pembagian1_id->TooltipValue = "";
-
 			// pembagian1_nama
 			$this->pembagian1_nama->LinkCustomAttributes = "";
 			$this->pembagian1_nama->HrefValue = "";
@@ -671,12 +664,6 @@ class cpembagian1_edit extends cpembagian1 {
 			$this->pembagian1_ket->HrefValue = "";
 			$this->pembagian1_ket->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
-
-			// pembagian1_id
-			$this->pembagian1_id->EditAttrs["class"] = "form-control";
-			$this->pembagian1_id->EditCustomAttributes = "";
-			$this->pembagian1_id->EditValue = $this->pembagian1_id->CurrentValue;
-			$this->pembagian1_id->ViewCustomAttributes = "";
 
 			// pembagian1_nama
 			$this->pembagian1_nama->EditAttrs["class"] = "form-control";
@@ -691,12 +678,8 @@ class cpembagian1_edit extends cpembagian1 {
 			$this->pembagian1_ket->PlaceHolder = ew_RemoveHtml($this->pembagian1_ket->FldCaption());
 
 			// Edit refer script
-			// pembagian1_id
-
-			$this->pembagian1_id->LinkCustomAttributes = "";
-			$this->pembagian1_id->HrefValue = "";
-
 			// pembagian1_nama
+
 			$this->pembagian1_nama->LinkCustomAttributes = "";
 			$this->pembagian1_nama->HrefValue = "";
 
@@ -1039,18 +1022,6 @@ $pembagian1_edit->ShowMessage();
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <div>
-<?php if ($pembagian1->pembagian1_id->Visible) { // pembagian1_id ?>
-	<div id="r_pembagian1_id" class="form-group">
-		<label id="elh_pembagian1_pembagian1_id" class="col-sm-2 control-label ewLabel"><?php echo $pembagian1->pembagian1_id->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $pembagian1->pembagian1_id->CellAttributes() ?>>
-<span id="el_pembagian1_pembagian1_id">
-<span<?php echo $pembagian1->pembagian1_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $pembagian1->pembagian1_id->EditValue ?></p></span>
-</span>
-<input type="hidden" data-table="pembagian1" data-field="x_pembagian1_id" name="x_pembagian1_id" id="x_pembagian1_id" value="<?php echo ew_HtmlEncode($pembagian1->pembagian1_id->CurrentValue) ?>">
-<?php echo $pembagian1->pembagian1_id->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
 <?php if ($pembagian1->pembagian1_nama->Visible) { // pembagian1_nama ?>
 	<div id="r_pembagian1_nama" class="form-group">
 		<label id="elh_pembagian1_pembagian1_nama" for="x_pembagian1_nama" class="col-sm-2 control-label ewLabel"><?php echo $pembagian1->pembagian1_nama->FldCaption() ?></label>
@@ -1072,6 +1043,7 @@ $pembagian1_edit->ShowMessage();
 	</div>
 <?php } ?>
 </div>
+<input type="hidden" data-table="pembagian1" data-field="x_pembagian1_id" name="x_pembagian1_id" id="x_pembagian1_id" value="<?php echo ew_HtmlEncode($pembagian1->pembagian1_id->CurrentValue) ?>">
 <?php if (!$pembagian1_edit->IsModal) { ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">

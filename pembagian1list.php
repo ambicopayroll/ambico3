@@ -410,8 +410,6 @@ class cpembagian1_list extends cpembagian1 {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->pembagian1_id->SetVisibility();
-		$this->pembagian1_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pembagian1_nama->SetVisibility();
 		$this->pembagian1_ket->SetVisibility();
 
@@ -1010,7 +1008,6 @@ class cpembagian1_list extends cpembagian1 {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->pembagian1_id, $bCtrl); // pembagian1_id
 			$this->UpdateSort($this->pembagian1_nama, $bCtrl); // pembagian1_nama
 			$this->UpdateSort($this->pembagian1_ket, $bCtrl); // pembagian1_ket
 			$this->setStartRecordNumber(1); // Reset start position
@@ -1045,7 +1042,6 @@ class cpembagian1_list extends cpembagian1 {
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->pembagian1_id->setSort("");
 				$this->pembagian1_nama->setSort("");
 				$this->pembagian1_ket->setSort("");
 			}
@@ -1101,6 +1097,14 @@ class cpembagian1_list extends cpembagian1 {
 		$item->ShowInDropDown = FALSE;
 		$item->ShowInButtonGroup = FALSE;
 
+		// "sequence"
+		$item = &$this->ListOptions->Add("sequence");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = TRUE;
+		$item->OnLeft = TRUE; // Always on left
+		$item->ShowInDropDown = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+
 		// Drop down button for ListOptions
 		$this->ListOptions->UseImageAndText = TRUE;
 		$this->ListOptions->UseDropDownButton = TRUE;
@@ -1121,6 +1125,10 @@ class cpembagian1_list extends cpembagian1 {
 	function RenderListOptions() {
 		global $Security, $Language, $objForm;
 		$this->ListOptions->LoadDefault();
+
+		// "sequence"
+		$oListOpt = &$this->ListOptions->Items["sequence"];
+		$oListOpt->Body = ew_FormatSeqNo($this->RecCnt);
 
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
@@ -1557,11 +1565,6 @@ class cpembagian1_list extends cpembagian1 {
 		// pembagian1_ket
 		$this->pembagian1_ket->ViewValue = $this->pembagian1_ket->CurrentValue;
 		$this->pembagian1_ket->ViewCustomAttributes = "";
-
-			// pembagian1_id
-			$this->pembagian1_id->LinkCustomAttributes = "";
-			$this->pembagian1_id->HrefValue = "";
-			$this->pembagian1_id->TooltipValue = "";
 
 			// pembagian1_nama
 			$this->pembagian1_nama->LinkCustomAttributes = "";
@@ -2096,6 +2099,13 @@ var CurrentSearchForm = fpembagian1listsrch = new ew_Form("fpembagian1listsrch")
 		else
 			$pembagian1_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
+
+	// Audit trail on search
+	if ($pembagian1_list->AuditTrailOnSearch && $pembagian1_list->Command == "search" && !$pembagian1_list->RestoreSearch) {
+		$searchparm = ew_ServerVar("QUERY_STRING");
+		$searchsql = $pembagian1_list->getSessionWhere();
+		$pembagian1_list->WriteAuditTrailOnSearch($searchparm, $searchsql);
+	}
 $pembagian1_list->RenderOtherOptions();
 ?>
 <?php if ($Security->CanSearch()) { ?>
@@ -2226,15 +2236,6 @@ $pembagian1_list->RenderListOptions();
 // Render list options (header, left)
 $pembagian1_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($pembagian1->pembagian1_id->Visible) { // pembagian1_id ?>
-	<?php if ($pembagian1->SortUrl($pembagian1->pembagian1_id) == "") { ?>
-		<th data-name="pembagian1_id"><div id="elh_pembagian1_pembagian1_id" class="pembagian1_pembagian1_id"><div class="ewTableHeaderCaption"><?php echo $pembagian1->pembagian1_id->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="pembagian1_id"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $pembagian1->SortUrl($pembagian1->pembagian1_id) ?>',2);"><div id="elh_pembagian1_pembagian1_id" class="pembagian1_pembagian1_id">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $pembagian1->pembagian1_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($pembagian1->pembagian1_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($pembagian1->pembagian1_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($pembagian1->pembagian1_nama->Visible) { // pembagian1_nama ?>
 	<?php if ($pembagian1->SortUrl($pembagian1->pembagian1_nama) == "") { ?>
 		<th data-name="pembagian1_nama"><div id="elh_pembagian1_pembagian1_nama" class="pembagian1_pembagian1_nama"><div class="ewTableHeaderCaption"><?php echo $pembagian1->pembagian1_nama->FldCaption() ?></div></div></th>
@@ -2318,21 +2319,13 @@ while ($pembagian1_list->RecCnt < $pembagian1_list->StopRec) {
 // Render list options (body, left)
 $pembagian1_list->ListOptions->Render("body", "left", $pembagian1_list->RowCnt);
 ?>
-	<?php if ($pembagian1->pembagian1_id->Visible) { // pembagian1_id ?>
-		<td data-name="pembagian1_id"<?php echo $pembagian1->pembagian1_id->CellAttributes() ?>>
-<span id="el<?php echo $pembagian1_list->RowCnt ?>_pembagian1_pembagian1_id" class="pembagian1_pembagian1_id">
-<span<?php echo $pembagian1->pembagian1_id->ViewAttributes() ?>>
-<?php echo $pembagian1->pembagian1_id->ListViewValue() ?></span>
-</span>
-<a id="<?php echo $pembagian1_list->PageObjName . "_row_" . $pembagian1_list->RowCnt ?>"></a></td>
-	<?php } ?>
 	<?php if ($pembagian1->pembagian1_nama->Visible) { // pembagian1_nama ?>
 		<td data-name="pembagian1_nama"<?php echo $pembagian1->pembagian1_nama->CellAttributes() ?>>
 <span id="el<?php echo $pembagian1_list->RowCnt ?>_pembagian1_pembagian1_nama" class="pembagian1_pembagian1_nama">
 <span<?php echo $pembagian1->pembagian1_nama->ViewAttributes() ?>>
 <?php echo $pembagian1->pembagian1_nama->ListViewValue() ?></span>
 </span>
-</td>
+<a id="<?php echo $pembagian1_list->PageObjName . "_row_" . $pembagian1_list->RowCnt ?>"></a></td>
 	<?php } ?>
 	<?php if ($pembagian1->pembagian1_ket->Visible) { // pembagian1_ket ?>
 		<td data-name="pembagian1_ket"<?php echo $pembagian1->pembagian1_ket->CellAttributes() ?>>
