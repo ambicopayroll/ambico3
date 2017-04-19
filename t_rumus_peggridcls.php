@@ -312,8 +312,6 @@ class ct_rumus_peg_grid extends ct_rumus_peg {
 
 		// Set up list options
 		$this->SetupListOptions();
-		$this->rumus_peg_id->SetVisibility();
-		$this->rumus_peg_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pegawai_id->SetVisibility();
 		$this->rumus_id->SetVisibility();
 
@@ -1164,8 +1162,6 @@ class ct_rumus_peg_grid extends ct_rumus_peg {
 
 	// Load default values
 	function LoadDefaultValues() {
-		$this->rumus_peg_id->CurrentValue = NULL;
-		$this->rumus_peg_id->OldValue = $this->rumus_peg_id->CurrentValue;
 		$this->pegawai_id->CurrentValue = NULL;
 		$this->pegawai_id->OldValue = $this->pegawai_id->CurrentValue;
 		$this->rumus_id->CurrentValue = NULL;
@@ -1178,8 +1174,6 @@ class ct_rumus_peg_grid extends ct_rumus_peg {
 		// Load from form
 		global $objForm;
 		$objForm->FormName = $this->FormName;
-		if (!$this->rumus_peg_id->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
-			$this->rumus_peg_id->setFormValue($objForm->GetValue("x_rumus_peg_id"));
 		if (!$this->pegawai_id->FldIsDetailKey) {
 			$this->pegawai_id->setFormValue($objForm->GetValue("x_pegawai_id"));
 		}
@@ -1188,6 +1182,8 @@ class ct_rumus_peg_grid extends ct_rumus_peg {
 			$this->rumus_id->setFormValue($objForm->GetValue("x_rumus_id"));
 		}
 		$this->rumus_id->setOldValue($objForm->GetValue("o_rumus_id"));
+		if (!$this->rumus_peg_id->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->rumus_peg_id->setFormValue($objForm->GetValue("x_rumus_peg_id"));
 	}
 
 	// Restore form values
@@ -1386,11 +1382,6 @@ class ct_rumus_peg_grid extends ct_rumus_peg {
 		}
 		$this->rumus_id->ViewCustomAttributes = "";
 
-			// rumus_peg_id
-			$this->rumus_peg_id->LinkCustomAttributes = "";
-			$this->rumus_peg_id->HrefValue = "";
-			$this->rumus_peg_id->TooltipValue = "";
-
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
@@ -1402,9 +1393,7 @@ class ct_rumus_peg_grid extends ct_rumus_peg {
 			$this->rumus_id->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
-			// rumus_peg_id
 			// pegawai_id
-
 			$this->pegawai_id->EditAttrs["class"] = "form-control";
 			$this->pegawai_id->EditCustomAttributes = "";
 			if ($this->pegawai_id->getSessionValue() <> "") {
@@ -1487,12 +1476,8 @@ class ct_rumus_peg_grid extends ct_rumus_peg {
 			$this->rumus_id->EditValue = $arwrk;
 
 			// Add refer script
-			// rumus_peg_id
-
-			$this->rumus_peg_id->LinkCustomAttributes = "";
-			$this->rumus_peg_id->HrefValue = "";
-
 			// pegawai_id
+
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
 
@@ -1500,12 +1485,6 @@ class ct_rumus_peg_grid extends ct_rumus_peg {
 			$this->rumus_id->LinkCustomAttributes = "";
 			$this->rumus_id->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
-
-			// rumus_peg_id
-			$this->rumus_peg_id->EditAttrs["class"] = "form-control";
-			$this->rumus_peg_id->EditCustomAttributes = "";
-			$this->rumus_peg_id->EditValue = $this->rumus_peg_id->CurrentValue;
-			$this->rumus_peg_id->ViewCustomAttributes = "";
 
 			// pegawai_id
 			$this->pegawai_id->EditAttrs["class"] = "form-control";
@@ -1590,12 +1569,8 @@ class ct_rumus_peg_grid extends ct_rumus_peg {
 			$this->rumus_id->EditValue = $arwrk;
 
 			// Edit refer script
-			// rumus_peg_id
-
-			$this->rumus_peg_id->LinkCustomAttributes = "";
-			$this->rumus_peg_id->HrefValue = "";
-
 			// pegawai_id
+
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
 

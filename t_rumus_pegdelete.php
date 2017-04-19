@@ -286,8 +286,6 @@ class ct_rumus_peg_delete extends ct_rumus_peg {
 			$Security->UserID_Loaded();
 		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->rumus_peg_id->SetVisibility();
-		$this->rumus_peg_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pegawai_id->SetVisibility();
 		$this->rumus_id->SetVisibility();
 
@@ -565,11 +563,6 @@ class ct_rumus_peg_delete extends ct_rumus_peg {
 		}
 		}
 		$this->rumus_id->ViewCustomAttributes = "";
-
-			// rumus_peg_id
-			$this->rumus_peg_id->LinkCustomAttributes = "";
-			$this->rumus_peg_id->HrefValue = "";
-			$this->rumus_peg_id->TooltipValue = "";
 
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
@@ -895,9 +888,6 @@ $t_rumus_peg_delete->ShowMessage();
 <?php echo $t_rumus_peg->TableCustomInnerHtml ?>
 	<thead>
 	<tr class="ewTableHeader">
-<?php if ($t_rumus_peg->rumus_peg_id->Visible) { // rumus_peg_id ?>
-		<th><span id="elh_t_rumus_peg_rumus_peg_id" class="t_rumus_peg_rumus_peg_id"><?php echo $t_rumus_peg->rumus_peg_id->FldCaption() ?></span></th>
-<?php } ?>
 <?php if ($t_rumus_peg->pegawai_id->Visible) { // pegawai_id ?>
 		<th><span id="elh_t_rumus_peg_pegawai_id" class="t_rumus_peg_pegawai_id"><?php echo $t_rumus_peg->pegawai_id->FldCaption() ?></span></th>
 <?php } ?>
@@ -925,14 +915,6 @@ while (!$t_rumus_peg_delete->Recordset->EOF) {
 	$t_rumus_peg_delete->RenderRow();
 ?>
 	<tr<?php echo $t_rumus_peg->RowAttributes() ?>>
-<?php if ($t_rumus_peg->rumus_peg_id->Visible) { // rumus_peg_id ?>
-		<td<?php echo $t_rumus_peg->rumus_peg_id->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_peg_delete->RowCnt ?>_t_rumus_peg_rumus_peg_id" class="t_rumus_peg_rumus_peg_id">
-<span<?php echo $t_rumus_peg->rumus_peg_id->ViewAttributes() ?>>
-<?php echo $t_rumus_peg->rumus_peg_id->ListViewValue() ?></span>
-</span>
-</td>
-<?php } ?>
 <?php if ($t_rumus_peg->pegawai_id->Visible) { // pegawai_id ?>
 		<td<?php echo $t_rumus_peg->pegawai_id->CellAttributes() ?>>
 <span id="el<?php echo $t_rumus_peg_delete->RowCnt ?>_t_rumus_peg_pegawai_id" class="t_rumus_peg_pegawai_id">

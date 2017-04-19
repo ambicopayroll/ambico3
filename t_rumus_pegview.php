@@ -387,8 +387,6 @@ class ct_rumus_peg_view extends ct_rumus_peg {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->rumus_peg_id->SetVisibility();
-		$this->rumus_peg_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pegawai_id->SetVisibility();
 		$this->rumus_id->SetVisibility();
 
@@ -814,11 +812,6 @@ class ct_rumus_peg_view extends ct_rumus_peg {
 		}
 		}
 		$this->rumus_id->ViewCustomAttributes = "";
-
-			// rumus_peg_id
-			$this->rumus_peg_id->LinkCustomAttributes = "";
-			$this->rumus_peg_id->HrefValue = "";
-			$this->rumus_peg_id->TooltipValue = "";
 
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
@@ -1389,17 +1382,6 @@ $t_rumus_peg_view->ShowMessage();
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($t_rumus_peg->rumus_peg_id->Visible) { // rumus_peg_id ?>
-	<tr id="r_rumus_peg_id">
-		<td><span id="elh_t_rumus_peg_rumus_peg_id"><?php echo $t_rumus_peg->rumus_peg_id->FldCaption() ?></span></td>
-		<td data-name="rumus_peg_id"<?php echo $t_rumus_peg->rumus_peg_id->CellAttributes() ?>>
-<span id="el_t_rumus_peg_rumus_peg_id">
-<span<?php echo $t_rumus_peg->rumus_peg_id->ViewAttributes() ?>>
-<?php echo $t_rumus_peg->rumus_peg_id->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($t_rumus_peg->pegawai_id->Visible) { // pegawai_id ?>
 	<tr id="r_pegawai_id">
 		<td><span id="elh_t_rumus_peg_pegawai_id"><?php echo $t_rumus_peg->pegawai_id->FldCaption() ?></span></td>

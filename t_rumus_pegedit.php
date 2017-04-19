@@ -289,8 +289,6 @@ class ct_rumus_peg_edit extends ct_rumus_peg {
 		// Create form object
 		$objForm = new cFormObj();
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->rumus_peg_id->SetVisibility();
-		$this->rumus_peg_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->pegawai_id->SetVisibility();
 		$this->rumus_id->SetVisibility();
 
@@ -547,14 +545,14 @@ class ct_rumus_peg_edit extends ct_rumus_peg {
 
 		// Load from form
 		global $objForm;
-		if (!$this->rumus_peg_id->FldIsDetailKey)
-			$this->rumus_peg_id->setFormValue($objForm->GetValue("x_rumus_peg_id"));
 		if (!$this->pegawai_id->FldIsDetailKey) {
 			$this->pegawai_id->setFormValue($objForm->GetValue("x_pegawai_id"));
 		}
 		if (!$this->rumus_id->FldIsDetailKey) {
 			$this->rumus_id->setFormValue($objForm->GetValue("x_rumus_id"));
 		}
+		if (!$this->rumus_peg_id->FldIsDetailKey)
+			$this->rumus_peg_id->setFormValue($objForm->GetValue("x_rumus_peg_id"));
 	}
 
 	// Restore form values
@@ -720,11 +718,6 @@ class ct_rumus_peg_edit extends ct_rumus_peg {
 		}
 		$this->rumus_id->ViewCustomAttributes = "";
 
-			// rumus_peg_id
-			$this->rumus_peg_id->LinkCustomAttributes = "";
-			$this->rumus_peg_id->HrefValue = "";
-			$this->rumus_peg_id->TooltipValue = "";
-
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
@@ -735,12 +728,6 @@ class ct_rumus_peg_edit extends ct_rumus_peg {
 			$this->rumus_id->HrefValue = "";
 			$this->rumus_id->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
-
-			// rumus_peg_id
-			$this->rumus_peg_id->EditAttrs["class"] = "form-control";
-			$this->rumus_peg_id->EditCustomAttributes = "";
-			$this->rumus_peg_id->EditValue = $this->rumus_peg_id->CurrentValue;
-			$this->rumus_peg_id->ViewCustomAttributes = "";
 
 			// pegawai_id
 			$this->pegawai_id->EditAttrs["class"] = "form-control";
@@ -824,12 +811,8 @@ class ct_rumus_peg_edit extends ct_rumus_peg {
 			$this->rumus_id->EditValue = $arwrk;
 
 			// Edit refer script
-			// rumus_peg_id
-
-			$this->rumus_peg_id->LinkCustomAttributes = "";
-			$this->rumus_peg_id->HrefValue = "";
-
 			// pegawai_id
+
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
 
@@ -1288,18 +1271,6 @@ $t_rumus_peg_edit->ShowMessage();
 <input type="hidden" name="fk_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->getSessionValue() ?>">
 <?php } ?>
 <div>
-<?php if ($t_rumus_peg->rumus_peg_id->Visible) { // rumus_peg_id ?>
-	<div id="r_rumus_peg_id" class="form-group">
-		<label id="elh_t_rumus_peg_rumus_peg_id" class="col-sm-2 control-label ewLabel"><?php echo $t_rumus_peg->rumus_peg_id->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $t_rumus_peg->rumus_peg_id->CellAttributes() ?>>
-<span id="el_t_rumus_peg_rumus_peg_id">
-<span<?php echo $t_rumus_peg->rumus_peg_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_rumus_peg->rumus_peg_id->EditValue ?></p></span>
-</span>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_peg_id" name="x_rumus_peg_id" id="x_rumus_peg_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->rumus_peg_id->CurrentValue) ?>">
-<?php echo $t_rumus_peg->rumus_peg_id->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
 <?php if ($t_rumus_peg->pegawai_id->Visible) { // pegawai_id ?>
 	<div id="r_pegawai_id" class="form-group">
 		<label id="elh_t_rumus_peg_pegawai_id" class="col-sm-2 control-label ewLabel"><?php echo $t_rumus_peg->pegawai_id->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
@@ -1348,6 +1319,7 @@ ft_rumus_pegedit.CreateAutoSuggest({"id":"x_pegawai_id","forceSelect":true});
 	</div>
 <?php } ?>
 </div>
+<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_peg_id" name="x_rumus_peg_id" id="x_rumus_peg_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->rumus_peg_id->CurrentValue) ?>">
 <?php if (!$t_rumus_peg_edit->IsModal) { ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">

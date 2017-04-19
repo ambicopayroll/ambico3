@@ -872,7 +872,6 @@ class ct_rumus_peg extends cTable {
 			if ($Doc->Horizontal) { // Horizontal format, write header
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
-					if ($this->rumus_peg_id->Exportable) $Doc->ExportCaption($this->rumus_peg_id);
 					if ($this->pegawai_id->Exportable) $Doc->ExportCaption($this->pegawai_id);
 					if ($this->rumus_id->Exportable) $Doc->ExportCaption($this->rumus_id);
 				} else {
@@ -910,7 +909,6 @@ class ct_rumus_peg extends cTable {
 				if (!$Doc->ExportCustom) {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
-						if ($this->rumus_peg_id->Exportable) $Doc->ExportField($this->rumus_peg_id);
 						if ($this->pegawai_id->Exportable) $Doc->ExportField($this->pegawai_id);
 						if ($this->rumus_id->Exportable) $Doc->ExportField($this->rumus_id);
 					} else {
