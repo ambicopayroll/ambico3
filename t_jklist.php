@@ -362,6 +362,9 @@ class ct_jk_list extends ct_jk {
 			$Security->UserID_Loaded();
 		}
 
+		// Create form object
+		$objForm = new cFormObj();
+
 		// Get export parameters
 		$custom = "";
 		if (@$_GET["export"] <> "") {
@@ -410,12 +413,11 @@ class ct_jk_list extends ct_jk {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->jk_id->SetVisibility();
-		$this->jk_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->jk_nm->SetVisibility();
 		$this->jk_kd->SetVisibility();
 		$this->jk_m->SetVisibility();
 		$this->jk_k->SetVisibility();
+		$this->jk_ket->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -578,6 +580,71 @@ class ct_jk_list extends ct_jk {
 			if ($this->Export == "")
 				$this->SetupBreadcrumb();
 
+			// Check QueryString parameters
+			if (@$_GET["a"] <> "") {
+				$this->CurrentAction = $_GET["a"];
+
+				// Clear inline mode
+				if ($this->CurrentAction == "cancel")
+					$this->ClearInlineMode();
+
+				// Switch to grid edit mode
+				if ($this->CurrentAction == "gridedit")
+					$this->GridEditMode();
+
+				// Switch to inline edit mode
+				if ($this->CurrentAction == "edit")
+					$this->InlineEditMode();
+
+				// Switch to inline add mode
+				if ($this->CurrentAction == "add" || $this->CurrentAction == "copy")
+					$this->InlineAddMode();
+
+				// Switch to grid add mode
+				if ($this->CurrentAction == "gridadd")
+					$this->GridAddMode();
+			} else {
+				if (@$_POST["a_list"] <> "") {
+					$this->CurrentAction = $_POST["a_list"]; // Get action
+
+					// Grid Update
+					if (($this->CurrentAction == "gridupdate" || $this->CurrentAction == "gridoverwrite") && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridedit") {
+						if ($this->ValidateGridForm()) {
+							$bGridUpdate = $this->GridUpdate();
+						} else {
+							$bGridUpdate = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridUpdate) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridedit"; // Stay in Grid Edit mode
+						}
+					}
+
+					// Inline Update
+					if (($this->CurrentAction == "update" || $this->CurrentAction == "overwrite") && @$_SESSION[EW_SESSION_INLINE_MODE] == "edit")
+						$this->InlineUpdate();
+
+					// Insert Inline
+					if ($this->CurrentAction == "insert" && @$_SESSION[EW_SESSION_INLINE_MODE] == "add")
+						$this->InlineInsert();
+
+					// Grid Insert
+					if ($this->CurrentAction == "gridinsert" && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridadd") {
+						if ($this->ValidateGridForm()) {
+							$bGridInsert = $this->GridInsert();
+						} else {
+							$bGridInsert = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridInsert) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridadd"; // Stay in Grid Add mode
+						}
+					}
+				}
+			}
+
 			// Hide list options
 			if ($this->Export <> "") {
 				$this->ListOptions->HideAllOptions(array("sequence"));
@@ -599,6 +666,14 @@ class ct_jk_list extends ct_jk {
 			if ($this->Export <> "") {
 				foreach ($this->OtherOptions as &$option)
 					$option->HideAllOptions();
+			}
+
+			// Show grid delete link for grid add / grid edit
+			if ($this->AllowAddDeleteRow) {
+				if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+					$item = $this->ListOptions->GetItem("griddelete");
+					if ($item) $item->Visible = TRUE;
+				}
 			}
 
 			// Get default search criteria
@@ -714,6 +789,234 @@ class ct_jk_list extends ct_jk {
 		}
 	}
 
+	//  Exit inline mode
+	function ClearInlineMode() {
+		$this->setKey("jk_id", ""); // Clear inline edit key
+		$this->LastAction = $this->CurrentAction; // Save last action
+		$this->CurrentAction = ""; // Clear action
+		$_SESSION[EW_SESSION_INLINE_MODE] = ""; // Clear inline mode
+	}
+
+	// Switch to Grid Add mode
+	function GridAddMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridadd"; // Enabled grid add
+	}
+
+	// Switch to Grid Edit mode
+	function GridEditMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridedit"; // Enable grid edit
+	}
+
+	// Switch to Inline Edit mode
+	function InlineEditMode() {
+		global $Security, $Language;
+		if (!$Security->CanEdit())
+			$this->Page_Terminate("login.php"); // Go to login page
+		$bInlineEdit = TRUE;
+		if (@$_GET["jk_id"] <> "") {
+			$this->jk_id->setQueryStringValue($_GET["jk_id"]);
+		} else {
+			$bInlineEdit = FALSE;
+		}
+		if ($bInlineEdit) {
+			if ($this->LoadRow()) {
+				$this->setKey("jk_id", $this->jk_id->CurrentValue); // Set up inline edit key
+				$_SESSION[EW_SESSION_INLINE_MODE] = "edit"; // Enable inline edit
+			}
+		}
+	}
+
+	// Perform update to Inline Edit record
+	function InlineUpdate() {
+		global $Language, $objForm, $gsFormError;
+		$objForm->Index = 1; 
+		$this->LoadFormValues(); // Get form values
+
+		// Validate form
+		$bInlineUpdate = TRUE;
+		if (!$this->ValidateForm()) {	
+			$bInlineUpdate = FALSE; // Form error, reset action
+			$this->setFailureMessage($gsFormError);
+		} else {
+			$bInlineUpdate = FALSE;
+			$rowkey = strval($objForm->GetValue($this->FormKeyName));
+			if ($this->SetupKeyValues($rowkey)) { // Set up key values
+				if ($this->CheckInlineEditKey()) { // Check key
+					$this->SendEmail = TRUE; // Send email on update success
+					$bInlineUpdate = $this->EditRow(); // Update record
+				} else {
+					$bInlineUpdate = FALSE;
+				}
+			}
+		}
+		if ($bInlineUpdate) { // Update success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Set up success message
+			$this->ClearInlineMode(); // Clear inline edit mode
+		} else {
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("UpdateFailed")); // Set update failed message
+			$this->EventCancelled = TRUE; // Cancel event
+			$this->CurrentAction = "edit"; // Stay in edit mode
+		}
+	}
+
+	// Check Inline Edit key
+	function CheckInlineEditKey() {
+
+		//CheckInlineEditKey = True
+		if (strval($this->getKey("jk_id")) <> strval($this->jk_id->CurrentValue))
+			return FALSE;
+		return TRUE;
+	}
+
+	// Switch to Inline Add mode
+	function InlineAddMode() {
+		global $Security, $Language;
+		if (!$Security->CanAdd())
+			$this->Page_Terminate("login.php"); // Return to login page
+		if ($this->CurrentAction == "copy") {
+			if (@$_GET["jk_id"] <> "") {
+				$this->jk_id->setQueryStringValue($_GET["jk_id"]);
+				$this->setKey("jk_id", $this->jk_id->CurrentValue); // Set up key
+			} else {
+				$this->setKey("jk_id", ""); // Clear key
+				$this->CurrentAction = "add";
+			}
+		}
+		$_SESSION[EW_SESSION_INLINE_MODE] = "add"; // Enable inline add
+	}
+
+	// Perform update to Inline Add/Copy record
+	function InlineInsert() {
+		global $Language, $objForm, $gsFormError;
+		$this->LoadOldRecord(); // Load old recordset
+		$objForm->Index = 0;
+		$this->LoadFormValues(); // Get form values
+
+		// Validate form
+		if (!$this->ValidateForm()) {
+			$this->setFailureMessage($gsFormError); // Set validation error message
+			$this->EventCancelled = TRUE; // Set event cancelled
+			$this->CurrentAction = "add"; // Stay in add mode
+			return;
+		}
+		$this->SendEmail = TRUE; // Send email on add success
+		if ($this->AddRow($this->OldRecordset)) { // Add record
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up add success message
+			$this->ClearInlineMode(); // Clear inline add mode
+		} else { // Add failed
+			$this->EventCancelled = TRUE; // Set event cancelled
+			$this->CurrentAction = "add"; // Stay in add mode
+		}
+	}
+
+	// Perform update to grid
+	function GridUpdate() {
+		global $Language, $objForm, $gsFormError;
+		$bGridUpdate = TRUE;
+
+		// Get old recordset
+		$this->CurrentFilter = $this->BuildKeyFilter();
+		if ($this->CurrentFilter == "")
+			$this->CurrentFilter = "0=1";
+		$sSql = $this->SQL();
+		$conn = &$this->Connection();
+		if ($rs = $conn->Execute($sSql)) {
+			$rsold = $rs->GetRows();
+			$rs->Close();
+		}
+
+		// Call Grid Updating event
+		if (!$this->Grid_Updating($rsold)) {
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("GridEditCancelled")); // Set grid edit cancelled message
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+		if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateBegin")); // Batch update begin
+		$sKey = "";
+
+		// Update row index and get row key
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Update all rows based on key
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+			$objForm->Index = $rowindex;
+			$rowkey = strval($objForm->GetValue($this->FormKeyName));
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+
+			// Load all values and keys
+			if ($rowaction <> "insertdelete") { // Skip insert then deleted rows
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "" || $rowaction == "edit" || $rowaction == "delete") {
+					$bGridUpdate = $this->SetupKeyValues($rowkey); // Set up key values
+				} else {
+					$bGridUpdate = TRUE;
+				}
+
+				// Skip empty row
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// No action required
+				// Validate form and insert/update/delete record
+
+				} elseif ($bGridUpdate) {
+					if ($rowaction == "delete") {
+						$this->CurrentFilter = $this->KeyFilter();
+						$bGridUpdate = $this->DeleteRows(); // Delete this row
+					} else if (!$this->ValidateForm()) {
+						$bGridUpdate = FALSE; // Form error, reset action
+						$this->setFailureMessage($gsFormError);
+					} else {
+						if ($rowaction == "insert") {
+							$bGridUpdate = $this->AddRow(); // Insert this row
+						} else {
+							if ($rowkey <> "") {
+								$this->SendEmail = FALSE; // Do not send email on update success
+								$bGridUpdate = $this->EditRow(); // Update this row
+							}
+						} // End update
+					}
+				}
+				if ($bGridUpdate) {
+					if ($sKey <> "") $sKey .= ", ";
+					$sKey .= $rowkey;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($bGridUpdate) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Updated event
+			$this->Grid_Updated($rsold, $rsnew);
+			if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateSuccess")); // Batch update success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Set up update success message
+			$this->ClearInlineMode(); // Clear inline edit mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateRollback")); // Batch update rollback
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("UpdateFailed")); // Set update failed message
+		}
+		return $bGridUpdate;
+	}
+
 	// Build filter for all keys
 	function BuildKeyFilter() {
 		global $objForm;
@@ -750,6 +1053,184 @@ class ct_jk_list extends ct_jk {
 				return FALSE;
 		}
 		return TRUE;
+	}
+
+	// Perform Grid Add
+	function GridInsert() {
+		global $Language, $objForm, $gsFormError;
+		$rowindex = 1;
+		$bGridInsert = FALSE;
+		$conn = &$this->Connection();
+
+		// Call Grid Inserting event
+		if (!$this->Grid_Inserting()) {
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("GridAddCancelled")); // Set grid add cancelled message
+			}
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+
+		// Init key filter
+		$sWrkFilter = "";
+		$addcnt = 0;
+		if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertBegin")); // Batch insert begin
+		$sKey = "";
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Insert all rows
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "" && $rowaction <> "insert")
+				continue; // Skip
+			$this->LoadFormValues(); // Get form values
+			if (!$this->EmptyRow()) {
+				$addcnt++;
+				$this->SendEmail = FALSE; // Do not send email on insert success
+
+				// Validate form
+				if (!$this->ValidateForm()) {
+					$bGridInsert = FALSE; // Form error, reset action
+					$this->setFailureMessage($gsFormError);
+				} else {
+					$bGridInsert = $this->AddRow($this->OldRecordset); // Insert this row
+				}
+				if ($bGridInsert) {
+					if ($sKey <> "") $sKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+					$sKey .= $this->jk_id->CurrentValue;
+
+					// Add filter for this record
+					$sFilter = $this->KeyFilter();
+					if ($sWrkFilter <> "") $sWrkFilter .= " OR ";
+					$sWrkFilter .= $sFilter;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($addcnt == 0) { // No record inserted
+			$this->setFailureMessage($Language->Phrase("NoAddRecord"));
+			$bGridInsert = FALSE;
+		}
+		if ($bGridInsert) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			$this->CurrentFilter = $sWrkFilter;
+			$sSql = $this->SQL();
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Inserted event
+			$this->Grid_Inserted($rsnew);
+			if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertSuccess")); // Batch insert success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("InsertSuccess")); // Set up insert success message
+			$this->ClearInlineMode(); // Clear grid add mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertRollback")); // Batch insert rollback
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("InsertFailed")); // Set insert failed message
+			}
+		}
+		return $bGridInsert;
+	}
+
+	// Check if empty row
+	function EmptyRow() {
+		global $objForm;
+		if ($objForm->HasValue("x_jk_nm") && $objForm->HasValue("o_jk_nm") && $this->jk_nm->CurrentValue <> $this->jk_nm->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_jk_kd") && $objForm->HasValue("o_jk_kd") && $this->jk_kd->CurrentValue <> $this->jk_kd->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_jk_m") && $objForm->HasValue("o_jk_m") && $this->jk_m->CurrentValue <> $this->jk_m->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_jk_k") && $objForm->HasValue("o_jk_k") && $this->jk_k->CurrentValue <> $this->jk_k->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_jk_ket") && $objForm->HasValue("o_jk_ket") && $this->jk_ket->CurrentValue <> $this->jk_ket->OldValue)
+			return FALSE;
+		return TRUE;
+	}
+
+	// Validate grid form
+	function ValidateGridForm() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Validate all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else if (!$this->ValidateForm()) {
+					return FALSE;
+				}
+			}
+		}
+		return TRUE;
+	}
+
+	// Get all form values of the grid
+	function GetGridFormValues() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+		$rows = array();
+
+		// Loop through all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else {
+					$rows[] = $this->GetFieldValues("FormValue"); // Return row as array
+				}
+			}
+		}
+		return $rows; // Return as array of array
+	}
+
+	// Restore form values for current row
+	function RestoreCurrentRowFormValues($idx) {
+		global $objForm;
+
+		// Get row based on current index
+		$objForm->Index = $idx;
+		$this->LoadFormValues(); // Load form values
 	}
 
 	// Get list of filters
@@ -1040,11 +1521,11 @@ class ct_jk_list extends ct_jk {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->jk_id, $bCtrl); // jk_id
 			$this->UpdateSort($this->jk_nm, $bCtrl); // jk_nm
 			$this->UpdateSort($this->jk_kd, $bCtrl); // jk_kd
 			$this->UpdateSort($this->jk_m, $bCtrl); // jk_m
 			$this->UpdateSort($this->jk_k, $bCtrl); // jk_k
+			$this->UpdateSort($this->jk_ket, $bCtrl); // jk_ket
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -1077,11 +1558,11 @@ class ct_jk_list extends ct_jk {
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->jk_id->setSort("");
 				$this->jk_nm->setSort("");
 				$this->jk_kd->setSort("");
 				$this->jk_m->setSort("");
 				$this->jk_k->setSort("");
+				$this->jk_ket->setSort("");
 			}
 
 			// Reset start position
@@ -1093,6 +1574,14 @@ class ct_jk_list extends ct_jk {
 	// Set up list options
 	function SetupListOptions() {
 		global $Security, $Language;
+
+		// "griddelete"
+		if ($this->AllowAddDeleteRow) {
+			$item = &$this->ListOptions->Add("griddelete");
+			$item->CssStyle = "white-space: nowrap;";
+			$item->OnLeft = TRUE;
+			$item->Visible = FALSE; // Default hidden
+		}
 
 		// Add group option item
 		$item = &$this->ListOptions->Add($this->ListOptions->GroupOptionName);
@@ -1135,6 +1624,14 @@ class ct_jk_list extends ct_jk {
 		$item->ShowInDropDown = FALSE;
 		$item->ShowInButtonGroup = FALSE;
 
+		// "sequence"
+		$item = &$this->ListOptions->Add("sequence");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = TRUE;
+		$item->OnLeft = TRUE; // Always on left
+		$item->ShowInDropDown = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+
 		// Drop down button for ListOptions
 		$this->ListOptions->UseImageAndText = TRUE;
 		$this->ListOptions->UseDropDownButton = TRUE;
@@ -1156,6 +1653,67 @@ class ct_jk_list extends ct_jk {
 		global $Security, $Language, $objForm;
 		$this->ListOptions->LoadDefault();
 
+		// Set up row action and key
+		if (is_numeric($this->RowIndex) && $this->CurrentMode <> "view") {
+			$objForm->Index = $this->RowIndex;
+			$ActionName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormActionName);
+			$OldKeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormOldKeyName);
+			$KeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormKeyName);
+			$BlankRowName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormBlankRowName);
+			if ($this->RowAction <> "")
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $ActionName . "\" id=\"" . $ActionName . "\" value=\"" . $this->RowAction . "\">";
+			if ($this->RowAction == "delete") {
+				$rowkey = $objForm->GetValue($this->FormKeyName);
+				$this->SetupKeyValues($rowkey);
+			}
+			if ($this->RowAction == "insert" && $this->CurrentAction == "F" && $this->EmptyRow())
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $BlankRowName . "\" id=\"" . $BlankRowName . "\" value=\"1\">";
+		}
+
+		// "delete"
+		if ($this->AllowAddDeleteRow) {
+			if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+				$option = &$this->ListOptions;
+				$option->UseButtonGroup = TRUE; // Use button group for grid delete button
+				$option->UseImageAndText = TRUE; // Use image and text for grid delete button
+				$oListOpt = &$option->Items["griddelete"];
+				if (!$Security->CanDelete() && is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
+					$oListOpt->Body = "&nbsp;";
+				} else {
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" onclick=\"return ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+				}
+			}
+		}
+
+		// "sequence"
+		$oListOpt = &$this->ListOptions->Items["sequence"];
+		$oListOpt->Body = ew_FormatSeqNo($this->RecCnt);
+
+		// "copy"
+		$oListOpt = &$this->ListOptions->Items["copy"];
+		if (($this->CurrentAction == "add" || $this->CurrentAction == "copy") && $this->RowType == EW_ROWTYPE_ADD) { // Inline Add/Copy
+			$this->ListOptions->CustomItem = "copy"; // Show copy column only
+			$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+			$oListOpt->Body = "<div" . (($oListOpt->OnLeft) ? " style=\"text-align: right\"" : "") . ">" .
+				"<a class=\"ewGridLink ewInlineInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("InsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("InsertLink") . "</a>&nbsp;" .
+				"<a class=\"ewGridLink ewInlineCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("CancelLink") . "</a>" .
+				"<input type=\"hidden\" name=\"a_list\" id=\"a_list\" value=\"insert\"></div>";
+			return;
+		}
+
+		// "edit"
+		$oListOpt = &$this->ListOptions->Items["edit"];
+		if ($this->CurrentAction == "edit" && $this->RowType == EW_ROWTYPE_EDIT) { // Inline-Edit
+			$this->ListOptions->CustomItem = "edit"; // Show edit column only
+			$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+				$oListOpt->Body = "<div" . (($oListOpt->OnLeft) ? " style=\"text-align: right\"" : "") . ">" .
+					"<a class=\"ewGridLink ewInlineUpdate\" title=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . ew_GetHashUrl($this->PageName(), $this->PageObjName . "_row_" . $this->RowCnt) . "');\">" . $Language->Phrase("UpdateLink") . "</a>&nbsp;" .
+					"<a class=\"ewGridLink ewInlineCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("CancelLink") . "</a>" .
+					"<input type=\"hidden\" name=\"a_list\" id=\"a_list\" value=\"update\"></div>";
+			$oListOpt->Body .= "<input type=\"hidden\" name=\"k" . $this->RowIndex . "_key\" id=\"k" . $this->RowIndex . "_key\" value=\"" . ew_HtmlEncode($this->jk_id->CurrentValue) . "\">";
+			return;
+		}
+
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
 		$viewcaption = ew_HtmlTitle($Language->Phrase("ViewLink"));
@@ -1170,6 +1728,7 @@ class ct_jk_list extends ct_jk {
 		$editcaption = ew_HtmlTitle($Language->Phrase("EditLink"));
 		if ($Security->CanEdit()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
+			$oListOpt->Body .= "<a class=\"ewRowLink ewInlineEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineEditLink")) . "\" href=\"" . ew_HtmlEncode(ew_GetHashUrl($this->InlineEditUrl, $this->PageObjName . "_row_" . $this->RowCnt)) . "\">" . $Language->Phrase("InlineEditLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
@@ -1179,6 +1738,7 @@ class ct_jk_list extends ct_jk {
 		$copycaption = ew_HtmlTitle($Language->Phrase("CopyLink"));
 		if ($Security->CanAdd()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . $copycaption . "\" data-caption=\"" . $copycaption . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
+			$oListOpt->Body .= "<a class=\"ewRowLink ewInlineCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->InlineCopyUrl) . "\">" . $Language->Phrase("InlineCopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
@@ -1215,6 +1775,9 @@ class ct_jk_list extends ct_jk {
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
 		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->jk_id->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
+		if ($this->CurrentAction == "gridedit" && is_numeric($this->RowIndex)) {
+			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->jk_id->CurrentValue . "\">";
+		}
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -1232,6 +1795,20 @@ class ct_jk_list extends ct_jk {
 		$addcaption = ew_HtmlTitle($Language->Phrase("AddLink"));
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . $addcaption . "\" data-caption=\"" . $addcaption . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
 		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+
+		// Inline Add
+		$item = &$option->Add("inlineadd");
+		$item->Body = "<a class=\"ewAddEdit ewInlineAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineAddLink")) . "\" href=\"" . ew_HtmlEncode($this->InlineAddUrl) . "\">" .$Language->Phrase("InlineAddLink") . "</a>";
+		$item->Visible = ($this->InlineAddUrl <> "" && $Security->CanAdd());
+		$item = &$option->Add("gridadd");
+		$item->Body = "<a class=\"ewAddEdit ewGridAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" href=\"" . ew_HtmlEncode($this->GridAddUrl) . "\">" . $Language->Phrase("GridAddLink") . "</a>";
+		$item->Visible = ($this->GridAddUrl <> "" && $Security->CanAdd());
+
+		// Add grid edit
+		$option = $options["addedit"];
+		$item = &$option->Add("gridedit");
+		$item->Body = "<a class=\"ewAddEdit ewGridEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GridEditUrl) . "\">" . $Language->Phrase("GridEditLink") . "</a>";
+		$item->Visible = ($this->GridEditUrl <> "" && $Security->CanEdit());
 		$option = $options["action"];
 
 		// Add multi delete
@@ -1274,6 +1851,7 @@ class ct_jk_list extends ct_jk {
 	function RenderOtherOptions() {
 		global $Language, $Security;
 		$options = &$this->OtherOptions;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "gridedit") { // Not grid add/edit mode
 			$option = &$options["action"];
 
 			// Set up list action buttons
@@ -1295,6 +1873,56 @@ class ct_jk_list extends ct_jk {
 				$option = &$options["action"];
 				$option->HideAllOptions();
 			}
+		} else { // Grid add/edit mode
+
+			// Hide all options first
+			foreach ($options as &$option)
+				$option->HideAllOptions();
+			if ($this->CurrentAction == "gridadd") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = $Security->CanAdd();
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+
+				// Add grid insert
+				$item = &$option->Add("gridinsert");
+				$item->Body = "<a class=\"ewAction ewGridInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridInsertLink") . "</a>";
+
+				// Add grid cancel
+				$item = &$option->Add("gridcancel");
+				$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+				$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+			if ($this->CurrentAction == "gridedit") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = $Security->CanAdd();
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+					$item = &$option->Add("gridsave");
+					$item->Body = "<a class=\"ewAction ewGridSave\" title=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridSaveLink") . "</a>";
+					$item = &$option->Add("gridcancel");
+					$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+					$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+		}
 	}
 
 	// Process list action
@@ -1459,11 +2087,70 @@ class ct_jk_list extends ct_jk {
 		}
 	}
 
+	// Load default values
+	function LoadDefaultValues() {
+		$this->jk_nm->CurrentValue = NULL;
+		$this->jk_nm->OldValue = $this->jk_nm->CurrentValue;
+		$this->jk_kd->CurrentValue = NULL;
+		$this->jk_kd->OldValue = $this->jk_kd->CurrentValue;
+		$this->jk_m->CurrentValue = NULL;
+		$this->jk_m->OldValue = $this->jk_m->CurrentValue;
+		$this->jk_k->CurrentValue = NULL;
+		$this->jk_k->OldValue = $this->jk_k->CurrentValue;
+		$this->jk_ket->CurrentValue = NULL;
+		$this->jk_ket->OldValue = $this->jk_ket->CurrentValue;
+	}
+
 	// Load basic search values
 	function LoadBasicSearchValues() {
 		$this->BasicSearch->Keyword = @$_GET[EW_TABLE_BASIC_SEARCH];
 		if ($this->BasicSearch->Keyword <> "") $this->Command = "search";
 		$this->BasicSearch->Type = @$_GET[EW_TABLE_BASIC_SEARCH_TYPE];
+	}
+
+	// Load form values
+	function LoadFormValues() {
+
+		// Load from form
+		global $objForm;
+		if (!$this->jk_nm->FldIsDetailKey) {
+			$this->jk_nm->setFormValue($objForm->GetValue("x_jk_nm"));
+		}
+		$this->jk_nm->setOldValue($objForm->GetValue("o_jk_nm"));
+		if (!$this->jk_kd->FldIsDetailKey) {
+			$this->jk_kd->setFormValue($objForm->GetValue("x_jk_kd"));
+		}
+		$this->jk_kd->setOldValue($objForm->GetValue("o_jk_kd"));
+		if (!$this->jk_m->FldIsDetailKey) {
+			$this->jk_m->setFormValue($objForm->GetValue("x_jk_m"));
+			$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 4);
+		}
+		$this->jk_m->setOldValue($objForm->GetValue("o_jk_m"));
+		if (!$this->jk_k->FldIsDetailKey) {
+			$this->jk_k->setFormValue($objForm->GetValue("x_jk_k"));
+			$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 4);
+		}
+		$this->jk_k->setOldValue($objForm->GetValue("o_jk_k"));
+		if (!$this->jk_ket->FldIsDetailKey) {
+			$this->jk_ket->setFormValue($objForm->GetValue("x_jk_ket"));
+		}
+		$this->jk_ket->setOldValue($objForm->GetValue("o_jk_ket"));
+		if (!$this->jk_id->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->jk_id->setFormValue($objForm->GetValue("x_jk_id"));
+	}
+
+	// Restore form values
+	function RestoreFormValues() {
+		global $objForm;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->jk_id->CurrentValue = $this->jk_id->FormValue;
+		$this->jk_nm->CurrentValue = $this->jk_nm->FormValue;
+		$this->jk_kd->CurrentValue = $this->jk_kd->FormValue;
+		$this->jk_m->CurrentValue = $this->jk_m->FormValue;
+		$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 4);
+		$this->jk_k->CurrentValue = $this->jk_k->FormValue;
+		$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 4);
+		$this->jk_ket->CurrentValue = $this->jk_ket->FormValue;
 	}
 
 	// Load recordset
@@ -1603,16 +2290,17 @@ class ct_jk_list extends ct_jk {
 
 		// jk_m
 		$this->jk_m->ViewValue = $this->jk_m->CurrentValue;
+		$this->jk_m->ViewValue = ew_FormatDateTime($this->jk_m->ViewValue, 4);
 		$this->jk_m->ViewCustomAttributes = "";
 
 		// jk_k
 		$this->jk_k->ViewValue = $this->jk_k->CurrentValue;
+		$this->jk_k->ViewValue = ew_FormatDateTime($this->jk_k->ViewValue, 4);
 		$this->jk_k->ViewCustomAttributes = "";
 
-			// jk_id
-			$this->jk_id->LinkCustomAttributes = "";
-			$this->jk_id->HrefValue = "";
-			$this->jk_id->TooltipValue = "";
+		// jk_ket
+		$this->jk_ket->ViewValue = $this->jk_ket->CurrentValue;
+		$this->jk_ket->ViewCustomAttributes = "";
 
 			// jk_nm
 			$this->jk_nm->LinkCustomAttributes = "";
@@ -1633,11 +2321,376 @@ class ct_jk_list extends ct_jk {
 			$this->jk_k->LinkCustomAttributes = "";
 			$this->jk_k->HrefValue = "";
 			$this->jk_k->TooltipValue = "";
+
+			// jk_ket
+			$this->jk_ket->LinkCustomAttributes = "";
+			$this->jk_ket->HrefValue = "";
+			$this->jk_ket->TooltipValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
+
+			// jk_nm
+			$this->jk_nm->EditAttrs["class"] = "form-control";
+			$this->jk_nm->EditCustomAttributes = "";
+			$this->jk_nm->EditValue = ew_HtmlEncode($this->jk_nm->CurrentValue);
+			$this->jk_nm->PlaceHolder = ew_RemoveHtml($this->jk_nm->FldCaption());
+
+			// jk_kd
+			$this->jk_kd->EditAttrs["class"] = "form-control";
+			$this->jk_kd->EditCustomAttributes = "";
+			$this->jk_kd->EditValue = ew_HtmlEncode($this->jk_kd->CurrentValue);
+			$this->jk_kd->PlaceHolder = ew_RemoveHtml($this->jk_kd->FldCaption());
+
+			// jk_m
+			$this->jk_m->EditAttrs["class"] = "form-control";
+			$this->jk_m->EditCustomAttributes = "";
+			$this->jk_m->EditValue = ew_HtmlEncode($this->jk_m->CurrentValue);
+			$this->jk_m->PlaceHolder = ew_RemoveHtml($this->jk_m->FldCaption());
+
+			// jk_k
+			$this->jk_k->EditAttrs["class"] = "form-control";
+			$this->jk_k->EditCustomAttributes = "";
+			$this->jk_k->EditValue = ew_HtmlEncode($this->jk_k->CurrentValue);
+			$this->jk_k->PlaceHolder = ew_RemoveHtml($this->jk_k->FldCaption());
+
+			// jk_ket
+			$this->jk_ket->EditAttrs["class"] = "form-control";
+			$this->jk_ket->EditCustomAttributes = "";
+			$this->jk_ket->EditValue = ew_HtmlEncode($this->jk_ket->CurrentValue);
+			$this->jk_ket->PlaceHolder = ew_RemoveHtml($this->jk_ket->FldCaption());
+
+			// Add refer script
+			// jk_nm
+
+			$this->jk_nm->LinkCustomAttributes = "";
+			$this->jk_nm->HrefValue = "";
+
+			// jk_kd
+			$this->jk_kd->LinkCustomAttributes = "";
+			$this->jk_kd->HrefValue = "";
+
+			// jk_m
+			$this->jk_m->LinkCustomAttributes = "";
+			$this->jk_m->HrefValue = "";
+
+			// jk_k
+			$this->jk_k->LinkCustomAttributes = "";
+			$this->jk_k->HrefValue = "";
+
+			// jk_ket
+			$this->jk_ket->LinkCustomAttributes = "";
+			$this->jk_ket->HrefValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
+
+			// jk_nm
+			$this->jk_nm->EditAttrs["class"] = "form-control";
+			$this->jk_nm->EditCustomAttributes = "";
+			$this->jk_nm->EditValue = ew_HtmlEncode($this->jk_nm->CurrentValue);
+			$this->jk_nm->PlaceHolder = ew_RemoveHtml($this->jk_nm->FldCaption());
+
+			// jk_kd
+			$this->jk_kd->EditAttrs["class"] = "form-control";
+			$this->jk_kd->EditCustomAttributes = "";
+			$this->jk_kd->EditValue = ew_HtmlEncode($this->jk_kd->CurrentValue);
+			$this->jk_kd->PlaceHolder = ew_RemoveHtml($this->jk_kd->FldCaption());
+
+			// jk_m
+			$this->jk_m->EditAttrs["class"] = "form-control";
+			$this->jk_m->EditCustomAttributes = "";
+			$this->jk_m->EditValue = ew_HtmlEncode($this->jk_m->CurrentValue);
+			$this->jk_m->PlaceHolder = ew_RemoveHtml($this->jk_m->FldCaption());
+
+			// jk_k
+			$this->jk_k->EditAttrs["class"] = "form-control";
+			$this->jk_k->EditCustomAttributes = "";
+			$this->jk_k->EditValue = ew_HtmlEncode($this->jk_k->CurrentValue);
+			$this->jk_k->PlaceHolder = ew_RemoveHtml($this->jk_k->FldCaption());
+
+			// jk_ket
+			$this->jk_ket->EditAttrs["class"] = "form-control";
+			$this->jk_ket->EditCustomAttributes = "";
+			$this->jk_ket->EditValue = ew_HtmlEncode($this->jk_ket->CurrentValue);
+			$this->jk_ket->PlaceHolder = ew_RemoveHtml($this->jk_ket->FldCaption());
+
+			// Edit refer script
+			// jk_nm
+
+			$this->jk_nm->LinkCustomAttributes = "";
+			$this->jk_nm->HrefValue = "";
+
+			// jk_kd
+			$this->jk_kd->LinkCustomAttributes = "";
+			$this->jk_kd->HrefValue = "";
+
+			// jk_m
+			$this->jk_m->LinkCustomAttributes = "";
+			$this->jk_m->HrefValue = "";
+
+			// jk_k
+			$this->jk_k->LinkCustomAttributes = "";
+			$this->jk_k->HrefValue = "";
+
+			// jk_ket
+			$this->jk_ket->LinkCustomAttributes = "";
+			$this->jk_ket->HrefValue = "";
+		}
+		if ($this->RowType == EW_ROWTYPE_ADD ||
+			$this->RowType == EW_ROWTYPE_EDIT ||
+			$this->RowType == EW_ROWTYPE_SEARCH) { // Add / Edit / Search row
+			$this->SetupFieldTitles();
 		}
 
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
+	}
+
+	// Validate form
+	function ValidateForm() {
+		global $Language, $gsFormError;
+
+		// Initialize form error message
+		$gsFormError = "";
+
+		// Check if validation required
+		if (!EW_SERVER_VALIDATE)
+			return ($gsFormError == "");
+		if (!$this->jk_nm->FldIsDetailKey && !is_null($this->jk_nm->FormValue) && $this->jk_nm->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->jk_nm->FldCaption(), $this->jk_nm->ReqErrMsg));
+		}
+		if (!$this->jk_kd->FldIsDetailKey && !is_null($this->jk_kd->FormValue) && $this->jk_kd->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->jk_kd->FldCaption(), $this->jk_kd->ReqErrMsg));
+		}
+		if (!$this->jk_m->FldIsDetailKey && !is_null($this->jk_m->FormValue) && $this->jk_m->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->jk_m->FldCaption(), $this->jk_m->ReqErrMsg));
+		}
+		if (!ew_CheckTime($this->jk_m->FormValue)) {
+			ew_AddMessage($gsFormError, $this->jk_m->FldErrMsg());
+		}
+		if (!$this->jk_k->FldIsDetailKey && !is_null($this->jk_k->FormValue) && $this->jk_k->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->jk_k->FldCaption(), $this->jk_k->ReqErrMsg));
+		}
+		if (!ew_CheckTime($this->jk_k->FormValue)) {
+			ew_AddMessage($gsFormError, $this->jk_k->FldErrMsg());
+		}
+
+		// Return validate result
+		$ValidateForm = ($gsFormError == "");
+
+		// Call Form_CustomValidate event
+		$sFormCustomError = "";
+		$ValidateForm = $ValidateForm && $this->Form_CustomValidate($sFormCustomError);
+		if ($sFormCustomError <> "") {
+			ew_AddMessage($gsFormError, $sFormCustomError);
+		}
+		return $ValidateForm;
+	}
+
+	//
+	// Delete records based on current filter
+	//
+	function DeleteRows() {
+		global $Language, $Security;
+		if (!$Security->CanDelete()) {
+			$this->setFailureMessage($Language->Phrase("NoDeletePermission")); // No delete permission
+			return FALSE;
+		}
+		$DeleteRows = TRUE;
+		$sSql = $this->SQL();
+		$conn = &$this->Connection();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE) {
+			return FALSE;
+		} elseif ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
+			$rs->Close();
+			return FALSE;
+
+		//} else {
+		//	$this->LoadRowValues($rs); // Load row values
+
+		}
+		$rows = ($rs) ? $rs->GetRows() : array();
+		if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteBegin")); // Batch delete begin
+
+		// Clone old rows
+		$rsold = $rows;
+		if ($rs)
+			$rs->Close();
+
+		// Call row deleting event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$DeleteRows = $this->Row_Deleting($row);
+				if (!$DeleteRows) break;
+			}
+		}
+		if ($DeleteRows) {
+			$sKey = "";
+			foreach ($rsold as $row) {
+				$sThisKey = "";
+				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+				$sThisKey .= $row['jk_id'];
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+				$DeleteRows = $this->Delete($row); // Delete
+				$conn->raiseErrorFn = '';
+				if ($DeleteRows === FALSE)
+					break;
+				if ($sKey <> "") $sKey .= ", ";
+				$sKey .= $sThisKey;
+			}
+		} else {
+
+			// Set up error message
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("DeleteCancelled"));
+			}
+		}
+		if ($DeleteRows) {
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
+		} else {
+		}
+
+		// Call Row Deleted event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$this->Row_Deleted($row);
+			}
+		}
+		return $DeleteRows;
+	}
+
+	// Update record based on key values
+	function EditRow() {
+		global $Security, $Language;
+		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
+		$this->CurrentFilter = $sFilter;
+		$sSql = $this->SQL();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE)
+			return FALSE;
+		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
+			$EditRow = FALSE; // Update Failed
+		} else {
+
+			// Save old values
+			$rsold = &$rs->fields;
+			$this->LoadDbValues($rsold);
+			$rsnew = array();
+
+			// jk_nm
+			$this->jk_nm->SetDbValueDef($rsnew, $this->jk_nm->CurrentValue, "", $this->jk_nm->ReadOnly);
+
+			// jk_kd
+			$this->jk_kd->SetDbValueDef($rsnew, $this->jk_kd->CurrentValue, "", $this->jk_kd->ReadOnly);
+
+			// jk_m
+			$this->jk_m->SetDbValueDef($rsnew, $this->jk_m->CurrentValue, ew_CurrentTime(), $this->jk_m->ReadOnly);
+
+			// jk_k
+			$this->jk_k->SetDbValueDef($rsnew, $this->jk_k->CurrentValue, ew_CurrentTime(), $this->jk_k->ReadOnly);
+
+			// jk_ket
+			$this->jk_ket->SetDbValueDef($rsnew, $this->jk_ket->CurrentValue, NULL, $this->jk_ket->ReadOnly);
+
+			// Call Row Updating event
+			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
+			if ($bUpdateRow) {
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+				if (count($rsnew) > 0)
+					$EditRow = $this->Update($rsnew, "", $rsold);
+				else
+					$EditRow = TRUE; // No field to update
+				$conn->raiseErrorFn = '';
+				if ($EditRow) {
+				}
+			} else {
+				if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+					// Use the message, do nothing
+				} elseif ($this->CancelMessage <> "") {
+					$this->setFailureMessage($this->CancelMessage);
+					$this->CancelMessage = "";
+				} else {
+					$this->setFailureMessage($Language->Phrase("UpdateCancelled"));
+				}
+				$EditRow = FALSE;
+			}
+		}
+
+		// Call Row_Updated event
+		if ($EditRow)
+			$this->Row_Updated($rsold, $rsnew);
+		$rs->Close();
+		return $EditRow;
+	}
+
+	// Add record
+	function AddRow($rsold = NULL) {
+		global $Language, $Security;
+		$conn = &$this->Connection();
+
+		// Load db values from rsold
+		if ($rsold) {
+			$this->LoadDbValues($rsold);
+		}
+		$rsnew = array();
+
+		// jk_nm
+		$this->jk_nm->SetDbValueDef($rsnew, $this->jk_nm->CurrentValue, "", FALSE);
+
+		// jk_kd
+		$this->jk_kd->SetDbValueDef($rsnew, $this->jk_kd->CurrentValue, "", FALSE);
+
+		// jk_m
+		$this->jk_m->SetDbValueDef($rsnew, $this->jk_m->CurrentValue, ew_CurrentTime(), FALSE);
+
+		// jk_k
+		$this->jk_k->SetDbValueDef($rsnew, $this->jk_k->CurrentValue, ew_CurrentTime(), FALSE);
+
+		// jk_ket
+		$this->jk_ket->SetDbValueDef($rsnew, $this->jk_ket->CurrentValue, NULL, FALSE);
+
+		// Call Row Inserting event
+		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
+		if ($bInsertRow) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			$AddRow = $this->Insert($rsnew);
+			$conn->raiseErrorFn = '';
+			if ($AddRow) {
+			}
+		} else {
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
+			}
+			$AddRow = FALSE;
+		}
+		if ($AddRow) {
+
+			// Call Row Inserted event
+			$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+			$this->Row_Inserted($rs, $rsnew);
+		}
+		return $AddRow;
 	}
 
 	// Set up export options
@@ -2086,6 +3139,66 @@ var CurrentPageID = EW_PAGE_ID = "list";
 var CurrentForm = ft_jklist = new ew_Form("ft_jklist", "list");
 ft_jklist.FormKeyCountName = '<?php echo $t_jk_list->FormKeyCountName ?>';
 
+// Validate form
+ft_jklist.Validate = function() {
+	if (!this.ValidateRequired)
+		return true; // Ignore validation
+	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
+	if ($fobj.find("#a_confirm").val() == "F")
+		return true;
+	var elm, felm, uelm, addcnt = 0;
+	var $k = $fobj.find("#" + this.FormKeyCountName); // Get key_count
+	var rowcnt = ($k[0]) ? parseInt($k.val(), 10) : 1;
+	var startcnt = (rowcnt == 0) ? 0 : 1; // Check rowcnt == 0 => Inline-Add
+	var gridinsert = $fobj.find("#a_list").val() == "gridinsert";
+	for (var i = startcnt; i <= rowcnt; i++) {
+		var infix = ($k[0]) ? String(i) : "";
+		$fobj.data("rowindex", infix);
+		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
+		if (checkrow) {
+			addcnt++;
+			elm = this.GetElements("x" + infix + "_jk_nm");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_jk->jk_nm->FldCaption(), $t_jk->jk_nm->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_jk_kd");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_jk->jk_kd->FldCaption(), $t_jk->jk_kd->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_jk_m");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_jk->jk_m->FldCaption(), $t_jk->jk_m->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_jk_m");
+			if (elm && !ew_CheckTime(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_jk->jk_m->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_jk_k");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_jk->jk_k->FldCaption(), $t_jk->jk_k->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_jk_k");
+			if (elm && !ew_CheckTime(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_jk->jk_k->FldErrMsg()) ?>");
+
+			// Fire Form_CustomValidate event
+			if (!this.Form_CustomValidate(fobj))
+				return false;
+		} // End Grid Add checking
+	}
+	if (gridinsert && addcnt == 0) { // No row added
+		ew_Alert(ewLanguage.Phrase("NoAddRecord"));
+		return false;
+	}
+	return true;
+}
+
+// Check empty row
+ft_jklist.EmptyRow = function(infix) {
+	var fobj = this.Form;
+	if (ew_ValueChanged(fobj, infix, "jk_nm", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "jk_kd", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "jk_m", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "jk_k", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "jk_ket", false)) return false;
+	return true;
+}
+
 // Form_CustomValidate event
 ft_jklist.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
@@ -2132,6 +3245,13 @@ var CurrentSearchForm = ft_jklistsrch = new ew_Form("ft_jklistsrch");
 </div>
 <?php } ?>
 <?php
+if ($t_jk->CurrentAction == "gridadd") {
+	$t_jk->CurrentFilter = "0=1";
+	$t_jk_list->StartRec = 1;
+	$t_jk_list->DisplayRecs = $t_jk->GridAddRowCount;
+	$t_jk_list->TotalRecs = $t_jk_list->DisplayRecs;
+	$t_jk_list->StopRec = $t_jk_list->DisplayRecs;
+} else {
 	$bSelectLimit = $t_jk_list->UseSelectLimit;
 	if ($bSelectLimit) {
 		if ($t_jk_list->TotalRecs <= 0)
@@ -2157,6 +3277,14 @@ var CurrentSearchForm = ft_jklistsrch = new ew_Form("ft_jklistsrch");
 		else
 			$t_jk_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
+
+	// Audit trail on search
+	if ($t_jk_list->AuditTrailOnSearch && $t_jk_list->Command == "search" && !$t_jk_list->RestoreSearch) {
+		$searchparm = ew_ServerVar("QUERY_STRING");
+		$searchsql = $t_jk_list->getSessionWhere();
+		$t_jk_list->WriteAuditTrailOnSearch($searchparm, $searchsql);
+	}
+}
 $t_jk_list->RenderOtherOptions();
 ?>
 <?php if ($Security->CanSearch()) { ?>
@@ -2271,7 +3399,7 @@ $t_jk_list->ShowMessage();
 <?php } ?>
 <input type="hidden" name="t" value="t_jk">
 <div id="gmp_t_jk" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
-<?php if ($t_jk_list->TotalRecs > 0 || $t_jk->CurrentAction == "gridedit") { ?>
+<?php if ($t_jk_list->TotalRecs > 0 || $t_jk->CurrentAction == "add" || $t_jk->CurrentAction == "copy" || $t_jk->CurrentAction == "gridedit") { ?>
 <table id="tbl_t_jklist" class="table ewTable">
 <?php echo $t_jk->TableCustomInnerHtml ?>
 <thead><!-- Table header -->
@@ -2287,15 +3415,6 @@ $t_jk_list->RenderListOptions();
 // Render list options (header, left)
 $t_jk_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($t_jk->jk_id->Visible) { // jk_id ?>
-	<?php if ($t_jk->SortUrl($t_jk->jk_id) == "") { ?>
-		<th data-name="jk_id"><div id="elh_t_jk_jk_id" class="t_jk_jk_id"><div class="ewTableHeaderCaption"><?php echo $t_jk->jk_id->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="jk_id"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $t_jk->SortUrl($t_jk->jk_id) ?>',2);"><div id="elh_t_jk_jk_id" class="t_jk_jk_id">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_jk->jk_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($t_jk->jk_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_jk->jk_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($t_jk->jk_nm->Visible) { // jk_nm ?>
 	<?php if ($t_jk->SortUrl($t_jk->jk_nm) == "") { ?>
 		<th data-name="jk_nm"><div id="elh_t_jk_jk_nm" class="t_jk_jk_nm"><div class="ewTableHeaderCaption"><?php echo $t_jk->jk_nm->FldCaption() ?></div></div></th>
@@ -2332,6 +3451,15 @@ $t_jk_list->ListOptions->Render("header", "left");
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
+<?php if ($t_jk->jk_ket->Visible) { // jk_ket ?>
+	<?php if ($t_jk->SortUrl($t_jk->jk_ket) == "") { ?>
+		<th data-name="jk_ket"><div id="elh_t_jk_jk_ket" class="t_jk_jk_ket"><div class="ewTableHeaderCaption"><?php echo $t_jk->jk_ket->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="jk_ket"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $t_jk->SortUrl($t_jk->jk_ket) ?>',2);"><div id="elh_t_jk_jk_ket" class="t_jk_jk_ket">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_jk->jk_ket->FldCaption() ?><?php echo $Language->Phrase("SrchLegend") ?></span><span class="ewTableHeaderSort"><?php if ($t_jk->jk_ket->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_jk->jk_ket->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
 <?php
 
 // Render list options (header, right)
@@ -2340,6 +3468,87 @@ $t_jk_list->ListOptions->Render("header", "right");
 	</tr>
 </thead>
 <tbody>
+<?php
+	if ($t_jk->CurrentAction == "add" || $t_jk->CurrentAction == "copy") {
+		$t_jk_list->RowIndex = 0;
+		$t_jk_list->KeyCount = $t_jk_list->RowIndex;
+		if ($t_jk->CurrentAction == "copy" && !$t_jk_list->LoadRow())
+				$t_jk->CurrentAction = "add";
+		if ($t_jk->CurrentAction == "add")
+			$t_jk_list->LoadDefaultValues();
+		if ($t_jk->EventCancelled) // Insert failed
+			$t_jk_list->RestoreFormValues(); // Restore form values
+
+		// Set row properties
+		$t_jk->ResetAttrs();
+		$t_jk->RowAttrs = array_merge($t_jk->RowAttrs, array('data-rowindex'=>0, 'id'=>'r0_t_jk', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		$t_jk->RowType = EW_ROWTYPE_ADD;
+
+		// Render row
+		$t_jk_list->RenderRow();
+
+		// Render list options
+		$t_jk_list->RenderListOptions();
+		$t_jk_list->StartRowCnt = 0;
+?>
+	<tr<?php echo $t_jk->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$t_jk_list->ListOptions->Render("body", "left", $t_jk_list->RowCnt);
+?>
+	<?php if ($t_jk->jk_nm->Visible) { // jk_nm ?>
+		<td data-name="jk_nm">
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_nm" class="form-group t_jk_jk_nm">
+<input type="text" data-table="t_jk" data-field="x_jk_nm" name="x<?php echo $t_jk_list->RowIndex ?>_jk_nm" id="x<?php echo $t_jk_list->RowIndex ?>_jk_nm" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_nm->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_nm->EditValue ?>"<?php echo $t_jk->jk_nm->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_nm" name="o<?php echo $t_jk_list->RowIndex ?>_jk_nm" id="o<?php echo $t_jk_list->RowIndex ?>_jk_nm" value="<?php echo ew_HtmlEncode($t_jk->jk_nm->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_jk->jk_kd->Visible) { // jk_kd ?>
+		<td data-name="jk_kd">
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_kd" class="form-group t_jk_jk_kd">
+<input type="text" data-table="t_jk" data-field="x_jk_kd" name="x<?php echo $t_jk_list->RowIndex ?>_jk_kd" id="x<?php echo $t_jk_list->RowIndex ?>_jk_kd" size="30" maxlength="50" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_kd->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_kd->EditValue ?>"<?php echo $t_jk->jk_kd->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_kd" name="o<?php echo $t_jk_list->RowIndex ?>_jk_kd" id="o<?php echo $t_jk_list->RowIndex ?>_jk_kd" value="<?php echo ew_HtmlEncode($t_jk->jk_kd->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_jk->jk_m->Visible) { // jk_m ?>
+		<td data-name="jk_m">
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_m" class="form-group t_jk_jk_m">
+<input type="text" data-table="t_jk" data-field="x_jk_m" name="x<?php echo $t_jk_list->RowIndex ?>_jk_m" id="x<?php echo $t_jk_list->RowIndex ?>_jk_m" size="30" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_m->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_m->EditValue ?>"<?php echo $t_jk->jk_m->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_m" name="o<?php echo $t_jk_list->RowIndex ?>_jk_m" id="o<?php echo $t_jk_list->RowIndex ?>_jk_m" value="<?php echo ew_HtmlEncode($t_jk->jk_m->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_jk->jk_k->Visible) { // jk_k ?>
+		<td data-name="jk_k">
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_k" class="form-group t_jk_jk_k">
+<input type="text" data-table="t_jk" data-field="x_jk_k" name="x<?php echo $t_jk_list->RowIndex ?>_jk_k" id="x<?php echo $t_jk_list->RowIndex ?>_jk_k" size="30" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_k->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_k->EditValue ?>"<?php echo $t_jk->jk_k->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_k" name="o<?php echo $t_jk_list->RowIndex ?>_jk_k" id="o<?php echo $t_jk_list->RowIndex ?>_jk_k" value="<?php echo ew_HtmlEncode($t_jk->jk_k->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_jk->jk_ket->Visible) { // jk_ket ?>
+		<td data-name="jk_ket">
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_ket" class="form-group t_jk_jk_ket">
+<textarea data-table="t_jk" data-field="x_jk_ket" name="x<?php echo $t_jk_list->RowIndex ?>_jk_ket" id="x<?php echo $t_jk_list->RowIndex ?>_jk_ket" cols="35" rows="4" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_ket->getPlaceHolder()) ?>"<?php echo $t_jk->jk_ket->EditAttributes() ?>><?php echo $t_jk->jk_ket->EditValue ?></textarea>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_ket" name="o<?php echo $t_jk_list->RowIndex ?>_jk_ket" id="o<?php echo $t_jk_list->RowIndex ?>_jk_ket" value="<?php echo ew_HtmlEncode($t_jk->jk_ket->OldValue) ?>">
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$t_jk_list->ListOptions->Render("body", "right", $t_jk_list->RowCnt);
+?>
+<script type="text/javascript">
+ft_jklist.UpdateOpts(<?php echo $t_jk_list->RowIndex ?>);
+</script>
+	</tr>
+<?php
+}
+?>
 <?php
 if ($t_jk->ExportAll && $t_jk->Export <> "") {
 	$t_jk_list->StopRec = $t_jk_list->TotalRecs;
@@ -2350,6 +3559,15 @@ if ($t_jk->ExportAll && $t_jk->Export <> "") {
 		$t_jk_list->StopRec = $t_jk_list->StartRec + $t_jk_list->DisplayRecs - 1;
 	else
 		$t_jk_list->StopRec = $t_jk_list->TotalRecs;
+}
+
+// Restore number of post back records
+if ($objForm) {
+	$objForm->Index = -1;
+	if ($objForm->HasValue($t_jk_list->FormKeyCountName) && ($t_jk->CurrentAction == "gridadd" || $t_jk->CurrentAction == "gridedit" || $t_jk->CurrentAction == "F")) {
+		$t_jk_list->KeyCount = $objForm->GetValue($t_jk_list->FormKeyCountName);
+		$t_jk_list->StopRec = $t_jk_list->StartRec + $t_jk_list->KeyCount - 1;
+	}
 }
 $t_jk_list->RecCnt = $t_jk_list->StartRec - 1;
 if ($t_jk_list->Recordset && !$t_jk_list->Recordset->EOF) {
@@ -2365,10 +3583,27 @@ if ($t_jk_list->Recordset && !$t_jk_list->Recordset->EOF) {
 $t_jk->RowType = EW_ROWTYPE_AGGREGATEINIT;
 $t_jk->ResetAttrs();
 $t_jk_list->RenderRow();
+$t_jk_list->EditRowCnt = 0;
+if ($t_jk->CurrentAction == "edit")
+	$t_jk_list->RowIndex = 1;
+if ($t_jk->CurrentAction == "gridadd")
+	$t_jk_list->RowIndex = 0;
+if ($t_jk->CurrentAction == "gridedit")
+	$t_jk_list->RowIndex = 0;
 while ($t_jk_list->RecCnt < $t_jk_list->StopRec) {
 	$t_jk_list->RecCnt++;
 	if (intval($t_jk_list->RecCnt) >= intval($t_jk_list->StartRec)) {
 		$t_jk_list->RowCnt++;
+		if ($t_jk->CurrentAction == "gridadd" || $t_jk->CurrentAction == "gridedit" || $t_jk->CurrentAction == "F") {
+			$t_jk_list->RowIndex++;
+			$objForm->Index = $t_jk_list->RowIndex;
+			if ($objForm->HasValue($t_jk_list->FormActionName))
+				$t_jk_list->RowAction = strval($objForm->GetValue($t_jk_list->FormActionName));
+			elseif ($t_jk->CurrentAction == "gridadd")
+				$t_jk_list->RowAction = "insert";
+			else
+				$t_jk_list->RowAction = "";
+		}
 
 		// Set up key count
 		$t_jk_list->KeyCount = $t_jk_list->RowIndex;
@@ -2377,10 +3612,37 @@ while ($t_jk_list->RecCnt < $t_jk_list->StopRec) {
 		$t_jk->ResetAttrs();
 		$t_jk->CssClass = "";
 		if ($t_jk->CurrentAction == "gridadd") {
+			$t_jk_list->LoadDefaultValues(); // Load default values
 		} else {
 			$t_jk_list->LoadRowValues($t_jk_list->Recordset); // Load row values
 		}
 		$t_jk->RowType = EW_ROWTYPE_VIEW; // Render view
+		if ($t_jk->CurrentAction == "gridadd") // Grid add
+			$t_jk->RowType = EW_ROWTYPE_ADD; // Render add
+		if ($t_jk->CurrentAction == "gridadd" && $t_jk->EventCancelled && !$objForm->HasValue("k_blankrow")) // Insert failed
+			$t_jk_list->RestoreCurrentRowFormValues($t_jk_list->RowIndex); // Restore form values
+		if ($t_jk->CurrentAction == "edit") {
+			if ($t_jk_list->CheckInlineEditKey() && $t_jk_list->EditRowCnt == 0) { // Inline edit
+				$t_jk->RowType = EW_ROWTYPE_EDIT; // Render edit
+			}
+		}
+		if ($t_jk->CurrentAction == "gridedit") { // Grid edit
+			if ($t_jk->EventCancelled) {
+				$t_jk_list->RestoreCurrentRowFormValues($t_jk_list->RowIndex); // Restore form values
+			}
+			if ($t_jk_list->RowAction == "insert")
+				$t_jk->RowType = EW_ROWTYPE_ADD; // Render add
+			else
+				$t_jk->RowType = EW_ROWTYPE_EDIT; // Render edit
+		}
+		if ($t_jk->CurrentAction == "edit" && $t_jk->RowType == EW_ROWTYPE_EDIT && $t_jk->EventCancelled) { // Update failed
+			$objForm->Index = 1;
+			$t_jk_list->RestoreFormValues(); // Restore form values
+		}
+		if ($t_jk->CurrentAction == "gridedit" && ($t_jk->RowType == EW_ROWTYPE_EDIT || $t_jk->RowType == EW_ROWTYPE_ADD) && $t_jk->EventCancelled) // Update failed
+			$t_jk_list->RestoreCurrentRowFormValues($t_jk_list->RowIndex); // Restore form values
+		if ($t_jk->RowType == EW_ROWTYPE_EDIT) // Edit row
+			$t_jk_list->EditRowCnt++;
 
 		// Set up row id / data-rowindex
 		$t_jk->RowAttrs = array_merge($t_jk->RowAttrs, array('data-rowindex'=>$t_jk_list->RowCnt, 'id'=>'r' . $t_jk_list->RowCnt . '_t_jk', 'data-rowtype'=>$t_jk->RowType));
@@ -2390,6 +3652,9 @@ while ($t_jk_list->RecCnt < $t_jk_list->StopRec) {
 
 		// Render list options
 		$t_jk_list->RenderListOptions();
+
+		// Skip delete row / empty row for confirm page
+		if ($t_jk_list->RowAction <> "delete" && $t_jk_list->RowAction <> "insertdelete" && !($t_jk_list->RowAction == "insert" && $t_jk->CurrentAction == "F" && $t_jk_list->EmptyRow())) {
 ?>
 	<tr<?php echo $t_jk->RowAttributes() ?>>
 <?php
@@ -2397,44 +3662,116 @@ while ($t_jk_list->RecCnt < $t_jk_list->StopRec) {
 // Render list options (body, left)
 $t_jk_list->ListOptions->Render("body", "left", $t_jk_list->RowCnt);
 ?>
-	<?php if ($t_jk->jk_id->Visible) { // jk_id ?>
-		<td data-name="jk_id"<?php echo $t_jk->jk_id->CellAttributes() ?>>
-<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_id" class="t_jk_jk_id">
-<span<?php echo $t_jk->jk_id->ViewAttributes() ?>>
-<?php echo $t_jk->jk_id->ListViewValue() ?></span>
-</span>
-<a id="<?php echo $t_jk_list->PageObjName . "_row_" . $t_jk_list->RowCnt ?>"></a></td>
-	<?php } ?>
 	<?php if ($t_jk->jk_nm->Visible) { // jk_nm ?>
 		<td data-name="jk_nm"<?php echo $t_jk->jk_nm->CellAttributes() ?>>
+<?php if ($t_jk->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_nm" class="form-group t_jk_jk_nm">
+<input type="text" data-table="t_jk" data-field="x_jk_nm" name="x<?php echo $t_jk_list->RowIndex ?>_jk_nm" id="x<?php echo $t_jk_list->RowIndex ?>_jk_nm" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_nm->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_nm->EditValue ?>"<?php echo $t_jk->jk_nm->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_nm" name="o<?php echo $t_jk_list->RowIndex ?>_jk_nm" id="o<?php echo $t_jk_list->RowIndex ?>_jk_nm" value="<?php echo ew_HtmlEncode($t_jk->jk_nm->OldValue) ?>">
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_nm" class="form-group t_jk_jk_nm">
+<input type="text" data-table="t_jk" data-field="x_jk_nm" name="x<?php echo $t_jk_list->RowIndex ?>_jk_nm" id="x<?php echo $t_jk_list->RowIndex ?>_jk_nm" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_nm->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_nm->EditValue ?>"<?php echo $t_jk->jk_nm->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_nm" class="t_jk_jk_nm">
 <span<?php echo $t_jk->jk_nm->ViewAttributes() ?>>
 <?php echo $t_jk->jk_nm->ListViewValue() ?></span>
 </span>
-</td>
+<?php } ?>
+<a id="<?php echo $t_jk_list->PageObjName . "_row_" . $t_jk_list->RowCnt ?>"></a></td>
 	<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<input type="hidden" data-table="t_jk" data-field="x_jk_id" name="x<?php echo $t_jk_list->RowIndex ?>_jk_id" id="x<?php echo $t_jk_list->RowIndex ?>_jk_id" value="<?php echo ew_HtmlEncode($t_jk->jk_id->CurrentValue) ?>">
+<input type="hidden" data-table="t_jk" data-field="x_jk_id" name="o<?php echo $t_jk_list->RowIndex ?>_jk_id" id="o<?php echo $t_jk_list->RowIndex ?>_jk_id" value="<?php echo ew_HtmlEncode($t_jk->jk_id->OldValue) ?>">
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_EDIT || $t_jk->CurrentMode == "edit") { ?>
+<input type="hidden" data-table="t_jk" data-field="x_jk_id" name="x<?php echo $t_jk_list->RowIndex ?>_jk_id" id="x<?php echo $t_jk_list->RowIndex ?>_jk_id" value="<?php echo ew_HtmlEncode($t_jk->jk_id->CurrentValue) ?>">
+<?php } ?>
 	<?php if ($t_jk->jk_kd->Visible) { // jk_kd ?>
 		<td data-name="jk_kd"<?php echo $t_jk->jk_kd->CellAttributes() ?>>
+<?php if ($t_jk->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_kd" class="form-group t_jk_jk_kd">
+<input type="text" data-table="t_jk" data-field="x_jk_kd" name="x<?php echo $t_jk_list->RowIndex ?>_jk_kd" id="x<?php echo $t_jk_list->RowIndex ?>_jk_kd" size="30" maxlength="50" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_kd->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_kd->EditValue ?>"<?php echo $t_jk->jk_kd->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_kd" name="o<?php echo $t_jk_list->RowIndex ?>_jk_kd" id="o<?php echo $t_jk_list->RowIndex ?>_jk_kd" value="<?php echo ew_HtmlEncode($t_jk->jk_kd->OldValue) ?>">
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_kd" class="form-group t_jk_jk_kd">
+<input type="text" data-table="t_jk" data-field="x_jk_kd" name="x<?php echo $t_jk_list->RowIndex ?>_jk_kd" id="x<?php echo $t_jk_list->RowIndex ?>_jk_kd" size="30" maxlength="50" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_kd->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_kd->EditValue ?>"<?php echo $t_jk->jk_kd->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_kd" class="t_jk_jk_kd">
 <span<?php echo $t_jk->jk_kd->ViewAttributes() ?>>
 <?php echo $t_jk->jk_kd->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($t_jk->jk_m->Visible) { // jk_m ?>
 		<td data-name="jk_m"<?php echo $t_jk->jk_m->CellAttributes() ?>>
+<?php if ($t_jk->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_m" class="form-group t_jk_jk_m">
+<input type="text" data-table="t_jk" data-field="x_jk_m" name="x<?php echo $t_jk_list->RowIndex ?>_jk_m" id="x<?php echo $t_jk_list->RowIndex ?>_jk_m" size="30" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_m->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_m->EditValue ?>"<?php echo $t_jk->jk_m->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_m" name="o<?php echo $t_jk_list->RowIndex ?>_jk_m" id="o<?php echo $t_jk_list->RowIndex ?>_jk_m" value="<?php echo ew_HtmlEncode($t_jk->jk_m->OldValue) ?>">
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_m" class="form-group t_jk_jk_m">
+<input type="text" data-table="t_jk" data-field="x_jk_m" name="x<?php echo $t_jk_list->RowIndex ?>_jk_m" id="x<?php echo $t_jk_list->RowIndex ?>_jk_m" size="30" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_m->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_m->EditValue ?>"<?php echo $t_jk->jk_m->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_m" class="t_jk_jk_m">
 <span<?php echo $t_jk->jk_m->ViewAttributes() ?>>
 <?php echo $t_jk->jk_m->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($t_jk->jk_k->Visible) { // jk_k ?>
 		<td data-name="jk_k"<?php echo $t_jk->jk_k->CellAttributes() ?>>
+<?php if ($t_jk->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_k" class="form-group t_jk_jk_k">
+<input type="text" data-table="t_jk" data-field="x_jk_k" name="x<?php echo $t_jk_list->RowIndex ?>_jk_k" id="x<?php echo $t_jk_list->RowIndex ?>_jk_k" size="30" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_k->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_k->EditValue ?>"<?php echo $t_jk->jk_k->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_k" name="o<?php echo $t_jk_list->RowIndex ?>_jk_k" id="o<?php echo $t_jk_list->RowIndex ?>_jk_k" value="<?php echo ew_HtmlEncode($t_jk->jk_k->OldValue) ?>">
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_k" class="form-group t_jk_jk_k">
+<input type="text" data-table="t_jk" data-field="x_jk_k" name="x<?php echo $t_jk_list->RowIndex ?>_jk_k" id="x<?php echo $t_jk_list->RowIndex ?>_jk_k" size="30" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_k->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_k->EditValue ?>"<?php echo $t_jk->jk_k->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_k" class="t_jk_jk_k">
 <span<?php echo $t_jk->jk_k->ViewAttributes() ?>>
 <?php echo $t_jk->jk_k->ListViewValue() ?></span>
 </span>
+<?php } ?>
+</td>
+	<?php } ?>
+	<?php if ($t_jk->jk_ket->Visible) { // jk_ket ?>
+		<td data-name="jk_ket"<?php echo $t_jk->jk_ket->CellAttributes() ?>>
+<?php if ($t_jk->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_ket" class="form-group t_jk_jk_ket">
+<textarea data-table="t_jk" data-field="x_jk_ket" name="x<?php echo $t_jk_list->RowIndex ?>_jk_ket" id="x<?php echo $t_jk_list->RowIndex ?>_jk_ket" cols="35" rows="4" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_ket->getPlaceHolder()) ?>"<?php echo $t_jk->jk_ket->EditAttributes() ?>><?php echo $t_jk->jk_ket->EditValue ?></textarea>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_ket" name="o<?php echo $t_jk_list->RowIndex ?>_jk_ket" id="o<?php echo $t_jk_list->RowIndex ?>_jk_ket" value="<?php echo ew_HtmlEncode($t_jk->jk_ket->OldValue) ?>">
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_ket" class="form-group t_jk_jk_ket">
+<textarea data-table="t_jk" data-field="x_jk_ket" name="x<?php echo $t_jk_list->RowIndex ?>_jk_ket" id="x<?php echo $t_jk_list->RowIndex ?>_jk_ket" cols="35" rows="4" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_ket->getPlaceHolder()) ?>"<?php echo $t_jk->jk_ket->EditAttributes() ?>><?php echo $t_jk->jk_ket->EditValue ?></textarea>
+</span>
+<?php } ?>
+<?php if ($t_jk->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $t_jk_list->RowCnt ?>_t_jk_jk_ket" class="t_jk_jk_ket">
+<span<?php echo $t_jk->jk_ket->ViewAttributes() ?>>
+<?php echo $t_jk->jk_ket->ListViewValue() ?></span>
+</span>
+<?php } ?>
 </td>
 	<?php } ?>
 <?php
@@ -2443,14 +3780,112 @@ $t_jk_list->ListOptions->Render("body", "left", $t_jk_list->RowCnt);
 $t_jk_list->ListOptions->Render("body", "right", $t_jk_list->RowCnt);
 ?>
 	</tr>
+<?php if ($t_jk->RowType == EW_ROWTYPE_ADD || $t_jk->RowType == EW_ROWTYPE_EDIT) { ?>
+<script type="text/javascript">
+ft_jklist.UpdateOpts(<?php echo $t_jk_list->RowIndex ?>);
+</script>
+<?php } ?>
 <?php
 	}
+	} // End delete row checking
 	if ($t_jk->CurrentAction <> "gridadd")
-		$t_jk_list->Recordset->MoveNext();
+		if (!$t_jk_list->Recordset->EOF) $t_jk_list->Recordset->MoveNext();
+}
+?>
+<?php
+	if ($t_jk->CurrentAction == "gridadd" || $t_jk->CurrentAction == "gridedit") {
+		$t_jk_list->RowIndex = '$rowindex$';
+		$t_jk_list->LoadDefaultValues();
+
+		// Set row properties
+		$t_jk->ResetAttrs();
+		$t_jk->RowAttrs = array_merge($t_jk->RowAttrs, array('data-rowindex'=>$t_jk_list->RowIndex, 'id'=>'r0_t_jk', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		ew_AppendClass($t_jk->RowAttrs["class"], "ewTemplate");
+		$t_jk->RowType = EW_ROWTYPE_ADD;
+
+		// Render row
+		$t_jk_list->RenderRow();
+
+		// Render list options
+		$t_jk_list->RenderListOptions();
+		$t_jk_list->StartRowCnt = 0;
+?>
+	<tr<?php echo $t_jk->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$t_jk_list->ListOptions->Render("body", "left", $t_jk_list->RowIndex);
+?>
+	<?php if ($t_jk->jk_nm->Visible) { // jk_nm ?>
+		<td data-name="jk_nm">
+<span id="el$rowindex$_t_jk_jk_nm" class="form-group t_jk_jk_nm">
+<input type="text" data-table="t_jk" data-field="x_jk_nm" name="x<?php echo $t_jk_list->RowIndex ?>_jk_nm" id="x<?php echo $t_jk_list->RowIndex ?>_jk_nm" size="30" maxlength="100" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_nm->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_nm->EditValue ?>"<?php echo $t_jk->jk_nm->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_nm" name="o<?php echo $t_jk_list->RowIndex ?>_jk_nm" id="o<?php echo $t_jk_list->RowIndex ?>_jk_nm" value="<?php echo ew_HtmlEncode($t_jk->jk_nm->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_jk->jk_kd->Visible) { // jk_kd ?>
+		<td data-name="jk_kd">
+<span id="el$rowindex$_t_jk_jk_kd" class="form-group t_jk_jk_kd">
+<input type="text" data-table="t_jk" data-field="x_jk_kd" name="x<?php echo $t_jk_list->RowIndex ?>_jk_kd" id="x<?php echo $t_jk_list->RowIndex ?>_jk_kd" size="30" maxlength="50" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_kd->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_kd->EditValue ?>"<?php echo $t_jk->jk_kd->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_kd" name="o<?php echo $t_jk_list->RowIndex ?>_jk_kd" id="o<?php echo $t_jk_list->RowIndex ?>_jk_kd" value="<?php echo ew_HtmlEncode($t_jk->jk_kd->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_jk->jk_m->Visible) { // jk_m ?>
+		<td data-name="jk_m">
+<span id="el$rowindex$_t_jk_jk_m" class="form-group t_jk_jk_m">
+<input type="text" data-table="t_jk" data-field="x_jk_m" name="x<?php echo $t_jk_list->RowIndex ?>_jk_m" id="x<?php echo $t_jk_list->RowIndex ?>_jk_m" size="30" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_m->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_m->EditValue ?>"<?php echo $t_jk->jk_m->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_m" name="o<?php echo $t_jk_list->RowIndex ?>_jk_m" id="o<?php echo $t_jk_list->RowIndex ?>_jk_m" value="<?php echo ew_HtmlEncode($t_jk->jk_m->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_jk->jk_k->Visible) { // jk_k ?>
+		<td data-name="jk_k">
+<span id="el$rowindex$_t_jk_jk_k" class="form-group t_jk_jk_k">
+<input type="text" data-table="t_jk" data-field="x_jk_k" name="x<?php echo $t_jk_list->RowIndex ?>_jk_k" id="x<?php echo $t_jk_list->RowIndex ?>_jk_k" size="30" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_k->getPlaceHolder()) ?>" value="<?php echo $t_jk->jk_k->EditValue ?>"<?php echo $t_jk->jk_k->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_k" name="o<?php echo $t_jk_list->RowIndex ?>_jk_k" id="o<?php echo $t_jk_list->RowIndex ?>_jk_k" value="<?php echo ew_HtmlEncode($t_jk->jk_k->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_jk->jk_ket->Visible) { // jk_ket ?>
+		<td data-name="jk_ket">
+<span id="el$rowindex$_t_jk_jk_ket" class="form-group t_jk_jk_ket">
+<textarea data-table="t_jk" data-field="x_jk_ket" name="x<?php echo $t_jk_list->RowIndex ?>_jk_ket" id="x<?php echo $t_jk_list->RowIndex ?>_jk_ket" cols="35" rows="4" placeholder="<?php echo ew_HtmlEncode($t_jk->jk_ket->getPlaceHolder()) ?>"<?php echo $t_jk->jk_ket->EditAttributes() ?>><?php echo $t_jk->jk_ket->EditValue ?></textarea>
+</span>
+<input type="hidden" data-table="t_jk" data-field="x_jk_ket" name="o<?php echo $t_jk_list->RowIndex ?>_jk_ket" id="o<?php echo $t_jk_list->RowIndex ?>_jk_ket" value="<?php echo ew_HtmlEncode($t_jk->jk_ket->OldValue) ?>">
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$t_jk_list->ListOptions->Render("body", "right", $t_jk_list->RowCnt);
+?>
+<script type="text/javascript">
+ft_jklist.UpdateOpts(<?php echo $t_jk_list->RowIndex ?>);
+</script>
+	</tr>
+<?php
 }
 ?>
 </tbody>
 </table>
+<?php } ?>
+<?php if ($t_jk->CurrentAction == "add" || $t_jk->CurrentAction == "copy") { ?>
+<input type="hidden" name="<?php echo $t_jk_list->FormKeyCountName ?>" id="<?php echo $t_jk_list->FormKeyCountName ?>" value="<?php echo $t_jk_list->KeyCount ?>">
+<?php } ?>
+<?php if ($t_jk->CurrentAction == "gridadd") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridinsert">
+<input type="hidden" name="<?php echo $t_jk_list->FormKeyCountName ?>" id="<?php echo $t_jk_list->FormKeyCountName ?>" value="<?php echo $t_jk_list->KeyCount ?>">
+<?php echo $t_jk_list->MultiSelectKey ?>
+<?php } ?>
+<?php if ($t_jk->CurrentAction == "edit") { ?>
+<input type="hidden" name="<?php echo $t_jk_list->FormKeyCountName ?>" id="<?php echo $t_jk_list->FormKeyCountName ?>" value="<?php echo $t_jk_list->KeyCount ?>">
+<?php } ?>
+<?php if ($t_jk->CurrentAction == "gridedit") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridupdate">
+<input type="hidden" name="<?php echo $t_jk_list->FormKeyCountName ?>" id="<?php echo $t_jk_list->FormKeyCountName ?>" value="<?php echo $t_jk_list->KeyCount ?>">
+<?php echo $t_jk_list->MultiSelectKey ?>
 <?php } ?>
 <?php if ($t_jk->CurrentAction == "") { ?>
 <input type="hidden" name="a_list" id="a_list" value="">

@@ -282,12 +282,11 @@ class ct_jk_delete extends ct_jk {
 			$Security->UserID_Loaded();
 		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->jk_id->SetVisibility();
-		$this->jk_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->jk_nm->SetVisibility();
 		$this->jk_kd->SetVisibility();
 		$this->jk_m->SetVisibility();
 		$this->jk_k->SetVisibility();
+		$this->jk_ket->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -515,16 +514,17 @@ class ct_jk_delete extends ct_jk {
 
 		// jk_m
 		$this->jk_m->ViewValue = $this->jk_m->CurrentValue;
+		$this->jk_m->ViewValue = ew_FormatDateTime($this->jk_m->ViewValue, 4);
 		$this->jk_m->ViewCustomAttributes = "";
 
 		// jk_k
 		$this->jk_k->ViewValue = $this->jk_k->CurrentValue;
+		$this->jk_k->ViewValue = ew_FormatDateTime($this->jk_k->ViewValue, 4);
 		$this->jk_k->ViewCustomAttributes = "";
 
-			// jk_id
-			$this->jk_id->LinkCustomAttributes = "";
-			$this->jk_id->HrefValue = "";
-			$this->jk_id->TooltipValue = "";
+		// jk_ket
+		$this->jk_ket->ViewValue = $this->jk_ket->CurrentValue;
+		$this->jk_ket->ViewCustomAttributes = "";
 
 			// jk_nm
 			$this->jk_nm->LinkCustomAttributes = "";
@@ -545,6 +545,11 @@ class ct_jk_delete extends ct_jk {
 			$this->jk_k->LinkCustomAttributes = "";
 			$this->jk_k->HrefValue = "";
 			$this->jk_k->TooltipValue = "";
+
+			// jk_ket
+			$this->jk_ket->LinkCustomAttributes = "";
+			$this->jk_ket->HrefValue = "";
+			$this->jk_ket->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -580,6 +585,7 @@ class ct_jk_delete extends ct_jk {
 		}
 		$rows = ($rs) ? $rs->GetRows() : array();
 		$conn->BeginTrans();
+		if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteBegin")); // Batch delete begin
 
 		// Clone old rows
 		$rsold = $rows;
@@ -622,8 +628,10 @@ class ct_jk_delete extends ct_jk {
 		}
 		if ($DeleteRows) {
 			$conn->CommitTrans(); // Commit the changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
 		} else {
 			$conn->RollbackTrans(); // Rollback changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteRollback")); // Batch delete rollback
 		}
 
 		// Call Row Deleted event
@@ -795,9 +803,6 @@ $t_jk_delete->ShowMessage();
 <?php echo $t_jk->TableCustomInnerHtml ?>
 	<thead>
 	<tr class="ewTableHeader">
-<?php if ($t_jk->jk_id->Visible) { // jk_id ?>
-		<th><span id="elh_t_jk_jk_id" class="t_jk_jk_id"><?php echo $t_jk->jk_id->FldCaption() ?></span></th>
-<?php } ?>
 <?php if ($t_jk->jk_nm->Visible) { // jk_nm ?>
 		<th><span id="elh_t_jk_jk_nm" class="t_jk_jk_nm"><?php echo $t_jk->jk_nm->FldCaption() ?></span></th>
 <?php } ?>
@@ -809,6 +814,9 @@ $t_jk_delete->ShowMessage();
 <?php } ?>
 <?php if ($t_jk->jk_k->Visible) { // jk_k ?>
 		<th><span id="elh_t_jk_jk_k" class="t_jk_jk_k"><?php echo $t_jk->jk_k->FldCaption() ?></span></th>
+<?php } ?>
+<?php if ($t_jk->jk_ket->Visible) { // jk_ket ?>
+		<th><span id="elh_t_jk_jk_ket" class="t_jk_jk_ket"><?php echo $t_jk->jk_ket->FldCaption() ?></span></th>
 <?php } ?>
 	</tr>
 	</thead>
@@ -831,14 +839,6 @@ while (!$t_jk_delete->Recordset->EOF) {
 	$t_jk_delete->RenderRow();
 ?>
 	<tr<?php echo $t_jk->RowAttributes() ?>>
-<?php if ($t_jk->jk_id->Visible) { // jk_id ?>
-		<td<?php echo $t_jk->jk_id->CellAttributes() ?>>
-<span id="el<?php echo $t_jk_delete->RowCnt ?>_t_jk_jk_id" class="t_jk_jk_id">
-<span<?php echo $t_jk->jk_id->ViewAttributes() ?>>
-<?php echo $t_jk->jk_id->ListViewValue() ?></span>
-</span>
-</td>
-<?php } ?>
 <?php if ($t_jk->jk_nm->Visible) { // jk_nm ?>
 		<td<?php echo $t_jk->jk_nm->CellAttributes() ?>>
 <span id="el<?php echo $t_jk_delete->RowCnt ?>_t_jk_jk_nm" class="t_jk_jk_nm">
@@ -868,6 +868,14 @@ while (!$t_jk_delete->Recordset->EOF) {
 <span id="el<?php echo $t_jk_delete->RowCnt ?>_t_jk_jk_k" class="t_jk_jk_k">
 <span<?php echo $t_jk->jk_k->ViewAttributes() ?>>
 <?php echo $t_jk->jk_k->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($t_jk->jk_ket->Visible) { // jk_ket ?>
+		<td<?php echo $t_jk->jk_ket->CellAttributes() ?>>
+<span id="el<?php echo $t_jk_delete->RowCnt ?>_t_jk_jk_ket" class="t_jk_jk_ket">
+<span<?php echo $t_jk->jk_ket->ViewAttributes() ?>>
+<?php echo $t_jk->jk_ket->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>

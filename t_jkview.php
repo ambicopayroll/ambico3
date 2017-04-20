@@ -383,8 +383,6 @@ class ct_jk_view extends ct_jk {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->jk_id->SetVisibility();
-		$this->jk_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->jk_nm->SetVisibility();
 		$this->jk_kd->SetVisibility();
 		$this->jk_m->SetVisibility();
@@ -705,6 +703,7 @@ class ct_jk_view extends ct_jk {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
+		if ($this->AuditTrailOnView) $this->WriteAuditTrailOnView($row);
 		$this->jk_id->setDbValue($rs->fields('jk_id'));
 		$this->jk_nm->setDbValue($rs->fields('jk_nm'));
 		$this->jk_kd->setDbValue($rs->fields('jk_kd'));
@@ -764,20 +763,17 @@ class ct_jk_view extends ct_jk {
 
 		// jk_m
 		$this->jk_m->ViewValue = $this->jk_m->CurrentValue;
+		$this->jk_m->ViewValue = ew_FormatDateTime($this->jk_m->ViewValue, 4);
 		$this->jk_m->ViewCustomAttributes = "";
 
 		// jk_k
 		$this->jk_k->ViewValue = $this->jk_k->CurrentValue;
+		$this->jk_k->ViewValue = ew_FormatDateTime($this->jk_k->ViewValue, 4);
 		$this->jk_k->ViewCustomAttributes = "";
 
 		// jk_ket
 		$this->jk_ket->ViewValue = $this->jk_ket->CurrentValue;
 		$this->jk_ket->ViewCustomAttributes = "";
-
-			// jk_id
-			$this->jk_id->LinkCustomAttributes = "";
-			$this->jk_id->HrefValue = "";
-			$this->jk_id->TooltipValue = "";
 
 			// jk_nm
 			$this->jk_nm->LinkCustomAttributes = "";
@@ -1300,17 +1296,6 @@ $t_jk_view->ShowMessage();
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($t_jk->jk_id->Visible) { // jk_id ?>
-	<tr id="r_jk_id">
-		<td><span id="elh_t_jk_jk_id"><?php echo $t_jk->jk_id->FldCaption() ?></span></td>
-		<td data-name="jk_id"<?php echo $t_jk->jk_id->CellAttributes() ?>>
-<span id="el_t_jk_jk_id">
-<span<?php echo $t_jk->jk_id->ViewAttributes() ?>>
-<?php echo $t_jk->jk_id->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($t_jk->jk_nm->Visible) { // jk_nm ?>
 	<tr id="r_jk_nm">
 		<td><span id="elh_t_jk_jk_nm"><?php echo $t_jk->jk_nm->FldCaption() ?></span></td>

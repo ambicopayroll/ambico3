@@ -285,8 +285,6 @@ class ct_jk_edit extends ct_jk {
 		// Create form object
 		$objForm = new cFormObj();
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->jk_id->SetVisibility();
-		$this->jk_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->jk_nm->SetVisibility();
 		$this->jk_kd->SetVisibility();
 		$this->jk_m->SetVisibility();
@@ -543,8 +541,6 @@ class ct_jk_edit extends ct_jk {
 
 		// Load from form
 		global $objForm;
-		if (!$this->jk_id->FldIsDetailKey)
-			$this->jk_id->setFormValue($objForm->GetValue("x_jk_id"));
 		if (!$this->jk_nm->FldIsDetailKey) {
 			$this->jk_nm->setFormValue($objForm->GetValue("x_jk_nm"));
 		}
@@ -553,15 +549,17 @@ class ct_jk_edit extends ct_jk {
 		}
 		if (!$this->jk_m->FldIsDetailKey) {
 			$this->jk_m->setFormValue($objForm->GetValue("x_jk_m"));
-			$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 0);
+			$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 4);
 		}
 		if (!$this->jk_k->FldIsDetailKey) {
 			$this->jk_k->setFormValue($objForm->GetValue("x_jk_k"));
-			$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 0);
+			$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 4);
 		}
 		if (!$this->jk_ket->FldIsDetailKey) {
 			$this->jk_ket->setFormValue($objForm->GetValue("x_jk_ket"));
 		}
+		if (!$this->jk_id->FldIsDetailKey)
+			$this->jk_id->setFormValue($objForm->GetValue("x_jk_id"));
 	}
 
 	// Restore form values
@@ -572,9 +570,9 @@ class ct_jk_edit extends ct_jk {
 		$this->jk_nm->CurrentValue = $this->jk_nm->FormValue;
 		$this->jk_kd->CurrentValue = $this->jk_kd->FormValue;
 		$this->jk_m->CurrentValue = $this->jk_m->FormValue;
-		$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 0);
+		$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 4);
 		$this->jk_k->CurrentValue = $this->jk_k->FormValue;
-		$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 0);
+		$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 4);
 		$this->jk_ket->CurrentValue = $this->jk_ket->FormValue;
 	}
 
@@ -686,20 +684,17 @@ class ct_jk_edit extends ct_jk {
 
 		// jk_m
 		$this->jk_m->ViewValue = $this->jk_m->CurrentValue;
+		$this->jk_m->ViewValue = ew_FormatDateTime($this->jk_m->ViewValue, 4);
 		$this->jk_m->ViewCustomAttributes = "";
 
 		// jk_k
 		$this->jk_k->ViewValue = $this->jk_k->CurrentValue;
+		$this->jk_k->ViewValue = ew_FormatDateTime($this->jk_k->ViewValue, 4);
 		$this->jk_k->ViewCustomAttributes = "";
 
 		// jk_ket
 		$this->jk_ket->ViewValue = $this->jk_ket->CurrentValue;
 		$this->jk_ket->ViewCustomAttributes = "";
-
-			// jk_id
-			$this->jk_id->LinkCustomAttributes = "";
-			$this->jk_id->HrefValue = "";
-			$this->jk_id->TooltipValue = "";
 
 			// jk_nm
 			$this->jk_nm->LinkCustomAttributes = "";
@@ -726,12 +721,6 @@ class ct_jk_edit extends ct_jk {
 			$this->jk_ket->HrefValue = "";
 			$this->jk_ket->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
-
-			// jk_id
-			$this->jk_id->EditAttrs["class"] = "form-control";
-			$this->jk_id->EditCustomAttributes = "";
-			$this->jk_id->EditValue = $this->jk_id->CurrentValue;
-			$this->jk_id->ViewCustomAttributes = "";
 
 			// jk_nm
 			$this->jk_nm->EditAttrs["class"] = "form-control";
@@ -764,12 +753,8 @@ class ct_jk_edit extends ct_jk {
 			$this->jk_ket->PlaceHolder = ew_RemoveHtml($this->jk_ket->FldCaption());
 
 			// Edit refer script
-			// jk_id
-
-			$this->jk_id->LinkCustomAttributes = "";
-			$this->jk_id->HrefValue = "";
-
 			// jk_nm
+
 			$this->jk_nm->LinkCustomAttributes = "";
 			$this->jk_nm->HrefValue = "";
 
@@ -1169,18 +1154,6 @@ $t_jk_edit->ShowMessage();
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <div>
-<?php if ($t_jk->jk_id->Visible) { // jk_id ?>
-	<div id="r_jk_id" class="form-group">
-		<label id="elh_t_jk_jk_id" class="col-sm-2 control-label ewLabel"><?php echo $t_jk->jk_id->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $t_jk->jk_id->CellAttributes() ?>>
-<span id="el_t_jk_jk_id">
-<span<?php echo $t_jk->jk_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_jk->jk_id->EditValue ?></p></span>
-</span>
-<input type="hidden" data-table="t_jk" data-field="x_jk_id" name="x_jk_id" id="x_jk_id" value="<?php echo ew_HtmlEncode($t_jk->jk_id->CurrentValue) ?>">
-<?php echo $t_jk->jk_id->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
 <?php if ($t_jk->jk_nm->Visible) { // jk_nm ?>
 	<div id="r_jk_nm" class="form-group">
 		<label id="elh_t_jk_jk_nm" for="x_jk_nm" class="col-sm-2 control-label ewLabel"><?php echo $t_jk->jk_nm->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
@@ -1232,6 +1205,7 @@ $t_jk_edit->ShowMessage();
 	</div>
 <?php } ?>
 </div>
+<input type="hidden" data-table="t_jk" data-field="x_jk_id" name="x_jk_id" id="x_jk_id" value="<?php echo ew_HtmlEncode($t_jk->jk_id->CurrentValue) ?>">
 <?php if (!$t_jk_edit->IsModal) { ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">

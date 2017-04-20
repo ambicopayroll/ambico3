@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<ew-language date="2017/4/19" version="13.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
+<ew-language date="2017/4/20" version="13.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
   <!-- 
 	*** Important Notes:
 	1. Language ID should follow: https://developers.google.com/recaptcha/docs/language,
@@ -1888,22 +1888,22 @@
     <table id="t_jk">
       <phrase id="tblcaption" value="Jam Kerja" />
       <field id="jk_id">
-        <phrase id="fldcaption" value="jk id" />
+        <phrase id="fldcaption" value="ID" />
       </field>
       <field id="jk_nm">
-        <phrase id="fldcaption" value="jk nm" />
+        <phrase id="fldcaption" value="Nama" />
       </field>
       <field id="jk_kd">
-        <phrase id="fldcaption" value="jk kd" />
+        <phrase id="fldcaption" value="Kode" />
       </field>
       <field id="jk_m">
-        <phrase id="fldcaption" value="jk m" />
+        <phrase id="fldcaption" value="Jam Masuk" />
       </field>
       <field id="jk_k">
-        <phrase id="fldcaption" value="jk k" />
+        <phrase id="fldcaption" value="Jam Keluar" />
       </field>
       <field id="jk_ket">
-        <phrase id="fldcaption" value="jk ket" />
+        <phrase id="fldcaption" value="Keterangan" />
       </field>
     </table>
     <table id="t_rumus">

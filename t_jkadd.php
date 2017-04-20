@@ -501,11 +501,11 @@ class ct_jk_add extends ct_jk {
 		}
 		if (!$this->jk_m->FldIsDetailKey) {
 			$this->jk_m->setFormValue($objForm->GetValue("x_jk_m"));
-			$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 0);
+			$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 4);
 		}
 		if (!$this->jk_k->FldIsDetailKey) {
 			$this->jk_k->setFormValue($objForm->GetValue("x_jk_k"));
-			$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 0);
+			$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 4);
 		}
 		if (!$this->jk_ket->FldIsDetailKey) {
 			$this->jk_ket->setFormValue($objForm->GetValue("x_jk_ket"));
@@ -519,9 +519,9 @@ class ct_jk_add extends ct_jk {
 		$this->jk_nm->CurrentValue = $this->jk_nm->FormValue;
 		$this->jk_kd->CurrentValue = $this->jk_kd->FormValue;
 		$this->jk_m->CurrentValue = $this->jk_m->FormValue;
-		$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 0);
+		$this->jk_m->CurrentValue = ew_UnFormatDateTime($this->jk_m->CurrentValue, 4);
 		$this->jk_k->CurrentValue = $this->jk_k->FormValue;
-		$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 0);
+		$this->jk_k->CurrentValue = ew_UnFormatDateTime($this->jk_k->CurrentValue, 4);
 		$this->jk_ket->CurrentValue = $this->jk_ket->FormValue;
 	}
 
@@ -630,10 +630,12 @@ class ct_jk_add extends ct_jk {
 
 		// jk_m
 		$this->jk_m->ViewValue = $this->jk_m->CurrentValue;
+		$this->jk_m->ViewValue = ew_FormatDateTime($this->jk_m->ViewValue, 4);
 		$this->jk_m->ViewCustomAttributes = "";
 
 		// jk_k
 		$this->jk_k->ViewValue = $this->jk_k->CurrentValue;
+		$this->jk_k->ViewValue = ew_FormatDateTime($this->jk_k->ViewValue, 4);
 		$this->jk_k->ViewCustomAttributes = "";
 
 		// jk_ket

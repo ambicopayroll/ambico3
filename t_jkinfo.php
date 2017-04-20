@@ -7,6 +7,12 @@ $t_jk = NULL;
 // Table class for t_jk
 //
 class ct_jk extends cTable {
+	var $AuditTrailOnAdd = TRUE;
+	var $AuditTrailOnEdit = TRUE;
+	var $AuditTrailOnDelete = TRUE;
+	var $AuditTrailOnView = FALSE;
+	var $AuditTrailOnViewData = FALSE;
+	var $AuditTrailOnSearch = FALSE;
 	var $jk_id;
 	var $jk_nm;
 	var $jk_kd;
@@ -61,13 +67,13 @@ class ct_jk extends cTable {
 		$this->fields['jk_kd'] = &$this->jk_kd;
 
 		// jk_m
-		$this->jk_m = new cField('t_jk', 't_jk', 'x_jk_m', 'jk_m', '`jk_m`', ew_CastDateFieldForLike('`jk_m`', 0, "DB"), 134, -1, FALSE, '`jk_m`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->jk_m = new cField('t_jk', 't_jk', 'x_jk_m', 'jk_m', '`jk_m`', ew_CastDateFieldForLike('`jk_m`', 4, "DB"), 134, 4, FALSE, '`jk_m`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->jk_m->Sortable = TRUE; // Allow sort
 		$this->jk_m->FldDefaultErrMsg = str_replace("%s", $GLOBALS["EW_TIME_SEPARATOR"], $Language->Phrase("IncorrectTime"));
 		$this->fields['jk_m'] = &$this->jk_m;
 
 		// jk_k
-		$this->jk_k = new cField('t_jk', 't_jk', 'x_jk_k', 'jk_k', '`jk_k`', ew_CastDateFieldForLike('`jk_k`', 0, "DB"), 134, -1, FALSE, '`jk_k`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->jk_k = new cField('t_jk', 't_jk', 'x_jk_k', 'jk_k', '`jk_k`', ew_CastDateFieldForLike('`jk_k`', 4, "DB"), 134, 4, FALSE, '`jk_k`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
 		$this->jk_k->Sortable = TRUE; // Allow sort
 		$this->jk_k->FldDefaultErrMsg = str_replace("%s", $GLOBALS["EW_TIME_SEPARATOR"], $Language->Phrase("IncorrectTime"));
 		$this->fields['jk_k'] = &$this->jk_k;
@@ -341,6 +347,8 @@ class ct_jk extends cTable {
 			// Get insert id if necessary
 			$this->jk_id->setDbValue($conn->Insert_ID());
 			$rs['jk_id'] = $this->jk_id->DbValue;
+			if ($this->AuditTrailOnAdd)
+				$this->WriteAuditTrailOnAdd($rs);
 		}
 		return $bInsert;
 	}
@@ -368,6 +376,12 @@ class ct_jk extends cTable {
 	function Update(&$rs, $where = "", $rsold = NULL, $curfilter = TRUE) {
 		$conn = &$this->Connection();
 		$bUpdate = $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
+		if ($bUpdate && $this->AuditTrailOnEdit) {
+			$rsaudit = $rs;
+			$fldname = 'jk_id';
+			if (!array_key_exists($fldname, $rsaudit)) $rsaudit[$fldname] = $rsold[$fldname];
+			$this->WriteAuditTrailOnEdit($rsaudit, $rsold);
+		}
 		return $bUpdate;
 	}
 
@@ -393,6 +407,8 @@ class ct_jk extends cTable {
 	function Delete(&$rs, $where = "", $curfilter = TRUE) {
 		$conn = &$this->Connection();
 		$bDelete = $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
+		if ($bDelete && $this->AuditTrailOnDelete)
+			$this->WriteAuditTrailOnDelete($rs);
 		return $bDelete;
 	}
 
@@ -615,10 +631,12 @@ class ct_jk extends cTable {
 
 		// jk_m
 		$this->jk_m->ViewValue = $this->jk_m->CurrentValue;
+		$this->jk_m->ViewValue = ew_FormatDateTime($this->jk_m->ViewValue, 4);
 		$this->jk_m->ViewCustomAttributes = "";
 
 		// jk_k
 		$this->jk_k->ViewValue = $this->jk_k->CurrentValue;
+		$this->jk_k->ViewValue = ew_FormatDateTime($this->jk_k->ViewValue, 4);
 		$this->jk_k->ViewCustomAttributes = "";
 
 		// jk_ket
@@ -729,7 +747,6 @@ class ct_jk extends cTable {
 			if ($Doc->Horizontal) { // Horizontal format, write header
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
-					if ($this->jk_id->Exportable) $Doc->ExportCaption($this->jk_id);
 					if ($this->jk_nm->Exportable) $Doc->ExportCaption($this->jk_nm);
 					if ($this->jk_kd->Exportable) $Doc->ExportCaption($this->jk_kd);
 					if ($this->jk_m->Exportable) $Doc->ExportCaption($this->jk_m);
@@ -741,6 +758,7 @@ class ct_jk extends cTable {
 					if ($this->jk_kd->Exportable) $Doc->ExportCaption($this->jk_kd);
 					if ($this->jk_m->Exportable) $Doc->ExportCaption($this->jk_m);
 					if ($this->jk_k->Exportable) $Doc->ExportCaption($this->jk_k);
+					if ($this->jk_ket->Exportable) $Doc->ExportCaption($this->jk_ket);
 				}
 				$Doc->EndExportRow();
 			}
@@ -772,7 +790,6 @@ class ct_jk extends cTable {
 				if (!$Doc->ExportCustom) {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
-						if ($this->jk_id->Exportable) $Doc->ExportField($this->jk_id);
 						if ($this->jk_nm->Exportable) $Doc->ExportField($this->jk_nm);
 						if ($this->jk_kd->Exportable) $Doc->ExportField($this->jk_kd);
 						if ($this->jk_m->Exportable) $Doc->ExportField($this->jk_m);
@@ -784,6 +801,7 @@ class ct_jk extends cTable {
 						if ($this->jk_kd->Exportable) $Doc->ExportField($this->jk_kd);
 						if ($this->jk_m->Exportable) $Doc->ExportField($this->jk_m);
 						if ($this->jk_k->Exportable) $Doc->ExportField($this->jk_k);
+						if ($this->jk_ket->Exportable) $Doc->ExportField($this->jk_ket);
 					}
 					$Doc->EndExportRow();
 				}
@@ -822,6 +840,129 @@ class ct_jk extends cTable {
 			return ew_ArrayToJson($rsarr);
 		} else {
 			return FALSE;
+		}
+	}
+
+	// Write Audit Trail start/end for grid update
+	function WriteAuditTrailDummy($typ) {
+		$table = 't_jk';
+		$usr = CurrentUserID();
+		ew_WriteAuditTrail("log", ew_StdCurrentDateTime(), ew_ScriptName(), $usr, $typ, $table, "", "", "", "");
+	}
+
+	// Write Audit Trail (add page)
+	function WriteAuditTrailOnAdd(&$rs) {
+		global $Language;
+		if (!$this->AuditTrailOnAdd) return;
+		$table = 't_jk';
+
+		// Get key value
+		$key = "";
+		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+		$key .= $rs['jk_id'];
+
+		// Write Audit Trail
+		$dt = ew_StdCurrentDateTime();
+		$id = ew_ScriptName();
+		$usr = CurrentUserID();
+		foreach (array_keys($rs) as $fldname) {
+			if (array_key_exists($fldname, $this->fields) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
+				if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") {
+					$newvalue = $Language->Phrase("PasswordMask"); // Password Field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) {
+					if (EW_AUDIT_TRAIL_TO_DATABASE)
+						$newvalue = $rs[$fldname];
+					else
+						$newvalue = "[MEMO]"; // Memo Field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) {
+					$newvalue = "[XML]"; // XML Field
+				} else {
+					$newvalue = $rs[$fldname];
+				}
+				ew_WriteAuditTrail("log", $dt, $id, $usr, "A", $table, $fldname, $key, "", $newvalue);
+			}
+		}
+	}
+
+	// Write Audit Trail (edit page)
+	function WriteAuditTrailOnEdit(&$rsold, &$rsnew) {
+		global $Language;
+		if (!$this->AuditTrailOnEdit) return;
+		$table = 't_jk';
+
+		// Get key value
+		$key = "";
+		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+		$key .= $rsold['jk_id'];
+
+		// Write Audit Trail
+		$dt = ew_StdCurrentDateTime();
+		$id = ew_ScriptName();
+		$usr = CurrentUserID();
+		foreach (array_keys($rsnew) as $fldname) {
+			if (array_key_exists($fldname, $this->fields) && array_key_exists($fldname, $rsold) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
+				if ($this->fields[$fldname]->FldDataType == EW_DATATYPE_DATE) { // DateTime field
+					$modified = (ew_FormatDateTime($rsold[$fldname], 0) <> ew_FormatDateTime($rsnew[$fldname], 0));
+				} else {
+					$modified = !ew_CompareValue($rsold[$fldname], $rsnew[$fldname]);
+				}
+				if ($modified) {
+					if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") { // Password Field
+						$oldvalue = $Language->Phrase("PasswordMask");
+						$newvalue = $Language->Phrase("PasswordMask");
+					} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) { // Memo field
+						if (EW_AUDIT_TRAIL_TO_DATABASE) {
+							$oldvalue = $rsold[$fldname];
+							$newvalue = $rsnew[$fldname];
+						} else {
+							$oldvalue = "[MEMO]";
+							$newvalue = "[MEMO]";
+						}
+					} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) { // XML field
+						$oldvalue = "[XML]";
+						$newvalue = "[XML]";
+					} else {
+						$oldvalue = $rsold[$fldname];
+						$newvalue = $rsnew[$fldname];
+					}
+					ew_WriteAuditTrail("log", $dt, $id, $usr, "U", $table, $fldname, $key, $oldvalue, $newvalue);
+				}
+			}
+		}
+	}
+
+	// Write Audit Trail (delete page)
+	function WriteAuditTrailOnDelete(&$rs) {
+		global $Language;
+		if (!$this->AuditTrailOnDelete) return;
+		$table = 't_jk';
+
+		// Get key value
+		$key = "";
+		if ($key <> "")
+			$key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+		$key .= $rs['jk_id'];
+
+		// Write Audit Trail
+		$dt = ew_StdCurrentDateTime();
+		$id = ew_ScriptName();
+		$curUser = CurrentUserID();
+		foreach (array_keys($rs) as $fldname) {
+			if (array_key_exists($fldname, $this->fields) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
+				if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") {
+					$oldvalue = $Language->Phrase("PasswordMask"); // Password Field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) {
+					if (EW_AUDIT_TRAIL_TO_DATABASE)
+						$oldvalue = $rs[$fldname];
+					else
+						$oldvalue = "[MEMO]"; // Memo field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) {
+					$oldvalue = "[XML]"; // XML field
+				} else {
+					$oldvalue = $rs[$fldname];
+				}
+				ew_WriteAuditTrail("log", $dt, $id, $curUser, "D", $table, $fldname, $key, $oldvalue, "");
+			}
 		}
 	}
 
