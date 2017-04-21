@@ -1688,7 +1688,7 @@ class crr_jdwkrj_summary extends crr_jdwkrj {
 	// - Variables setup: Session[EWR_TABLE_SESSION_ORDER_BY], Session["sort_Table_Field"]
 	function GetSort($options = array()) {
 		if ($this->DrillDown)
-			return "";
+			return "`pegawai_nama` ASC, `tgl` ASC";
 		$bResetSort = @$options["resetsort"] == "1" || @$_GET["cmd"] == "resetsort";
 		$orderBy = (@$options["order"] <> "") ? @$options["order"] : ewr_StripSlashes(@$_GET["order"]);
 		$orderType = (@$options["ordertype"] <> "") ? @$options["ordertype"] : ewr_StripSlashes(@$_GET["ordertype"]);
@@ -1718,6 +1718,13 @@ class crr_jdwkrj_summary extends crr_jdwkrj {
 			$sSortSql = $this->SortSql();
 			$this->setOrderBy($sSortSql);
 			$this->setStartGroup(1);
+		}
+
+		// Set up default sort
+		if ($this->getOrderBy() == "") {
+			$this->setOrderBy("`pegawai_nama` ASC, `tgl` ASC");
+			$this->pegawai_nama->setSort("ASC");
+			$this->tgl->setSort("ASC");
 		}
 		return $this->getOrderBy();
 	}
