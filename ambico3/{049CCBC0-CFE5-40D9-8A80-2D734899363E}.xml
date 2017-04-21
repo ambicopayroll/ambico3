@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <configuration date="2017/04/21" author="e.World Technology Ltd.">
-  <project id="{503C8825-3846-4E96-8DFF-03202C380E17}" file="D:\xampp\htdocs\ambico3\ambico3.pmp" name="ambico3" product="PHPMaker" version="13.0" datetime="2017/04/21 13:25:18" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0">
+  <project id="{049CCBC0-CFE5-40D9-8A80-2D734899363E}" file="D:\xampp\htdocs\ambico3\ambico3.prp" name="ambico3" product="PHPReportMaker" version="10.0" datetime="2017/04/21 13:43:31" languagefolder="phprptlang" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0">
     <table id="att_log" name="att_log" caption="att log" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="audittrail" name="audittrail" caption="User Activity Log" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="audittrail" name="audittrail" caption="audittrail" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="cuti_normatif" name="cuti_normatif" caption="cuti normatif" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="dev_type" name="dev_type" caption="dev type" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="device" name="device" caption="device" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
@@ -30,23 +30,23 @@
     <table id="kontrak_kerja" name="kontrak_kerja" caption="kontrak kerja" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="lembur" name="lembur" caption="lembur" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="libur" name="libur" caption="libur" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="pegawai" name="pegawai" caption="Pegawai" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="pegawai" name="pegawai" caption="pegawai" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="pegawai_d" name="pegawai_d" caption="pegawai d" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="pembagian1" name="pembagian1" caption="Jabatan" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="pembagian2" name="pembagian2" caption="Divisi" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="pembagian3" name="pembagian3" caption="Status" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="pembagian1" name="pembagian1" caption="pembagian 1" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="pembagian2" name="pembagian2" caption="pembagian 2" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="pembagian3" name="pembagian3" caption="pembagian 3" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="pendidikan" name="pendidikan" caption="pendidikan" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="setting" name="setting" caption="setting" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="shift_result" name="shift_result" caption="shift result" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="sms_group" name="sms_group" caption="sms group" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="sms_group_member" name="sms_group_member" caption="sms group member" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="sms_recipient" name="sms_recipient" caption="sms recipient" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="t_jdw_krj_def" name="t_jdw_krj_def" caption="Jadwal Kerja (Perincian)" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="t_jdw_krj_peg" name="t_jdw_krj_peg" caption="Jadwal Kerja (Periode)" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="t_jk" name="t_jk" caption="Jam Kerja" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="t_rumus" name="t_rumus" caption="Penggolongan Gaji" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="t_rumus_peg" name="t_rumus_peg" caption="Gaji" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="t_user" name="t_user" caption="User" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="t_jdw_krj_def" name="t_jdw_krj_def" caption="t jdw krj def" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="t_jdw_krj_peg" name="t_jdw_krj_peg" caption="t jdw krj peg" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="t_jk" name="t_jk" caption="t jk" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="t_rumus" name="t_rumus" caption="t rumus" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="t_rumus_peg" name="t_rumus_peg" caption="t rumus peg" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="t_user" name="t_user" caption="t user" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="temp_pegawai" name="temp_pegawai" caption="temp pegawai" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="tmp" name="tmp" caption="tmp" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="tmp_uareu" name="tmp_uareu" caption="tmp uareu" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
@@ -70,9 +70,6 @@
     <table id="zx_jns_krd" name="zx_jns_krd" caption="zx jns krd" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="zx_kredit_d" name="zx_kredit_d" caption="zx kredit d" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="zx_kredit_m" name="zx_kredit_m" caption="zx kredit m" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="dashboard_php" name="dashboard.php" caption="Dashboard" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="gen_jdwkrj__php" name="gen_jdwkrj_.php" caption="Generate Jadwal Kerja" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="gen_rekon__php" name="gen_rekon_.php" caption="Generate Rekonsiliasi Absensi" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="lap_gaji__php" name="lap_gaji_.php" caption="Laporan Gaji" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="r_rekon" name="r_rekon" caption="Laporan Rekonsiliasi" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
   </project>
 </configuration>
