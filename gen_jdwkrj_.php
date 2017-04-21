@@ -321,7 +321,7 @@ Page_Rendering();
 			else {
 			?>
 				<h1>Mohon Perhatian !!!!</h1>
-				<p>Data Jadwal Kerja yang sudah terbentuk akan diperbaharui. Apakah Anda yakin akan menlanjutkan proses ?</p>
+				<p>Data Jadwal Kerja yang sudah terbentuk akan diperbaharui. Apakah Anda yakin akan melanjutkan proses ini ?</p>
 				<button class="btn btn-primary ewButton" name="btnsubmit" id="btnsubmit" type="submit">Generate</button>
 			<?php
 			}
