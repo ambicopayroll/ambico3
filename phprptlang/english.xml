@@ -350,6 +350,12 @@
   <project>
     <phrase id="bodytitle" value="AMBICO" />
     <phrase id="footertext" value="&amp;copy;2017 AMBICO. All rights reserved." />
+    <menu id="72">
+      <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
+    </menu>
+    <menu id="73">
+      <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
+    </menu>
     <menu id="71">
       <phrase id="menutext" value="Scan Finger" />
     </menu>
@@ -2379,6 +2385,42 @@
       </field>
       <field id="scan_date_tgl">
         <phrase id="fldcaption" value="Tanggal (Thn-Bln-Tgl)" />
+      </field>
+    </table>
+    <table id="v_jdw_krj_def">
+      <phrase id="tblcaption" value="Jadwal Kerja (Perincian)" />
+      <field id="pegawai_nama">
+        <phrase id="fldcaption" value="Nama Pegawai" />
+      </field>
+      <field id="tgl_indo">
+        <phrase id="fldcaption" value="Tanggal" />
+      </field>
+      <field id="jk_kd">
+        <phrase id="fldcaption" value="Kode Jam Kerja" />
+      </field>
+      <field id="hk_def">
+        <phrase id="fldcaption" value="Gol. Hari Kerja" />
+      </field>
+      <field id="tgl">
+        <phrase id="fldcaption" value="tgl" />
+      </field>
+    </table>
+    <table id="r_jdwkrj">
+      <phrase id="tblcaption" value="Jadwal Kerja (Perincian)" />
+      <field id="pegawai_nama">
+        <phrase id="fldcaption" value="Nama Pegawai" />
+      </field>
+      <field id="tgl_indo">
+        <phrase id="fldcaption" value="Tanggal" />
+      </field>
+      <field id="jk_kd">
+        <phrase id="fldcaption" value="Kode Jam Kerja" />
+      </field>
+      <field id="hk_def">
+        <phrase id="fldcaption" value="Gol. Hari Kerja" />
+      </field>
+      <field id="tgl">
+        <phrase id="fldcaption" value="Tgl." />
       </field>
     </table>
   </project>

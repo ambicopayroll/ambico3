@@ -637,6 +637,9 @@
     <menu id="10071">
       <phrase id="menutext" value="Scan Finger" />
     </menu>
+    <menu id="10073">
+      <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
+    </menu>
     <menu id="10070">
       <phrase id="menutext" value="Rekonsiliasi" />
     </menu>
@@ -816,6 +819,9 @@
     </menu>
     <menu id="69">
       <phrase id="menutext" value="zx kredit m" />
+    </menu>
+    <menu id="10072">
+      <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
     </menu>
     <menu id="10001">
       <phrase id="menutext" value="att log" />
