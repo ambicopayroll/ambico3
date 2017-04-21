@@ -282,8 +282,6 @@ class ct_user_delete extends ct_user {
 			}
 		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->user_id->SetVisibility();
-		$this->user_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->username->SetVisibility();
 		$this->password->SetVisibility();
 		$this->userlevel->SetVisibility();
@@ -537,11 +535,6 @@ class ct_user_delete extends ct_user {
 		}
 		$this->userlevel->ViewCustomAttributes = "";
 
-			// user_id
-			$this->user_id->LinkCustomAttributes = "";
-			$this->user_id->HrefValue = "";
-			$this->user_id->TooltipValue = "";
-
 			// username
 			$this->username->LinkCustomAttributes = "";
 			$this->username->HrefValue = "";
@@ -591,6 +584,7 @@ class ct_user_delete extends ct_user {
 		}
 		$rows = ($rs) ? $rs->GetRows() : array();
 		$conn->BeginTrans();
+		if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteBegin")); // Batch delete begin
 
 		// Clone old rows
 		$rsold = $rows;
@@ -633,8 +627,10 @@ class ct_user_delete extends ct_user {
 		}
 		if ($DeleteRows) {
 			$conn->CommitTrans(); // Commit the changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
 		} else {
 			$conn->RollbackTrans(); // Rollback changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteRollback")); // Batch delete rollback
 		}
 
 		// Call Row Deleted event
@@ -816,9 +812,6 @@ $t_user_delete->ShowMessage();
 <?php echo $t_user->TableCustomInnerHtml ?>
 	<thead>
 	<tr class="ewTableHeader">
-<?php if ($t_user->user_id->Visible) { // user_id ?>
-		<th><span id="elh_t_user_user_id" class="t_user_user_id"><?php echo $t_user->user_id->FldCaption() ?></span></th>
-<?php } ?>
 <?php if ($t_user->username->Visible) { // username ?>
 		<th><span id="elh_t_user_username" class="t_user_username"><?php echo $t_user->username->FldCaption() ?></span></th>
 <?php } ?>
@@ -849,14 +842,6 @@ while (!$t_user_delete->Recordset->EOF) {
 	$t_user_delete->RenderRow();
 ?>
 	<tr<?php echo $t_user->RowAttributes() ?>>
-<?php if ($t_user->user_id->Visible) { // user_id ?>
-		<td<?php echo $t_user->user_id->CellAttributes() ?>>
-<span id="el<?php echo $t_user_delete->RowCnt ?>_t_user_user_id" class="t_user_user_id">
-<span<?php echo $t_user->user_id->ViewAttributes() ?>>
-<?php echo $t_user->user_id->ListViewValue() ?></span>
-</span>
-</td>
-<?php } ?>
 <?php if ($t_user->username->Visible) { // username ?>
 		<td<?php echo $t_user->username->CellAttributes() ?>>
 <span id="el<?php echo $t_user_delete->RowCnt ?>_t_user_username" class="t_user_username">

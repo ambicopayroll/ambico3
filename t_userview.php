@@ -383,8 +383,6 @@ class ct_user_view extends ct_user {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->user_id->SetVisibility();
-		$this->user_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->username->SetVisibility();
 		$this->password->SetVisibility();
 		$this->userlevel->SetVisibility();
@@ -703,6 +701,7 @@ class ct_user_view extends ct_user {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
+		if ($this->AuditTrailOnView) $this->WriteAuditTrailOnView($row);
 		$this->user_id->setDbValue($rs->fields('user_id'));
 		$this->username->setDbValue($rs->fields('username'));
 		$this->password->setDbValue($rs->fields('password'));
@@ -765,11 +764,6 @@ class ct_user_view extends ct_user {
 			$this->userlevel->ViewValue = $Language->Phrase("PasswordMask");
 		}
 		$this->userlevel->ViewCustomAttributes = "";
-
-			// user_id
-			$this->user_id->LinkCustomAttributes = "";
-			$this->user_id->HrefValue = "";
-			$this->user_id->TooltipValue = "";
 
 			// username
 			$this->username->LinkCustomAttributes = "";
@@ -1292,17 +1286,6 @@ $t_user_view->ShowMessage();
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($t_user->user_id->Visible) { // user_id ?>
-	<tr id="r_user_id">
-		<td><span id="elh_t_user_user_id"><?php echo $t_user->user_id->FldCaption() ?></span></td>
-		<td data-name="user_id"<?php echo $t_user->user_id->CellAttributes() ?>>
-<span id="el_t_user_user_id">
-<span<?php echo $t_user->user_id->ViewAttributes() ?>>
-<?php echo $t_user->user_id->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($t_user->username->Visible) { // username ?>
 	<tr id="r_username">
 		<td><span id="elh_t_user_username"><?php echo $t_user->username->FldCaption() ?></span></td>
