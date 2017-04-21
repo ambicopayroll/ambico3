@@ -99,7 +99,7 @@ $msql = "
 		left join t_rumus2 c on b.rumus2_id = c.rumus2_id
 	where
 		tgl between '".$_POST['start']."' and '".$_POST['end']."'
-		and c.hk_gol = a.gol_hk
+		and c.gol_hk = a.gol_hk
 		and a.pegawai_id in (select pegawai_id from t_rumus2_peg)
 	order by
 		a.pegawai_id

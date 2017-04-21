@@ -100,6 +100,7 @@ $msql = "
 	where
 		tgl between '".$_POST['start']."' and '".$_POST['end']."'
 		and c.hk_gol = a.gol_hk
+		and a.pegawai_id not in (select pegawai_id from t_rumus2_peg)
 	order by
 		a.pegawai_id
 		, tgl
