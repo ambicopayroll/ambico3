@@ -9,6 +9,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "t_userinfo.php" ?>
 <?php include_once "t_jdw_krj_peggridcls.php" ?>
 <?php include_once "t_rumus_peggridcls.php" ?>
+<?php include_once "t_rumus2_peggridcls.php" ?>
 <?php include_once "userfn13.php" ?>
 <?php
 
@@ -326,6 +327,14 @@ class cpegawai_edit extends cpegawai {
 			if (@$_POST["grid"] == "ft_rumus_peggrid") {
 				if (!isset($GLOBALS["t_rumus_peg_grid"])) $GLOBALS["t_rumus_peg_grid"] = new ct_rumus_peg_grid;
 				$GLOBALS["t_rumus_peg_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
+
+			// Process auto fill for detail table 't_rumus2_peg'
+			if (@$_POST["grid"] == "ft_rumus2_peggrid") {
+				if (!isset($GLOBALS["t_rumus2_peg_grid"])) $GLOBALS["t_rumus2_peg_grid"] = new ct_rumus2_peg_grid;
+				$GLOBALS["t_rumus2_peg_grid"]->Page_Init();
 				$this->Page_Terminate();
 				exit();
 			}
@@ -1145,6 +1154,10 @@ class cpegawai_edit extends cpegawai {
 			if (!isset($GLOBALS["t_rumus_peg_grid"])) $GLOBALS["t_rumus_peg_grid"] = new ct_rumus_peg_grid(); // get detail page object
 			$GLOBALS["t_rumus_peg_grid"]->ValidateGridForm();
 		}
+		if (in_array("t_rumus2_peg", $DetailTblVar) && $GLOBALS["t_rumus2_peg"]->DetailEdit) {
+			if (!isset($GLOBALS["t_rumus2_peg_grid"])) $GLOBALS["t_rumus2_peg_grid"] = new ct_rumus2_peg_grid(); // get detail page object
+			$GLOBALS["t_rumus2_peg_grid"]->ValidateGridForm();
+		}
 
 		// Return validate result
 		$ValidateForm = ($gsFormError == "");
@@ -1255,6 +1268,14 @@ class cpegawai_edit extends cpegawai {
 						$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName); // Restore user level of master table
 					}
 				}
+				if ($EditRow) {
+					if (in_array("t_rumus2_peg", $DetailTblVar) && $GLOBALS["t_rumus2_peg"]->DetailEdit) {
+						if (!isset($GLOBALS["t_rumus2_peg_grid"])) $GLOBALS["t_rumus2_peg_grid"] = new ct_rumus2_peg_grid(); // Get detail page object
+						$Security->LoadCurrentUserLevel($this->ProjectID . "t_rumus2_peg"); // Load user level of detail table
+						$EditRow = $GLOBALS["t_rumus2_peg_grid"]->GridUpdate();
+						$Security->LoadCurrentUserLevel($this->ProjectID . $this->TableName); // Restore user level of master table
+					}
+				}
 
 				// Commit/Rollback transaction
 				if ($this->getCurrentDetailTable() <> "") {
@@ -1327,6 +1348,21 @@ class cpegawai_edit extends cpegawai {
 					$GLOBALS["t_rumus_peg_grid"]->pegawai_id->setSessionValue($GLOBALS["t_rumus_peg_grid"]->pegawai_id->CurrentValue);
 				}
 			}
+			if (in_array("t_rumus2_peg", $DetailTblVar)) {
+				if (!isset($GLOBALS["t_rumus2_peg_grid"]))
+					$GLOBALS["t_rumus2_peg_grid"] = new ct_rumus2_peg_grid;
+				if ($GLOBALS["t_rumus2_peg_grid"]->DetailEdit) {
+					$GLOBALS["t_rumus2_peg_grid"]->CurrentMode = "edit";
+					$GLOBALS["t_rumus2_peg_grid"]->CurrentAction = "gridedit";
+
+					// Save current master table to detail table
+					$GLOBALS["t_rumus2_peg_grid"]->setCurrentMasterTable($this->TableVar);
+					$GLOBALS["t_rumus2_peg_grid"]->setStartRecordNumber(1);
+					$GLOBALS["t_rumus2_peg_grid"]->pegawai_id->FldIsDetailKey = TRUE;
+					$GLOBALS["t_rumus2_peg_grid"]->pegawai_id->CurrentValue = $this->pegawai_id->CurrentValue;
+					$GLOBALS["t_rumus2_peg_grid"]->pegawai_id->setSessionValue($GLOBALS["t_rumus2_peg_grid"]->pegawai_id->CurrentValue);
+				}
+			}
 		}
 	}
 
@@ -1346,6 +1382,7 @@ class cpegawai_edit extends cpegawai {
 		$pages->Style = "pills";
 		$pages->Add('t_jdw_krj_peg');
 		$pages->Add('t_rumus_peg');
+		$pages->Add('t_rumus2_peg');
 		$this->DetailPages = $pages;
 	}
 
@@ -1747,6 +1784,16 @@ $pegawai_edit->ShowMessage();
 <?php
 	}
 ?>
+<?php
+	if (in_array("t_rumus2_peg", explode(",", $pegawai->getCurrentDetailTable())) && $t_rumus2_peg->DetailEdit) {
+		if ($FirstActiveDetailTable == "" || $FirstActiveDetailTable == "t_rumus2_peg") {
+			$FirstActiveDetailTable = "t_rumus2_peg";
+		}
+?>
+		<li<?php echo $pegawai_edit->DetailPages->TabStyle("t_rumus2_peg") ?>><a href="#tab_t_rumus2_peg" data-toggle="tab"><?php echo $Language->TablePhrase("t_rumus2_peg", "TblCaption") ?></a></li>
+<?php
+	}
+?>
 	</ul>
 	<div class="tab-content">
 <?php
@@ -1767,6 +1814,16 @@ $pegawai_edit->ShowMessage();
 ?>
 		<div class="tab-pane<?php echo $pegawai_edit->DetailPages->PageStyle("t_rumus_peg") ?>" id="tab_t_rumus_peg">
 <?php include_once "t_rumus_peggrid.php" ?>
+		</div>
+<?php } ?>
+<?php
+	if (in_array("t_rumus2_peg", explode(",", $pegawai->getCurrentDetailTable())) && $t_rumus2_peg->DetailEdit) {
+		if ($FirstActiveDetailTable == "" || $FirstActiveDetailTable == "t_rumus2_peg") {
+			$FirstActiveDetailTable = "t_rumus2_peg";
+		}
+?>
+		<div class="tab-pane<?php echo $pegawai_edit->DetailPages->PageStyle("t_rumus2_peg") ?>" id="tab_t_rumus2_peg">
+<?php include_once "t_rumus2_peggrid.php" ?>
 		</div>
 <?php } ?>
 	</div>

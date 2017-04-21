@@ -5,7 +5,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg13.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql13.php") ?>
 <?php include_once "phpfn13.php" ?>
-<?php include_once "t_rumusinfo.php" ?>
+<?php include_once "t_rumus2info.php" ?>
 <?php include_once "t_userinfo.php" ?>
 <?php include_once "userfn13.php" ?>
 <?php
@@ -14,9 +14,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$t_rumus_delete = NULL; // Initialize page object first
+$t_rumus2_delete = NULL; // Initialize page object first
 
-class ct_rumus_delete extends ct_rumus {
+class ct_rumus2_delete extends ct_rumus2 {
 
 	// Page ID
 	var $PageID = 'delete';
@@ -25,10 +25,10 @@ class ct_rumus_delete extends ct_rumus {
 	var $ProjectID = "{503C8825-3846-4E96-8DFF-03202C380E17}";
 
 	// Table name
-	var $TableName = 't_rumus';
+	var $TableName = 't_rumus2';
 
 	// Page object name
-	var $PageObjName = 't_rumus_delete';
+	var $PageObjName = 't_rumus2_delete';
 
 	// Page name
 	function PageName() {
@@ -226,10 +226,10 @@ class ct_rumus_delete extends ct_rumus {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (t_rumus)
-		if (!isset($GLOBALS["t_rumus"]) || get_class($GLOBALS["t_rumus"]) == "ct_rumus") {
-			$GLOBALS["t_rumus"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["t_rumus"];
+		// Table object (t_rumus2)
+		if (!isset($GLOBALS["t_rumus2"]) || get_class($GLOBALS["t_rumus2"]) == "ct_rumus2") {
+			$GLOBALS["t_rumus2"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["t_rumus2"];
 		}
 
 		// Table object (t_user)
@@ -241,7 +241,7 @@ class ct_rumus_delete extends ct_rumus {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 't_rumus', TRUE);
+			define("EW_TABLE_NAME", 't_rumus2', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -272,7 +272,7 @@ class ct_rumus_delete extends ct_rumus {
 			$Security->SaveLastUrl();
 			$this->setFailureMessage(ew_DeniedMsg()); // Set no permission
 			if ($Security->CanList())
-				$this->Page_Terminate(ew_GetUrl("t_rumuslist.php"));
+				$this->Page_Terminate(ew_GetUrl("t_rumus2list.php"));
 			else
 				$this->Page_Terminate(ew_GetUrl("login.php"));
 		}
@@ -282,15 +282,15 @@ class ct_rumus_delete extends ct_rumus {
 			$Security->UserID_Loaded();
 		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->rumus_nama->SetVisibility();
-		$this->hk_gol->SetVisibility();
-		$this->umr->SetVisibility();
-		$this->hk_jml->SetVisibility();
-		$this->upah->SetVisibility();
+		$this->rumus2_nama->SetVisibility();
+		$this->gol_hk->SetVisibility();
 		$this->premi_hadir->SetVisibility();
 		$this->premi_malam->SetVisibility();
+		$this->lp->SetVisibility();
+		$this->forklift->SetVisibility();
 		$this->pot_absen->SetVisibility();
-		$this->lembur->SetVisibility();
+		$this->pot_aspen->SetVisibility();
+		$this->pot_bpjs->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -322,13 +322,13 @@ class ct_rumus_delete extends ct_rumus {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $t_rumus;
+		global $EW_EXPORT, $t_rumus2;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($t_rumus);
+				$doc = new $class($t_rumus2);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -374,10 +374,10 @@ class ct_rumus_delete extends ct_rumus {
 		$this->RecKeys = $this->GetRecordKeys(); // Load record keys
 		$sFilter = $this->GetKeyFilter();
 		if ($sFilter == "")
-			$this->Page_Terminate("t_rumuslist.php"); // Prevent SQL injection, return to list
+			$this->Page_Terminate("t_rumus2list.php"); // Prevent SQL injection, return to list
 
 		// Set up filter (SQL WHHERE clause) and get return SQL
-		// SQL constructor in t_rumus class, t_rumusinfo.php
+		// SQL constructor in t_rumus2 class, t_rumus2info.php
 
 		$this->CurrentFilter = $sFilter;
 
@@ -405,7 +405,7 @@ class ct_rumus_delete extends ct_rumus {
 			if ($this->TotalRecs <= 0) { // No record found, exit
 				if ($this->Recordset)
 					$this->Recordset->Close();
-				$this->Page_Terminate("t_rumuslist.php"); // Return to list
+				$this->Page_Terminate("t_rumus2list.php"); // Return to list
 			}
 		}
 	}
@@ -465,32 +465,32 @@ class ct_rumus_delete extends ct_rumus {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->rumus_id->setDbValue($rs->fields('rumus_id'));
-		$this->rumus_nama->setDbValue($rs->fields('rumus_nama'));
-		$this->hk_gol->setDbValue($rs->fields('hk_gol'));
-		$this->umr->setDbValue($rs->fields('umr'));
-		$this->hk_jml->setDbValue($rs->fields('hk_jml'));
-		$this->upah->setDbValue($rs->fields('upah'));
+		$this->rumus2_id->setDbValue($rs->fields('rumus2_id'));
+		$this->rumus2_nama->setDbValue($rs->fields('rumus2_nama'));
+		$this->gol_hk->setDbValue($rs->fields('gol_hk'));
 		$this->premi_hadir->setDbValue($rs->fields('premi_hadir'));
 		$this->premi_malam->setDbValue($rs->fields('premi_malam'));
+		$this->lp->setDbValue($rs->fields('lp'));
+		$this->forklift->setDbValue($rs->fields('forklift'));
 		$this->pot_absen->setDbValue($rs->fields('pot_absen'));
-		$this->lembur->setDbValue($rs->fields('lembur'));
+		$this->pot_aspen->setDbValue($rs->fields('pot_aspen'));
+		$this->pot_bpjs->setDbValue($rs->fields('pot_bpjs'));
 	}
 
 	// Load DbValue from recordset
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->rumus_id->DbValue = $row['rumus_id'];
-		$this->rumus_nama->DbValue = $row['rumus_nama'];
-		$this->hk_gol->DbValue = $row['hk_gol'];
-		$this->umr->DbValue = $row['umr'];
-		$this->hk_jml->DbValue = $row['hk_jml'];
-		$this->upah->DbValue = $row['upah'];
+		$this->rumus2_id->DbValue = $row['rumus2_id'];
+		$this->rumus2_nama->DbValue = $row['rumus2_nama'];
+		$this->gol_hk->DbValue = $row['gol_hk'];
 		$this->premi_hadir->DbValue = $row['premi_hadir'];
 		$this->premi_malam->DbValue = $row['premi_malam'];
+		$this->lp->DbValue = $row['lp'];
+		$this->forklift->DbValue = $row['forklift'];
 		$this->pot_absen->DbValue = $row['pot_absen'];
-		$this->lembur->DbValue = $row['lembur'];
+		$this->pot_aspen->DbValue = $row['pot_aspen'];
+		$this->pot_bpjs->DbValue = $row['pot_bpjs'];
 	}
 
 	// Render row values based on field settings
@@ -500,14 +500,6 @@ class ct_rumus_delete extends ct_rumus {
 		// Initialize URLs
 		// Convert decimal values if posted back
 
-		if ($this->umr->FormValue == $this->umr->CurrentValue && is_numeric(ew_StrToFloat($this->umr->CurrentValue)))
-			$this->umr->CurrentValue = ew_StrToFloat($this->umr->CurrentValue);
-
-		// Convert decimal values if posted back
-		if ($this->upah->FormValue == $this->upah->CurrentValue && is_numeric(ew_StrToFloat($this->upah->CurrentValue)))
-			$this->upah->CurrentValue = ew_StrToFloat($this->upah->CurrentValue);
-
-		// Convert decimal values if posted back
 		if ($this->premi_hadir->FormValue == $this->premi_hadir->CurrentValue && is_numeric(ew_StrToFloat($this->premi_hadir->CurrentValue)))
 			$this->premi_hadir->CurrentValue = ew_StrToFloat($this->premi_hadir->CurrentValue);
 
@@ -516,63 +508,57 @@ class ct_rumus_delete extends ct_rumus {
 			$this->premi_malam->CurrentValue = ew_StrToFloat($this->premi_malam->CurrentValue);
 
 		// Convert decimal values if posted back
+		if ($this->lp->FormValue == $this->lp->CurrentValue && is_numeric(ew_StrToFloat($this->lp->CurrentValue)))
+			$this->lp->CurrentValue = ew_StrToFloat($this->lp->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->forklift->FormValue == $this->forklift->CurrentValue && is_numeric(ew_StrToFloat($this->forklift->CurrentValue)))
+			$this->forklift->CurrentValue = ew_StrToFloat($this->forklift->CurrentValue);
+
+		// Convert decimal values if posted back
 		if ($this->pot_absen->FormValue == $this->pot_absen->CurrentValue && is_numeric(ew_StrToFloat($this->pot_absen->CurrentValue)))
 			$this->pot_absen->CurrentValue = ew_StrToFloat($this->pot_absen->CurrentValue);
 
 		// Convert decimal values if posted back
-		if ($this->lembur->FormValue == $this->lembur->CurrentValue && is_numeric(ew_StrToFloat($this->lembur->CurrentValue)))
-			$this->lembur->CurrentValue = ew_StrToFloat($this->lembur->CurrentValue);
+		if ($this->pot_aspen->FormValue == $this->pot_aspen->CurrentValue && is_numeric(ew_StrToFloat($this->pot_aspen->CurrentValue)))
+			$this->pot_aspen->CurrentValue = ew_StrToFloat($this->pot_aspen->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->pot_bpjs->FormValue == $this->pot_bpjs->CurrentValue && is_numeric(ew_StrToFloat($this->pot_bpjs->CurrentValue)))
+			$this->pot_bpjs->CurrentValue = ew_StrToFloat($this->pot_bpjs->CurrentValue);
 
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// rumus_id
-		// rumus_nama
-		// hk_gol
-		// umr
-		// hk_jml
-		// upah
+		// rumus2_id
+		// rumus2_nama
+		// gol_hk
 		// premi_hadir
 		// premi_malam
+		// lp
+		// forklift
 		// pot_absen
-		// lembur
+		// pot_aspen
+		// pot_bpjs
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// rumus_id
-		$this->rumus_id->ViewValue = $this->rumus_id->CurrentValue;
-		$this->rumus_id->ViewCustomAttributes = "";
+		// rumus2_id
+		$this->rumus2_id->ViewValue = $this->rumus2_id->CurrentValue;
+		$this->rumus2_id->ViewCustomAttributes = "";
 
-		// rumus_nama
-		$this->rumus_nama->ViewValue = $this->rumus_nama->CurrentValue;
-		$this->rumus_nama->ViewCustomAttributes = "";
+		// rumus2_nama
+		$this->rumus2_nama->ViewValue = $this->rumus2_nama->CurrentValue;
+		$this->rumus2_nama->ViewCustomAttributes = "";
 
-		// hk_gol
-		if (strval($this->hk_gol->CurrentValue) <> "") {
-			$this->hk_gol->ViewValue = $this->hk_gol->OptionCaption($this->hk_gol->CurrentValue);
+		// gol_hk
+		if (strval($this->gol_hk->CurrentValue) <> "") {
+			$this->gol_hk->ViewValue = $this->gol_hk->OptionCaption($this->gol_hk->CurrentValue);
 		} else {
-			$this->hk_gol->ViewValue = NULL;
+			$this->gol_hk->ViewValue = NULL;
 		}
-		$this->hk_gol->CellCssStyle .= "text-align: center;";
-		$this->hk_gol->ViewCustomAttributes = "";
-
-		// umr
-		$this->umr->ViewValue = $this->umr->CurrentValue;
-		$this->umr->ViewValue = ew_FormatNumber($this->umr->ViewValue, 0, -2, -2, -2);
-		$this->umr->CellCssStyle .= "text-align: right;";
-		$this->umr->ViewCustomAttributes = "";
-
-		// hk_jml
-		$this->hk_jml->ViewValue = $this->hk_jml->CurrentValue;
-		$this->hk_jml->CellCssStyle .= "text-align: center;";
-		$this->hk_jml->ViewCustomAttributes = "";
-
-		// upah
-		$this->upah->ViewValue = $this->upah->CurrentValue;
-		$this->upah->ViewValue = ew_FormatNumber($this->upah->ViewValue, 0, -2, -2, -2);
-		$this->upah->CellCssStyle .= "text-align: right;";
-		$this->upah->ViewCustomAttributes = "";
+		$this->gol_hk->ViewCustomAttributes = "";
 
 		// premi_hadir
 		$this->premi_hadir->ViewValue = $this->premi_hadir->CurrentValue;
@@ -586,42 +572,45 @@ class ct_rumus_delete extends ct_rumus {
 		$this->premi_malam->CellCssStyle .= "text-align: right;";
 		$this->premi_malam->ViewCustomAttributes = "";
 
+		// lp
+		$this->lp->ViewValue = $this->lp->CurrentValue;
+		$this->lp->ViewValue = ew_FormatNumber($this->lp->ViewValue, 0, -2, -2, -2);
+		$this->lp->CellCssStyle .= "text-align: right;";
+		$this->lp->ViewCustomAttributes = "";
+
+		// forklift
+		$this->forklift->ViewValue = $this->forklift->CurrentValue;
+		$this->forklift->ViewValue = ew_FormatNumber($this->forklift->ViewValue, 0, -2, -2, -2);
+		$this->forklift->CellCssStyle .= "text-align: right;";
+		$this->forklift->ViewCustomAttributes = "";
+
 		// pot_absen
 		$this->pot_absen->ViewValue = $this->pot_absen->CurrentValue;
 		$this->pot_absen->ViewValue = ew_FormatNumber($this->pot_absen->ViewValue, 0, -2, -2, -2);
 		$this->pot_absen->CellCssStyle .= "text-align: right;";
 		$this->pot_absen->ViewCustomAttributes = "";
 
-		// lembur
-		$this->lembur->ViewValue = $this->lembur->CurrentValue;
-		$this->lembur->ViewValue = ew_FormatNumber($this->lembur->ViewValue, 0, -2, -2, -2);
-		$this->lembur->CellCssStyle .= "text-align: right;";
-		$this->lembur->ViewCustomAttributes = "";
+		// pot_aspen
+		$this->pot_aspen->ViewValue = $this->pot_aspen->CurrentValue;
+		$this->pot_aspen->ViewValue = ew_FormatNumber($this->pot_aspen->ViewValue, 2, -2, -2, -2);
+		$this->pot_aspen->CellCssStyle .= "text-align: right;";
+		$this->pot_aspen->ViewCustomAttributes = "";
 
-			// rumus_nama
-			$this->rumus_nama->LinkCustomAttributes = "";
-			$this->rumus_nama->HrefValue = "";
-			$this->rumus_nama->TooltipValue = "";
+		// pot_bpjs
+		$this->pot_bpjs->ViewValue = $this->pot_bpjs->CurrentValue;
+		$this->pot_bpjs->ViewValue = ew_FormatNumber($this->pot_bpjs->ViewValue, 2, -2, -2, -2);
+		$this->pot_bpjs->CellCssStyle .= "text-align: right;";
+		$this->pot_bpjs->ViewCustomAttributes = "";
 
-			// hk_gol
-			$this->hk_gol->LinkCustomAttributes = "";
-			$this->hk_gol->HrefValue = "";
-			$this->hk_gol->TooltipValue = "";
+			// rumus2_nama
+			$this->rumus2_nama->LinkCustomAttributes = "";
+			$this->rumus2_nama->HrefValue = "";
+			$this->rumus2_nama->TooltipValue = "";
 
-			// umr
-			$this->umr->LinkCustomAttributes = "";
-			$this->umr->HrefValue = "";
-			$this->umr->TooltipValue = "";
-
-			// hk_jml
-			$this->hk_jml->LinkCustomAttributes = "";
-			$this->hk_jml->HrefValue = "";
-			$this->hk_jml->TooltipValue = "";
-
-			// upah
-			$this->upah->LinkCustomAttributes = "";
-			$this->upah->HrefValue = "";
-			$this->upah->TooltipValue = "";
+			// gol_hk
+			$this->gol_hk->LinkCustomAttributes = "";
+			$this->gol_hk->HrefValue = "";
+			$this->gol_hk->TooltipValue = "";
 
 			// premi_hadir
 			$this->premi_hadir->LinkCustomAttributes = "";
@@ -633,15 +622,30 @@ class ct_rumus_delete extends ct_rumus {
 			$this->premi_malam->HrefValue = "";
 			$this->premi_malam->TooltipValue = "";
 
+			// lp
+			$this->lp->LinkCustomAttributes = "";
+			$this->lp->HrefValue = "";
+			$this->lp->TooltipValue = "";
+
+			// forklift
+			$this->forklift->LinkCustomAttributes = "";
+			$this->forklift->HrefValue = "";
+			$this->forklift->TooltipValue = "";
+
 			// pot_absen
 			$this->pot_absen->LinkCustomAttributes = "";
 			$this->pot_absen->HrefValue = "";
 			$this->pot_absen->TooltipValue = "";
 
-			// lembur
-			$this->lembur->LinkCustomAttributes = "";
-			$this->lembur->HrefValue = "";
-			$this->lembur->TooltipValue = "";
+			// pot_aspen
+			$this->pot_aspen->LinkCustomAttributes = "";
+			$this->pot_aspen->HrefValue = "";
+			$this->pot_aspen->TooltipValue = "";
+
+			// pot_bpjs
+			$this->pot_bpjs->LinkCustomAttributes = "";
+			$this->pot_bpjs->HrefValue = "";
+			$this->pot_bpjs->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -696,7 +700,7 @@ class ct_rumus_delete extends ct_rumus {
 			foreach ($rsold as $row) {
 				$sThisKey = "";
 				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-				$sThisKey .= $row['rumus_id'];
+				$sThisKey .= $row['rumus2_id'];
 				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				$DeleteRows = $this->Delete($row); // Delete
 				$conn->raiseErrorFn = '';
@@ -740,7 +744,7 @@ class ct_rumus_delete extends ct_rumus {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
 		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
-		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("t_rumuslist.php"), "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("t_rumus2list.php"), "", $this->TableVar, TRUE);
 		$PageId = "delete";
 		$Breadcrumb->Add("delete", $PageId, $url);
 	}
@@ -826,29 +830,29 @@ class ct_rumus_delete extends ct_rumus {
 <?php
 
 // Create page object
-if (!isset($t_rumus_delete)) $t_rumus_delete = new ct_rumus_delete();
+if (!isset($t_rumus2_delete)) $t_rumus2_delete = new ct_rumus2_delete();
 
 // Page init
-$t_rumus_delete->Page_Init();
+$t_rumus2_delete->Page_Init();
 
 // Page main
-$t_rumus_delete->Page_Main();
+$t_rumus2_delete->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$t_rumus_delete->Page_Render();
+$t_rumus2_delete->Page_Render();
 ?>
 <?php include_once "header.php" ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "delete";
-var CurrentForm = ft_rumusdelete = new ew_Form("ft_rumusdelete", "delete");
+var CurrentForm = ft_rumus2delete = new ew_Form("ft_rumus2delete", "delete");
 
 // Form_CustomValidate event
-ft_rumusdelete.Form_CustomValidate = 
+ft_rumus2delete.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -857,14 +861,14 @@ ft_rumusdelete.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-ft_rumusdelete.ValidateRequired = true;
+ft_rumus2delete.ValidateRequired = true;
 <?php } else { ?>
-ft_rumusdelete.ValidateRequired = false; 
+ft_rumus2delete.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-ft_rumusdelete.Lists["x_hk_gol"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
-ft_rumusdelete.Lists["x_hk_gol"].Options = <?php echo json_encode($t_rumus->hk_gol->Options()) ?>;
+ft_rumus2delete.Lists["x_gol_hk"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ft_rumus2delete.Lists["x_gol_hk"].Options = <?php echo json_encode($t_rumus2->gol_hk->Options()) ?>;
 
 // Form object for search
 </script>
@@ -877,151 +881,151 @@ ft_rumusdelete.Lists["x_hk_gol"].Options = <?php echo json_encode($t_rumus->hk_g
 <?php echo $Language->SelectionForm(); ?>
 <div class="clearfix"></div>
 </div>
-<?php $t_rumus_delete->ShowPageHeader(); ?>
+<?php $t_rumus2_delete->ShowPageHeader(); ?>
 <?php
-$t_rumus_delete->ShowMessage();
+$t_rumus2_delete->ShowMessage();
 ?>
-<form name="ft_rumusdelete" id="ft_rumusdelete" class="form-inline ewForm ewDeleteForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($t_rumus_delete->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $t_rumus_delete->Token ?>">
+<form name="ft_rumus2delete" id="ft_rumus2delete" class="form-inline ewForm ewDeleteForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($t_rumus2_delete->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $t_rumus2_delete->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="t_rumus">
+<input type="hidden" name="t" value="t_rumus2">
 <input type="hidden" name="a_delete" id="a_delete" value="D">
-<?php foreach ($t_rumus_delete->RecKeys as $key) { ?>
+<?php foreach ($t_rumus2_delete->RecKeys as $key) { ?>
 <?php $keyvalue = is_array($key) ? implode($EW_COMPOSITE_KEY_SEPARATOR, $key) : $key; ?>
 <input type="hidden" name="key_m[]" value="<?php echo ew_HtmlEncode($keyvalue) ?>">
 <?php } ?>
 <div class="ewGrid">
 <div class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
 <table class="table ewTable">
-<?php echo $t_rumus->TableCustomInnerHtml ?>
+<?php echo $t_rumus2->TableCustomInnerHtml ?>
 	<thead>
 	<tr class="ewTableHeader">
-<?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
-		<th><span id="elh_t_rumus_rumus_nama" class="t_rumus_rumus_nama"><?php echo $t_rumus->rumus_nama->FldCaption() ?></span></th>
+<?php if ($t_rumus2->rumus2_nama->Visible) { // rumus2_nama ?>
+		<th><span id="elh_t_rumus2_rumus2_nama" class="t_rumus2_rumus2_nama"><?php echo $t_rumus2->rumus2_nama->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($t_rumus->hk_gol->Visible) { // hk_gol ?>
-		<th><span id="elh_t_rumus_hk_gol" class="t_rumus_hk_gol"><?php echo $t_rumus->hk_gol->FldCaption() ?></span></th>
+<?php if ($t_rumus2->gol_hk->Visible) { // gol_hk ?>
+		<th><span id="elh_t_rumus2_gol_hk" class="t_rumus2_gol_hk"><?php echo $t_rumus2->gol_hk->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($t_rumus->umr->Visible) { // umr ?>
-		<th><span id="elh_t_rumus_umr" class="t_rumus_umr"><?php echo $t_rumus->umr->FldCaption() ?></span></th>
+<?php if ($t_rumus2->premi_hadir->Visible) { // premi_hadir ?>
+		<th><span id="elh_t_rumus2_premi_hadir" class="t_rumus2_premi_hadir"><?php echo $t_rumus2->premi_hadir->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($t_rumus->hk_jml->Visible) { // hk_jml ?>
-		<th><span id="elh_t_rumus_hk_jml" class="t_rumus_hk_jml"><?php echo $t_rumus->hk_jml->FldCaption() ?></span></th>
+<?php if ($t_rumus2->premi_malam->Visible) { // premi_malam ?>
+		<th><span id="elh_t_rumus2_premi_malam" class="t_rumus2_premi_malam"><?php echo $t_rumus2->premi_malam->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($t_rumus->upah->Visible) { // upah ?>
-		<th><span id="elh_t_rumus_upah" class="t_rumus_upah"><?php echo $t_rumus->upah->FldCaption() ?></span></th>
+<?php if ($t_rumus2->lp->Visible) { // lp ?>
+		<th><span id="elh_t_rumus2_lp" class="t_rumus2_lp"><?php echo $t_rumus2->lp->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($t_rumus->premi_hadir->Visible) { // premi_hadir ?>
-		<th><span id="elh_t_rumus_premi_hadir" class="t_rumus_premi_hadir"><?php echo $t_rumus->premi_hadir->FldCaption() ?></span></th>
+<?php if ($t_rumus2->forklift->Visible) { // forklift ?>
+		<th><span id="elh_t_rumus2_forklift" class="t_rumus2_forklift"><?php echo $t_rumus2->forklift->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($t_rumus->premi_malam->Visible) { // premi_malam ?>
-		<th><span id="elh_t_rumus_premi_malam" class="t_rumus_premi_malam"><?php echo $t_rumus->premi_malam->FldCaption() ?></span></th>
+<?php if ($t_rumus2->pot_absen->Visible) { // pot_absen ?>
+		<th><span id="elh_t_rumus2_pot_absen" class="t_rumus2_pot_absen"><?php echo $t_rumus2->pot_absen->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($t_rumus->pot_absen->Visible) { // pot_absen ?>
-		<th><span id="elh_t_rumus_pot_absen" class="t_rumus_pot_absen"><?php echo $t_rumus->pot_absen->FldCaption() ?></span></th>
+<?php if ($t_rumus2->pot_aspen->Visible) { // pot_aspen ?>
+		<th><span id="elh_t_rumus2_pot_aspen" class="t_rumus2_pot_aspen"><?php echo $t_rumus2->pot_aspen->FldCaption() ?></span></th>
 <?php } ?>
-<?php if ($t_rumus->lembur->Visible) { // lembur ?>
-		<th><span id="elh_t_rumus_lembur" class="t_rumus_lembur"><?php echo $t_rumus->lembur->FldCaption() ?></span></th>
+<?php if ($t_rumus2->pot_bpjs->Visible) { // pot_bpjs ?>
+		<th><span id="elh_t_rumus2_pot_bpjs" class="t_rumus2_pot_bpjs"><?php echo $t_rumus2->pot_bpjs->FldCaption() ?></span></th>
 <?php } ?>
 	</tr>
 	</thead>
 	<tbody>
 <?php
-$t_rumus_delete->RecCnt = 0;
+$t_rumus2_delete->RecCnt = 0;
 $i = 0;
-while (!$t_rumus_delete->Recordset->EOF) {
-	$t_rumus_delete->RecCnt++;
-	$t_rumus_delete->RowCnt++;
+while (!$t_rumus2_delete->Recordset->EOF) {
+	$t_rumus2_delete->RecCnt++;
+	$t_rumus2_delete->RowCnt++;
 
 	// Set row properties
-	$t_rumus->ResetAttrs();
-	$t_rumus->RowType = EW_ROWTYPE_VIEW; // View
+	$t_rumus2->ResetAttrs();
+	$t_rumus2->RowType = EW_ROWTYPE_VIEW; // View
 
 	// Get the field contents
-	$t_rumus_delete->LoadRowValues($t_rumus_delete->Recordset);
+	$t_rumus2_delete->LoadRowValues($t_rumus2_delete->Recordset);
 
 	// Render row
-	$t_rumus_delete->RenderRow();
+	$t_rumus2_delete->RenderRow();
 ?>
-	<tr<?php echo $t_rumus->RowAttributes() ?>>
-<?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
-		<td<?php echo $t_rumus->rumus_nama->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_rumus_nama" class="t_rumus_rumus_nama">
-<span<?php echo $t_rumus->rumus_nama->ViewAttributes() ?>>
-<?php echo $t_rumus->rumus_nama->ListViewValue() ?></span>
+	<tr<?php echo $t_rumus2->RowAttributes() ?>>
+<?php if ($t_rumus2->rumus2_nama->Visible) { // rumus2_nama ?>
+		<td<?php echo $t_rumus2->rumus2_nama->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_delete->RowCnt ?>_t_rumus2_rumus2_nama" class="t_rumus2_rumus2_nama">
+<span<?php echo $t_rumus2->rumus2_nama->ViewAttributes() ?>>
+<?php echo $t_rumus2->rumus2_nama->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
-<?php if ($t_rumus->hk_gol->Visible) { // hk_gol ?>
-		<td<?php echo $t_rumus->hk_gol->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_hk_gol" class="t_rumus_hk_gol">
-<span<?php echo $t_rumus->hk_gol->ViewAttributes() ?>>
-<?php echo $t_rumus->hk_gol->ListViewValue() ?></span>
+<?php if ($t_rumus2->gol_hk->Visible) { // gol_hk ?>
+		<td<?php echo $t_rumus2->gol_hk->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_delete->RowCnt ?>_t_rumus2_gol_hk" class="t_rumus2_gol_hk">
+<span<?php echo $t_rumus2->gol_hk->ViewAttributes() ?>>
+<?php echo $t_rumus2->gol_hk->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
-<?php if ($t_rumus->umr->Visible) { // umr ?>
-		<td<?php echo $t_rumus->umr->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_umr" class="t_rumus_umr">
-<span<?php echo $t_rumus->umr->ViewAttributes() ?>>
-<?php echo $t_rumus->umr->ListViewValue() ?></span>
+<?php if ($t_rumus2->premi_hadir->Visible) { // premi_hadir ?>
+		<td<?php echo $t_rumus2->premi_hadir->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_delete->RowCnt ?>_t_rumus2_premi_hadir" class="t_rumus2_premi_hadir">
+<span<?php echo $t_rumus2->premi_hadir->ViewAttributes() ?>>
+<?php echo $t_rumus2->premi_hadir->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
-<?php if ($t_rumus->hk_jml->Visible) { // hk_jml ?>
-		<td<?php echo $t_rumus->hk_jml->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_hk_jml" class="t_rumus_hk_jml">
-<span<?php echo $t_rumus->hk_jml->ViewAttributes() ?>>
-<?php echo $t_rumus->hk_jml->ListViewValue() ?></span>
+<?php if ($t_rumus2->premi_malam->Visible) { // premi_malam ?>
+		<td<?php echo $t_rumus2->premi_malam->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_delete->RowCnt ?>_t_rumus2_premi_malam" class="t_rumus2_premi_malam">
+<span<?php echo $t_rumus2->premi_malam->ViewAttributes() ?>>
+<?php echo $t_rumus2->premi_malam->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
-<?php if ($t_rumus->upah->Visible) { // upah ?>
-		<td<?php echo $t_rumus->upah->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_upah" class="t_rumus_upah">
-<span<?php echo $t_rumus->upah->ViewAttributes() ?>>
-<?php echo $t_rumus->upah->ListViewValue() ?></span>
+<?php if ($t_rumus2->lp->Visible) { // lp ?>
+		<td<?php echo $t_rumus2->lp->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_delete->RowCnt ?>_t_rumus2_lp" class="t_rumus2_lp">
+<span<?php echo $t_rumus2->lp->ViewAttributes() ?>>
+<?php echo $t_rumus2->lp->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
-<?php if ($t_rumus->premi_hadir->Visible) { // premi_hadir ?>
-		<td<?php echo $t_rumus->premi_hadir->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_premi_hadir" class="t_rumus_premi_hadir">
-<span<?php echo $t_rumus->premi_hadir->ViewAttributes() ?>>
-<?php echo $t_rumus->premi_hadir->ListViewValue() ?></span>
+<?php if ($t_rumus2->forklift->Visible) { // forklift ?>
+		<td<?php echo $t_rumus2->forklift->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_delete->RowCnt ?>_t_rumus2_forklift" class="t_rumus2_forklift">
+<span<?php echo $t_rumus2->forklift->ViewAttributes() ?>>
+<?php echo $t_rumus2->forklift->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
-<?php if ($t_rumus->premi_malam->Visible) { // premi_malam ?>
-		<td<?php echo $t_rumus->premi_malam->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_premi_malam" class="t_rumus_premi_malam">
-<span<?php echo $t_rumus->premi_malam->ViewAttributes() ?>>
-<?php echo $t_rumus->premi_malam->ListViewValue() ?></span>
+<?php if ($t_rumus2->pot_absen->Visible) { // pot_absen ?>
+		<td<?php echo $t_rumus2->pot_absen->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_delete->RowCnt ?>_t_rumus2_pot_absen" class="t_rumus2_pot_absen">
+<span<?php echo $t_rumus2->pot_absen->ViewAttributes() ?>>
+<?php echo $t_rumus2->pot_absen->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
-<?php if ($t_rumus->pot_absen->Visible) { // pot_absen ?>
-		<td<?php echo $t_rumus->pot_absen->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_pot_absen" class="t_rumus_pot_absen">
-<span<?php echo $t_rumus->pot_absen->ViewAttributes() ?>>
-<?php echo $t_rumus->pot_absen->ListViewValue() ?></span>
+<?php if ($t_rumus2->pot_aspen->Visible) { // pot_aspen ?>
+		<td<?php echo $t_rumus2->pot_aspen->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_delete->RowCnt ?>_t_rumus2_pot_aspen" class="t_rumus2_pot_aspen">
+<span<?php echo $t_rumus2->pot_aspen->ViewAttributes() ?>>
+<?php echo $t_rumus2->pot_aspen->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
-<?php if ($t_rumus->lembur->Visible) { // lembur ?>
-		<td<?php echo $t_rumus->lembur->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_lembur" class="t_rumus_lembur">
-<span<?php echo $t_rumus->lembur->ViewAttributes() ?>>
-<?php echo $t_rumus->lembur->ListViewValue() ?></span>
+<?php if ($t_rumus2->pot_bpjs->Visible) { // pot_bpjs ?>
+		<td<?php echo $t_rumus2->pot_bpjs->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_delete->RowCnt ?>_t_rumus2_pot_bpjs" class="t_rumus2_pot_bpjs">
+<span<?php echo $t_rumus2->pot_bpjs->ViewAttributes() ?>>
+<?php echo $t_rumus2->pot_bpjs->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>
 	</tr>
 <?php
-	$t_rumus_delete->Recordset->MoveNext();
+	$t_rumus2_delete->Recordset->MoveNext();
 }
-$t_rumus_delete->Recordset->Close();
+$t_rumus2_delete->Recordset->Close();
 ?>
 </tbody>
 </table>
@@ -1029,14 +1033,14 @@ $t_rumus_delete->Recordset->Close();
 </div>
 <div>
 <button class="btn btn-primary ewButton" name="btnAction" id="btnAction" type="submit"><?php echo $Language->Phrase("DeleteBtn") ?></button>
-<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $t_rumus_delete->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
+<button class="btn btn-default ewButton" name="btnCancel" id="btnCancel" type="button" data-href="<?php echo $t_rumus2_delete->getReturnUrl() ?>"><?php echo $Language->Phrase("CancelBtn") ?></button>
 </div>
 </form>
 <script type="text/javascript">
-ft_rumusdelete.Init();
+ft_rumus2delete.Init();
 </script>
 <?php
-$t_rumus_delete->ShowPageFooter();
+$t_rumus2_delete->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
@@ -1048,5 +1052,5 @@ if (EW_DEBUG_ENABLED)
 </script>
 <?php include_once "footer.php" ?>
 <?php
-$t_rumus_delete->Page_Terminate();
+$t_rumus2_delete->Page_Terminate();
 ?>

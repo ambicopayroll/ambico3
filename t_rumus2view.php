@@ -5,7 +5,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg13.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql13.php") ?>
 <?php include_once "phpfn13.php" ?>
-<?php include_once "t_rumusinfo.php" ?>
+<?php include_once "t_rumus2info.php" ?>
 <?php include_once "t_userinfo.php" ?>
 <?php include_once "userfn13.php" ?>
 <?php
@@ -14,9 +14,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$t_rumus_view = NULL; // Initialize page object first
+$t_rumus2_view = NULL; // Initialize page object first
 
-class ct_rumus_view extends ct_rumus {
+class ct_rumus2_view extends ct_rumus2 {
 
 	// Page ID
 	var $PageID = 'view';
@@ -25,10 +25,10 @@ class ct_rumus_view extends ct_rumus {
 	var $ProjectID = "{503C8825-3846-4E96-8DFF-03202C380E17}";
 
 	// Table name
-	var $TableName = 't_rumus';
+	var $TableName = 't_rumus2';
 
 	// Page object name
-	var $PageObjName = 't_rumus_view';
+	var $PageObjName = 't_rumus2_view';
 
 	// Page name
 	function PageName() {
@@ -258,15 +258,15 @@ class ct_rumus_view extends ct_rumus {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (t_rumus)
-		if (!isset($GLOBALS["t_rumus"]) || get_class($GLOBALS["t_rumus"]) == "ct_rumus") {
-			$GLOBALS["t_rumus"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["t_rumus"];
+		// Table object (t_rumus2)
+		if (!isset($GLOBALS["t_rumus2"]) || get_class($GLOBALS["t_rumus2"]) == "ct_rumus2") {
+			$GLOBALS["t_rumus2"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["t_rumus2"];
 		}
 		$KeyUrl = "";
-		if (@$_GET["rumus_id"] <> "") {
-			$this->RecKey["rumus_id"] = $_GET["rumus_id"];
-			$KeyUrl .= "&amp;rumus_id=" . urlencode($this->RecKey["rumus_id"]);
+		if (@$_GET["rumus2_id"] <> "") {
+			$this->RecKey["rumus2_id"] = $_GET["rumus2_id"];
+			$KeyUrl .= "&amp;rumus2_id=" . urlencode($this->RecKey["rumus2_id"]);
 		}
 		$this->ExportPrintUrl = $this->PageUrl() . "export=print" . $KeyUrl;
 		$this->ExportHtmlUrl = $this->PageUrl() . "export=html" . $KeyUrl;
@@ -285,7 +285,7 @@ class ct_rumus_view extends ct_rumus {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 't_rumus', TRUE);
+			define("EW_TABLE_NAME", 't_rumus2', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -329,7 +329,7 @@ class ct_rumus_view extends ct_rumus {
 			$Security->SaveLastUrl();
 			$this->setFailureMessage(ew_DeniedMsg()); // Set no permission
 			if ($Security->CanList())
-				$this->Page_Terminate(ew_GetUrl("t_rumuslist.php"));
+				$this->Page_Terminate(ew_GetUrl("t_rumus2list.php"));
 			else
 				$this->Page_Terminate(ew_GetUrl("login.php"));
 		}
@@ -355,9 +355,9 @@ class ct_rumus_view extends ct_rumus {
 			$this->setExportReturnUrl(ew_CurrentUrl());
 		}
 		$gsExportFile = $this->TableVar; // Get export file, used in header
-		if (@$_GET["rumus_id"] <> "") {
+		if (@$_GET["rumus2_id"] <> "") {
 			if ($gsExportFile <> "") $gsExportFile .= "_";
-			$gsExportFile .= ew_StripSlashes($_GET["rumus_id"]);
+			$gsExportFile .= ew_StripSlashes($_GET["rumus2_id"]);
 		}
 
 		// Get custom export parameters
@@ -383,15 +383,15 @@ class ct_rumus_view extends ct_rumus {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->rumus_nama->SetVisibility();
-		$this->hk_gol->SetVisibility();
-		$this->umr->SetVisibility();
-		$this->hk_jml->SetVisibility();
-		$this->upah->SetVisibility();
+		$this->rumus2_nama->SetVisibility();
+		$this->gol_hk->SetVisibility();
 		$this->premi_hadir->SetVisibility();
 		$this->premi_malam->SetVisibility();
+		$this->lp->SetVisibility();
+		$this->forklift->SetVisibility();
 		$this->pot_absen->SetVisibility();
-		$this->lembur->SetVisibility();
+		$this->pot_aspen->SetVisibility();
+		$this->pot_bpjs->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -423,13 +423,13 @@ class ct_rumus_view extends ct_rumus {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $t_rumus;
+		global $EW_EXPORT, $t_rumus2;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($t_rumus);
+				$doc = new $class($t_rumus2);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -492,12 +492,12 @@ class ct_rumus_view extends ct_rumus {
 		$sReturnUrl = "";
 		$bMatchRecord = FALSE;
 		if ($this->IsPageRequest()) { // Validate request
-			if (@$_GET["rumus_id"] <> "") {
-				$this->rumus_id->setQueryStringValue($_GET["rumus_id"]);
-				$this->RecKey["rumus_id"] = $this->rumus_id->QueryStringValue;
-			} elseif (@$_POST["rumus_id"] <> "") {
-				$this->rumus_id->setFormValue($_POST["rumus_id"]);
-				$this->RecKey["rumus_id"] = $this->rumus_id->FormValue;
+			if (@$_GET["rumus2_id"] <> "") {
+				$this->rumus2_id->setQueryStringValue($_GET["rumus2_id"]);
+				$this->RecKey["rumus2_id"] = $this->rumus2_id->QueryStringValue;
+			} elseif (@$_POST["rumus2_id"] <> "") {
+				$this->rumus2_id->setFormValue($_POST["rumus2_id"]);
+				$this->RecKey["rumus2_id"] = $this->rumus2_id->FormValue;
 			} else {
 				$bLoadCurrentRecord = TRUE;
 			}
@@ -512,7 +512,7 @@ class ct_rumus_view extends ct_rumus {
 					if ($this->TotalRecs <= 0) { // No record found
 						if ($this->getSuccessMessage() == "" && $this->getFailureMessage() == "")
 							$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
-						$this->Page_Terminate("t_rumuslist.php"); // Return to list page
+						$this->Page_Terminate("t_rumus2list.php"); // Return to list page
 					} elseif ($bLoadCurrentRecord) { // Load current record position
 						$this->SetUpStartRec(); // Set up start record position
 
@@ -523,7 +523,7 @@ class ct_rumus_view extends ct_rumus {
 						}
 					} else { // Match key values
 						while (!$this->Recordset->EOF) {
-							if (strval($this->rumus_id->CurrentValue) == strval($this->Recordset->fields('rumus_id'))) {
+							if (strval($this->rumus2_id->CurrentValue) == strval($this->Recordset->fields('rumus2_id'))) {
 								$this->setStartRecordNumber($this->StartRec); // Save record position
 								$bMatchRecord = TRUE;
 								break;
@@ -536,7 +536,7 @@ class ct_rumus_view extends ct_rumus {
 					if (!$bMatchRecord) {
 						if ($this->getSuccessMessage() == "" && $this->getFailureMessage() == "")
 							$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
-						$sReturnUrl = "t_rumuslist.php"; // No matching record, return to list
+						$sReturnUrl = "t_rumus2list.php"; // No matching record, return to list
 					} else {
 						$this->LoadRowValues($this->Recordset); // Load row values
 					}
@@ -549,7 +549,7 @@ class ct_rumus_view extends ct_rumus {
 				exit();
 			}
 		} else {
-			$sReturnUrl = "t_rumuslist.php"; // Not page request, return to list
+			$sReturnUrl = "t_rumus2list.php"; // Not page request, return to list
 		}
 		if ($sReturnUrl <> "")
 			$this->Page_Terminate($sReturnUrl);
@@ -708,32 +708,32 @@ class ct_rumus_view extends ct_rumus {
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
 		if ($this->AuditTrailOnView) $this->WriteAuditTrailOnView($row);
-		$this->rumus_id->setDbValue($rs->fields('rumus_id'));
-		$this->rumus_nama->setDbValue($rs->fields('rumus_nama'));
-		$this->hk_gol->setDbValue($rs->fields('hk_gol'));
-		$this->umr->setDbValue($rs->fields('umr'));
-		$this->hk_jml->setDbValue($rs->fields('hk_jml'));
-		$this->upah->setDbValue($rs->fields('upah'));
+		$this->rumus2_id->setDbValue($rs->fields('rumus2_id'));
+		$this->rumus2_nama->setDbValue($rs->fields('rumus2_nama'));
+		$this->gol_hk->setDbValue($rs->fields('gol_hk'));
 		$this->premi_hadir->setDbValue($rs->fields('premi_hadir'));
 		$this->premi_malam->setDbValue($rs->fields('premi_malam'));
+		$this->lp->setDbValue($rs->fields('lp'));
+		$this->forklift->setDbValue($rs->fields('forklift'));
 		$this->pot_absen->setDbValue($rs->fields('pot_absen'));
-		$this->lembur->setDbValue($rs->fields('lembur'));
+		$this->pot_aspen->setDbValue($rs->fields('pot_aspen'));
+		$this->pot_bpjs->setDbValue($rs->fields('pot_bpjs'));
 	}
 
 	// Load DbValue from recordset
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->rumus_id->DbValue = $row['rumus_id'];
-		$this->rumus_nama->DbValue = $row['rumus_nama'];
-		$this->hk_gol->DbValue = $row['hk_gol'];
-		$this->umr->DbValue = $row['umr'];
-		$this->hk_jml->DbValue = $row['hk_jml'];
-		$this->upah->DbValue = $row['upah'];
+		$this->rumus2_id->DbValue = $row['rumus2_id'];
+		$this->rumus2_nama->DbValue = $row['rumus2_nama'];
+		$this->gol_hk->DbValue = $row['gol_hk'];
 		$this->premi_hadir->DbValue = $row['premi_hadir'];
 		$this->premi_malam->DbValue = $row['premi_malam'];
+		$this->lp->DbValue = $row['lp'];
+		$this->forklift->DbValue = $row['forklift'];
 		$this->pot_absen->DbValue = $row['pot_absen'];
-		$this->lembur->DbValue = $row['lembur'];
+		$this->pot_aspen->DbValue = $row['pot_aspen'];
+		$this->pot_bpjs->DbValue = $row['pot_bpjs'];
 	}
 
 	// Render row values based on field settings
@@ -749,14 +749,6 @@ class ct_rumus_view extends ct_rumus {
 		$this->SetupOtherOptions();
 
 		// Convert decimal values if posted back
-		if ($this->umr->FormValue == $this->umr->CurrentValue && is_numeric(ew_StrToFloat($this->umr->CurrentValue)))
-			$this->umr->CurrentValue = ew_StrToFloat($this->umr->CurrentValue);
-
-		// Convert decimal values if posted back
-		if ($this->upah->FormValue == $this->upah->CurrentValue && is_numeric(ew_StrToFloat($this->upah->CurrentValue)))
-			$this->upah->CurrentValue = ew_StrToFloat($this->upah->CurrentValue);
-
-		// Convert decimal values if posted back
 		if ($this->premi_hadir->FormValue == $this->premi_hadir->CurrentValue && is_numeric(ew_StrToFloat($this->premi_hadir->CurrentValue)))
 			$this->premi_hadir->CurrentValue = ew_StrToFloat($this->premi_hadir->CurrentValue);
 
@@ -765,63 +757,57 @@ class ct_rumus_view extends ct_rumus {
 			$this->premi_malam->CurrentValue = ew_StrToFloat($this->premi_malam->CurrentValue);
 
 		// Convert decimal values if posted back
+		if ($this->lp->FormValue == $this->lp->CurrentValue && is_numeric(ew_StrToFloat($this->lp->CurrentValue)))
+			$this->lp->CurrentValue = ew_StrToFloat($this->lp->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->forklift->FormValue == $this->forklift->CurrentValue && is_numeric(ew_StrToFloat($this->forklift->CurrentValue)))
+			$this->forklift->CurrentValue = ew_StrToFloat($this->forklift->CurrentValue);
+
+		// Convert decimal values if posted back
 		if ($this->pot_absen->FormValue == $this->pot_absen->CurrentValue && is_numeric(ew_StrToFloat($this->pot_absen->CurrentValue)))
 			$this->pot_absen->CurrentValue = ew_StrToFloat($this->pot_absen->CurrentValue);
 
 		// Convert decimal values if posted back
-		if ($this->lembur->FormValue == $this->lembur->CurrentValue && is_numeric(ew_StrToFloat($this->lembur->CurrentValue)))
-			$this->lembur->CurrentValue = ew_StrToFloat($this->lembur->CurrentValue);
+		if ($this->pot_aspen->FormValue == $this->pot_aspen->CurrentValue && is_numeric(ew_StrToFloat($this->pot_aspen->CurrentValue)))
+			$this->pot_aspen->CurrentValue = ew_StrToFloat($this->pot_aspen->CurrentValue);
+
+		// Convert decimal values if posted back
+		if ($this->pot_bpjs->FormValue == $this->pot_bpjs->CurrentValue && is_numeric(ew_StrToFloat($this->pot_bpjs->CurrentValue)))
+			$this->pot_bpjs->CurrentValue = ew_StrToFloat($this->pot_bpjs->CurrentValue);
 
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// rumus_id
-		// rumus_nama
-		// hk_gol
-		// umr
-		// hk_jml
-		// upah
+		// rumus2_id
+		// rumus2_nama
+		// gol_hk
 		// premi_hadir
 		// premi_malam
+		// lp
+		// forklift
 		// pot_absen
-		// lembur
+		// pot_aspen
+		// pot_bpjs
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// rumus_id
-		$this->rumus_id->ViewValue = $this->rumus_id->CurrentValue;
-		$this->rumus_id->ViewCustomAttributes = "";
+		// rumus2_id
+		$this->rumus2_id->ViewValue = $this->rumus2_id->CurrentValue;
+		$this->rumus2_id->ViewCustomAttributes = "";
 
-		// rumus_nama
-		$this->rumus_nama->ViewValue = $this->rumus_nama->CurrentValue;
-		$this->rumus_nama->ViewCustomAttributes = "";
+		// rumus2_nama
+		$this->rumus2_nama->ViewValue = $this->rumus2_nama->CurrentValue;
+		$this->rumus2_nama->ViewCustomAttributes = "";
 
-		// hk_gol
-		if (strval($this->hk_gol->CurrentValue) <> "") {
-			$this->hk_gol->ViewValue = $this->hk_gol->OptionCaption($this->hk_gol->CurrentValue);
+		// gol_hk
+		if (strval($this->gol_hk->CurrentValue) <> "") {
+			$this->gol_hk->ViewValue = $this->gol_hk->OptionCaption($this->gol_hk->CurrentValue);
 		} else {
-			$this->hk_gol->ViewValue = NULL;
+			$this->gol_hk->ViewValue = NULL;
 		}
-		$this->hk_gol->CellCssStyle .= "text-align: center;";
-		$this->hk_gol->ViewCustomAttributes = "";
-
-		// umr
-		$this->umr->ViewValue = $this->umr->CurrentValue;
-		$this->umr->ViewValue = ew_FormatNumber($this->umr->ViewValue, 0, -2, -2, -2);
-		$this->umr->CellCssStyle .= "text-align: right;";
-		$this->umr->ViewCustomAttributes = "";
-
-		// hk_jml
-		$this->hk_jml->ViewValue = $this->hk_jml->CurrentValue;
-		$this->hk_jml->CellCssStyle .= "text-align: center;";
-		$this->hk_jml->ViewCustomAttributes = "";
-
-		// upah
-		$this->upah->ViewValue = $this->upah->CurrentValue;
-		$this->upah->ViewValue = ew_FormatNumber($this->upah->ViewValue, 0, -2, -2, -2);
-		$this->upah->CellCssStyle .= "text-align: right;";
-		$this->upah->ViewCustomAttributes = "";
+		$this->gol_hk->ViewCustomAttributes = "";
 
 		// premi_hadir
 		$this->premi_hadir->ViewValue = $this->premi_hadir->CurrentValue;
@@ -835,42 +821,45 @@ class ct_rumus_view extends ct_rumus {
 		$this->premi_malam->CellCssStyle .= "text-align: right;";
 		$this->premi_malam->ViewCustomAttributes = "";
 
+		// lp
+		$this->lp->ViewValue = $this->lp->CurrentValue;
+		$this->lp->ViewValue = ew_FormatNumber($this->lp->ViewValue, 0, -2, -2, -2);
+		$this->lp->CellCssStyle .= "text-align: right;";
+		$this->lp->ViewCustomAttributes = "";
+
+		// forklift
+		$this->forklift->ViewValue = $this->forklift->CurrentValue;
+		$this->forklift->ViewValue = ew_FormatNumber($this->forklift->ViewValue, 0, -2, -2, -2);
+		$this->forklift->CellCssStyle .= "text-align: right;";
+		$this->forklift->ViewCustomAttributes = "";
+
 		// pot_absen
 		$this->pot_absen->ViewValue = $this->pot_absen->CurrentValue;
 		$this->pot_absen->ViewValue = ew_FormatNumber($this->pot_absen->ViewValue, 0, -2, -2, -2);
 		$this->pot_absen->CellCssStyle .= "text-align: right;";
 		$this->pot_absen->ViewCustomAttributes = "";
 
-		// lembur
-		$this->lembur->ViewValue = $this->lembur->CurrentValue;
-		$this->lembur->ViewValue = ew_FormatNumber($this->lembur->ViewValue, 0, -2, -2, -2);
-		$this->lembur->CellCssStyle .= "text-align: right;";
-		$this->lembur->ViewCustomAttributes = "";
+		// pot_aspen
+		$this->pot_aspen->ViewValue = $this->pot_aspen->CurrentValue;
+		$this->pot_aspen->ViewValue = ew_FormatNumber($this->pot_aspen->ViewValue, 2, -2, -2, -2);
+		$this->pot_aspen->CellCssStyle .= "text-align: right;";
+		$this->pot_aspen->ViewCustomAttributes = "";
 
-			// rumus_nama
-			$this->rumus_nama->LinkCustomAttributes = "";
-			$this->rumus_nama->HrefValue = "";
-			$this->rumus_nama->TooltipValue = "";
+		// pot_bpjs
+		$this->pot_bpjs->ViewValue = $this->pot_bpjs->CurrentValue;
+		$this->pot_bpjs->ViewValue = ew_FormatNumber($this->pot_bpjs->ViewValue, 2, -2, -2, -2);
+		$this->pot_bpjs->CellCssStyle .= "text-align: right;";
+		$this->pot_bpjs->ViewCustomAttributes = "";
 
-			// hk_gol
-			$this->hk_gol->LinkCustomAttributes = "";
-			$this->hk_gol->HrefValue = "";
-			$this->hk_gol->TooltipValue = "";
+			// rumus2_nama
+			$this->rumus2_nama->LinkCustomAttributes = "";
+			$this->rumus2_nama->HrefValue = "";
+			$this->rumus2_nama->TooltipValue = "";
 
-			// umr
-			$this->umr->LinkCustomAttributes = "";
-			$this->umr->HrefValue = "";
-			$this->umr->TooltipValue = "";
-
-			// hk_jml
-			$this->hk_jml->LinkCustomAttributes = "";
-			$this->hk_jml->HrefValue = "";
-			$this->hk_jml->TooltipValue = "";
-
-			// upah
-			$this->upah->LinkCustomAttributes = "";
-			$this->upah->HrefValue = "";
-			$this->upah->TooltipValue = "";
+			// gol_hk
+			$this->gol_hk->LinkCustomAttributes = "";
+			$this->gol_hk->HrefValue = "";
+			$this->gol_hk->TooltipValue = "";
 
 			// premi_hadir
 			$this->premi_hadir->LinkCustomAttributes = "";
@@ -882,15 +871,30 @@ class ct_rumus_view extends ct_rumus {
 			$this->premi_malam->HrefValue = "";
 			$this->premi_malam->TooltipValue = "";
 
+			// lp
+			$this->lp->LinkCustomAttributes = "";
+			$this->lp->HrefValue = "";
+			$this->lp->TooltipValue = "";
+
+			// forklift
+			$this->forklift->LinkCustomAttributes = "";
+			$this->forklift->HrefValue = "";
+			$this->forklift->TooltipValue = "";
+
 			// pot_absen
 			$this->pot_absen->LinkCustomAttributes = "";
 			$this->pot_absen->HrefValue = "";
 			$this->pot_absen->TooltipValue = "";
 
-			// lembur
-			$this->lembur->LinkCustomAttributes = "";
-			$this->lembur->HrefValue = "";
-			$this->lembur->TooltipValue = "";
+			// pot_aspen
+			$this->pot_aspen->LinkCustomAttributes = "";
+			$this->pot_aspen->HrefValue = "";
+			$this->pot_aspen->TooltipValue = "";
+
+			// pot_bpjs
+			$this->pot_bpjs->LinkCustomAttributes = "";
+			$this->pot_bpjs->HrefValue = "";
+			$this->pot_bpjs->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -940,7 +944,7 @@ class ct_rumus_view extends ct_rumus {
 		// Export to Email
 		$item = &$this->ExportOptions->Add("email");
 		$url = "";
-		$item->Body = "<button id=\"emf_t_rumus\" class=\"ewExportLink ewEmail\" title=\"" . $Language->Phrase("ExportToEmailText") . "\" data-caption=\"" . $Language->Phrase("ExportToEmailText") . "\" onclick=\"ew_EmailDialogShow({lnk:'emf_t_rumus',hdr:ewLanguage.Phrase('ExportToEmailText'),f:document.ft_rumusview,key:" . ew_ArrayToJsonAttr($this->RecKey) . ",sel:false" . $url . "});\">" . $Language->Phrase("ExportToEmail") . "</button>";
+		$item->Body = "<button id=\"emf_t_rumus2\" class=\"ewExportLink ewEmail\" title=\"" . $Language->Phrase("ExportToEmailText") . "\" data-caption=\"" . $Language->Phrase("ExportToEmailText") . "\" onclick=\"ew_EmailDialogShow({lnk:'emf_t_rumus2',hdr:ewLanguage.Phrase('ExportToEmailText'),f:document.ft_rumus2view,key:" . ew_ArrayToJsonAttr($this->RecKey) . ",sel:false" . $url . "});\">" . $Language->Phrase("ExportToEmail") . "</button>";
 		$item->Visible = TRUE;
 
 		// Drop down button for export
@@ -1150,7 +1154,7 @@ class ct_rumus_view extends ct_rumus {
 		global $Breadcrumb, $Language;
 		$Breadcrumb = new cBreadcrumb();
 		$url = substr(ew_CurrentUrl(), strrpos(ew_CurrentUrl(), "/")+1);
-		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("t_rumuslist.php"), "", $this->TableVar, TRUE);
+		$Breadcrumb->Add("list", $this->TableVar, $this->AddMasterUrl("t_rumus2list.php"), "", $this->TableVar, TRUE);
 		$PageId = "view";
 		$Breadcrumb->Add("view", $PageId, $url);
 	}
@@ -1262,30 +1266,30 @@ class ct_rumus_view extends ct_rumus {
 <?php
 
 // Create page object
-if (!isset($t_rumus_view)) $t_rumus_view = new ct_rumus_view();
+if (!isset($t_rumus2_view)) $t_rumus2_view = new ct_rumus2_view();
 
 // Page init
-$t_rumus_view->Page_Init();
+$t_rumus2_view->Page_Init();
 
 // Page main
-$t_rumus_view->Page_Main();
+$t_rumus2_view->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$t_rumus_view->Page_Render();
+$t_rumus2_view->Page_Render();
 ?>
 <?php include_once "header.php" ?>
-<?php if ($t_rumus->Export == "") { ?>
+<?php if ($t_rumus2->Export == "") { ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "view";
-var CurrentForm = ft_rumusview = new ew_Form("ft_rumusview", "view");
+var CurrentForm = ft_rumus2view = new ew_Form("ft_rumus2view", "view");
 
 // Form_CustomValidate event
-ft_rumusview.Form_CustomValidate = 
+ft_rumus2view.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -1294,14 +1298,14 @@ ft_rumusview.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-ft_rumusview.ValidateRequired = true;
+ft_rumus2view.ValidateRequired = true;
 <?php } else { ?>
-ft_rumusview.ValidateRequired = false; 
+ft_rumus2view.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-ft_rumusview.Lists["x_hk_gol"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
-ft_rumusview.Lists["x_hk_gol"].Options = <?php echo json_encode($t_rumus->hk_gol->Options()) ?>;
+ft_rumus2view.Lists["x_gol_hk"] = {"LinkField":"","Ajax":null,"AutoFill":false,"DisplayFields":["","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":""};
+ft_rumus2view.Lists["x_gol_hk"].Options = <?php echo json_encode($t_rumus2->gol_hk->Options()) ?>;
 
 // Form object for search
 </script>
@@ -1310,243 +1314,243 @@ ft_rumusview.Lists["x_hk_gol"].Options = <?php echo json_encode($t_rumus->hk_gol
 // Write your client script here, no need to add script tags.
 </script>
 <?php } ?>
-<?php if ($t_rumus->Export == "") { ?>
+<?php if ($t_rumus2->Export == "") { ?>
 <div class="ewToolbar">
-<?php if (!$t_rumus_view->IsModal) { ?>
-<?php if ($t_rumus->Export == "") { ?>
+<?php if (!$t_rumus2_view->IsModal) { ?>
+<?php if ($t_rumus2->Export == "") { ?>
 <?php $Breadcrumb->Render(); ?>
 <?php } ?>
 <?php } ?>
-<?php $t_rumus_view->ExportOptions->Render("body") ?>
+<?php $t_rumus2_view->ExportOptions->Render("body") ?>
 <?php
-	foreach ($t_rumus_view->OtherOptions as &$option)
+	foreach ($t_rumus2_view->OtherOptions as &$option)
 		$option->Render("body");
 ?>
-<?php if (!$t_rumus_view->IsModal) { ?>
-<?php if ($t_rumus->Export == "") { ?>
+<?php if (!$t_rumus2_view->IsModal) { ?>
+<?php if ($t_rumus2->Export == "") { ?>
 <?php echo $Language->SelectionForm(); ?>
 <?php } ?>
 <?php } ?>
 <div class="clearfix"></div>
 </div>
 <?php } ?>
-<?php $t_rumus_view->ShowPageHeader(); ?>
+<?php $t_rumus2_view->ShowPageHeader(); ?>
 <?php
-$t_rumus_view->ShowMessage();
+$t_rumus2_view->ShowMessage();
 ?>
-<?php if (!$t_rumus_view->IsModal) { ?>
-<?php if ($t_rumus->Export == "") { ?>
+<?php if (!$t_rumus2_view->IsModal) { ?>
+<?php if ($t_rumus2->Export == "") { ?>
 <form name="ewPagerForm" class="form-inline ewForm ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($t_rumus_view->Pager)) $t_rumus_view->Pager = new cPrevNextPager($t_rumus_view->StartRec, $t_rumus_view->DisplayRecs, $t_rumus_view->TotalRecs) ?>
-<?php if ($t_rumus_view->Pager->RecordCount > 0 && $t_rumus_view->Pager->Visible) { ?>
+<?php if (!isset($t_rumus2_view->Pager)) $t_rumus2_view->Pager = new cPrevNextPager($t_rumus2_view->StartRec, $t_rumus2_view->DisplayRecs, $t_rumus2_view->TotalRecs) ?>
+<?php if ($t_rumus2_view->Pager->RecordCount > 0 && $t_rumus2_view->Pager->Visible) { ?>
 <div class="ewPager">
 <span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
 <div class="ewPrevNext"><div class="input-group">
 <div class="input-group-btn">
 <!--first page button-->
-	<?php if ($t_rumus_view->Pager->FirstButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_rumus_view->PageUrl() ?>start=<?php echo $t_rumus_view->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php if ($t_rumus2_view->Pager->FirstButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_rumus2_view->PageUrl() ?>start=<?php echo $t_rumus2_view->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
 <!--previous page button-->
-	<?php if ($t_rumus_view->Pager->PrevButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_rumus_view->PageUrl() ?>start=<?php echo $t_rumus_view->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php if ($t_rumus2_view->Pager->PrevButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_rumus2_view->PageUrl() ?>start=<?php echo $t_rumus2_view->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
 </div>
 <!--current page number-->
-	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_rumus_view->Pager->CurrentPage ?>">
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_rumus2_view->Pager->CurrentPage ?>">
 <div class="input-group-btn">
 <!--next page button-->
-	<?php if ($t_rumus_view->Pager->NextButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_rumus_view->PageUrl() ?>start=<?php echo $t_rumus_view->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php if ($t_rumus2_view->Pager->NextButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_rumus2_view->PageUrl() ?>start=<?php echo $t_rumus2_view->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
 <!--last page button-->
-	<?php if ($t_rumus_view->Pager->LastButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_rumus_view->PageUrl() ?>start=<?php echo $t_rumus_view->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php if ($t_rumus2_view->Pager->LastButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_rumus2_view->PageUrl() ?>start=<?php echo $t_rumus2_view->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
 </div>
 </div>
 </div>
-<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_rumus_view->Pager->PageCount ?></span>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_rumus2_view->Pager->PageCount ?></span>
 </div>
 <?php } ?>
 <div class="clearfix"></div>
 </form>
 <?php } ?>
 <?php } ?>
-<form name="ft_rumusview" id="ft_rumusview" class="form-inline ewForm ewViewForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($t_rumus_view->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $t_rumus_view->Token ?>">
+<form name="ft_rumus2view" id="ft_rumus2view" class="form-inline ewForm ewViewForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($t_rumus2_view->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $t_rumus2_view->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="t_rumus">
-<?php if ($t_rumus_view->IsModal) { ?>
+<input type="hidden" name="t" value="t_rumus2">
+<?php if ($t_rumus2_view->IsModal) { ?>
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
-	<tr id="r_rumus_nama">
-		<td><span id="elh_t_rumus_rumus_nama"><?php echo $t_rumus->rumus_nama->FldCaption() ?></span></td>
-		<td data-name="rumus_nama"<?php echo $t_rumus->rumus_nama->CellAttributes() ?>>
-<span id="el_t_rumus_rumus_nama">
-<span<?php echo $t_rumus->rumus_nama->ViewAttributes() ?>>
-<?php echo $t_rumus->rumus_nama->ViewValue ?></span>
+<?php if ($t_rumus2->rumus2_nama->Visible) { // rumus2_nama ?>
+	<tr id="r_rumus2_nama">
+		<td><span id="elh_t_rumus2_rumus2_nama"><?php echo $t_rumus2->rumus2_nama->FldCaption() ?></span></td>
+		<td data-name="rumus2_nama"<?php echo $t_rumus2->rumus2_nama->CellAttributes() ?>>
+<span id="el_t_rumus2_rumus2_nama">
+<span<?php echo $t_rumus2->rumus2_nama->ViewAttributes() ?>>
+<?php echo $t_rumus2->rumus2_nama->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($t_rumus->hk_gol->Visible) { // hk_gol ?>
-	<tr id="r_hk_gol">
-		<td><span id="elh_t_rumus_hk_gol"><?php echo $t_rumus->hk_gol->FldCaption() ?></span></td>
-		<td data-name="hk_gol"<?php echo $t_rumus->hk_gol->CellAttributes() ?>>
-<span id="el_t_rumus_hk_gol">
-<span<?php echo $t_rumus->hk_gol->ViewAttributes() ?>>
-<?php echo $t_rumus->hk_gol->ViewValue ?></span>
+<?php if ($t_rumus2->gol_hk->Visible) { // gol_hk ?>
+	<tr id="r_gol_hk">
+		<td><span id="elh_t_rumus2_gol_hk"><?php echo $t_rumus2->gol_hk->FldCaption() ?></span></td>
+		<td data-name="gol_hk"<?php echo $t_rumus2->gol_hk->CellAttributes() ?>>
+<span id="el_t_rumus2_gol_hk">
+<span<?php echo $t_rumus2->gol_hk->ViewAttributes() ?>>
+<?php echo $t_rumus2->gol_hk->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($t_rumus->umr->Visible) { // umr ?>
-	<tr id="r_umr">
-		<td><span id="elh_t_rumus_umr"><?php echo $t_rumus->umr->FldCaption() ?></span></td>
-		<td data-name="umr"<?php echo $t_rumus->umr->CellAttributes() ?>>
-<span id="el_t_rumus_umr">
-<span<?php echo $t_rumus->umr->ViewAttributes() ?>>
-<?php echo $t_rumus->umr->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($t_rumus->hk_jml->Visible) { // hk_jml ?>
-	<tr id="r_hk_jml">
-		<td><span id="elh_t_rumus_hk_jml"><?php echo $t_rumus->hk_jml->FldCaption() ?></span></td>
-		<td data-name="hk_jml"<?php echo $t_rumus->hk_jml->CellAttributes() ?>>
-<span id="el_t_rumus_hk_jml">
-<span<?php echo $t_rumus->hk_jml->ViewAttributes() ?>>
-<?php echo $t_rumus->hk_jml->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($t_rumus->upah->Visible) { // upah ?>
-	<tr id="r_upah">
-		<td><span id="elh_t_rumus_upah"><?php echo $t_rumus->upah->FldCaption() ?></span></td>
-		<td data-name="upah"<?php echo $t_rumus->upah->CellAttributes() ?>>
-<span id="el_t_rumus_upah">
-<span<?php echo $t_rumus->upah->ViewAttributes() ?>>
-<?php echo $t_rumus->upah->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
-<?php if ($t_rumus->premi_hadir->Visible) { // premi_hadir ?>
+<?php if ($t_rumus2->premi_hadir->Visible) { // premi_hadir ?>
 	<tr id="r_premi_hadir">
-		<td><span id="elh_t_rumus_premi_hadir"><?php echo $t_rumus->premi_hadir->FldCaption() ?></span></td>
-		<td data-name="premi_hadir"<?php echo $t_rumus->premi_hadir->CellAttributes() ?>>
-<span id="el_t_rumus_premi_hadir">
-<span<?php echo $t_rumus->premi_hadir->ViewAttributes() ?>>
-<?php echo $t_rumus->premi_hadir->ViewValue ?></span>
+		<td><span id="elh_t_rumus2_premi_hadir"><?php echo $t_rumus2->premi_hadir->FldCaption() ?></span></td>
+		<td data-name="premi_hadir"<?php echo $t_rumus2->premi_hadir->CellAttributes() ?>>
+<span id="el_t_rumus2_premi_hadir">
+<span<?php echo $t_rumus2->premi_hadir->ViewAttributes() ?>>
+<?php echo $t_rumus2->premi_hadir->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($t_rumus->premi_malam->Visible) { // premi_malam ?>
+<?php if ($t_rumus2->premi_malam->Visible) { // premi_malam ?>
 	<tr id="r_premi_malam">
-		<td><span id="elh_t_rumus_premi_malam"><?php echo $t_rumus->premi_malam->FldCaption() ?></span></td>
-		<td data-name="premi_malam"<?php echo $t_rumus->premi_malam->CellAttributes() ?>>
-<span id="el_t_rumus_premi_malam">
-<span<?php echo $t_rumus->premi_malam->ViewAttributes() ?>>
-<?php echo $t_rumus->premi_malam->ViewValue ?></span>
+		<td><span id="elh_t_rumus2_premi_malam"><?php echo $t_rumus2->premi_malam->FldCaption() ?></span></td>
+		<td data-name="premi_malam"<?php echo $t_rumus2->premi_malam->CellAttributes() ?>>
+<span id="el_t_rumus2_premi_malam">
+<span<?php echo $t_rumus2->premi_malam->ViewAttributes() ?>>
+<?php echo $t_rumus2->premi_malam->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($t_rumus->pot_absen->Visible) { // pot_absen ?>
+<?php if ($t_rumus2->lp->Visible) { // lp ?>
+	<tr id="r_lp">
+		<td><span id="elh_t_rumus2_lp"><?php echo $t_rumus2->lp->FldCaption() ?></span></td>
+		<td data-name="lp"<?php echo $t_rumus2->lp->CellAttributes() ?>>
+<span id="el_t_rumus2_lp">
+<span<?php echo $t_rumus2->lp->ViewAttributes() ?>>
+<?php echo $t_rumus2->lp->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($t_rumus2->forklift->Visible) { // forklift ?>
+	<tr id="r_forklift">
+		<td><span id="elh_t_rumus2_forklift"><?php echo $t_rumus2->forklift->FldCaption() ?></span></td>
+		<td data-name="forklift"<?php echo $t_rumus2->forklift->CellAttributes() ?>>
+<span id="el_t_rumus2_forklift">
+<span<?php echo $t_rumus2->forklift->ViewAttributes() ?>>
+<?php echo $t_rumus2->forklift->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($t_rumus2->pot_absen->Visible) { // pot_absen ?>
 	<tr id="r_pot_absen">
-		<td><span id="elh_t_rumus_pot_absen"><?php echo $t_rumus->pot_absen->FldCaption() ?></span></td>
-		<td data-name="pot_absen"<?php echo $t_rumus->pot_absen->CellAttributes() ?>>
-<span id="el_t_rumus_pot_absen">
-<span<?php echo $t_rumus->pot_absen->ViewAttributes() ?>>
-<?php echo $t_rumus->pot_absen->ViewValue ?></span>
+		<td><span id="elh_t_rumus2_pot_absen"><?php echo $t_rumus2->pot_absen->FldCaption() ?></span></td>
+		<td data-name="pot_absen"<?php echo $t_rumus2->pot_absen->CellAttributes() ?>>
+<span id="el_t_rumus2_pot_absen">
+<span<?php echo $t_rumus2->pot_absen->ViewAttributes() ?>>
+<?php echo $t_rumus2->pot_absen->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
-<?php if ($t_rumus->lembur->Visible) { // lembur ?>
-	<tr id="r_lembur">
-		<td><span id="elh_t_rumus_lembur"><?php echo $t_rumus->lembur->FldCaption() ?></span></td>
-		<td data-name="lembur"<?php echo $t_rumus->lembur->CellAttributes() ?>>
-<span id="el_t_rumus_lembur">
-<span<?php echo $t_rumus->lembur->ViewAttributes() ?>>
-<?php echo $t_rumus->lembur->ViewValue ?></span>
+<?php if ($t_rumus2->pot_aspen->Visible) { // pot_aspen ?>
+	<tr id="r_pot_aspen">
+		<td><span id="elh_t_rumus2_pot_aspen"><?php echo $t_rumus2->pot_aspen->FldCaption() ?></span></td>
+		<td data-name="pot_aspen"<?php echo $t_rumus2->pot_aspen->CellAttributes() ?>>
+<span id="el_t_rumus2_pot_aspen">
+<span<?php echo $t_rumus2->pot_aspen->ViewAttributes() ?>>
+<?php echo $t_rumus2->pot_aspen->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($t_rumus2->pot_bpjs->Visible) { // pot_bpjs ?>
+	<tr id="r_pot_bpjs">
+		<td><span id="elh_t_rumus2_pot_bpjs"><?php echo $t_rumus2->pot_bpjs->FldCaption() ?></span></td>
+		<td data-name="pot_bpjs"<?php echo $t_rumus2->pot_bpjs->CellAttributes() ?>>
+<span id="el_t_rumus2_pot_bpjs">
+<span<?php echo $t_rumus2->pot_bpjs->ViewAttributes() ?>>
+<?php echo $t_rumus2->pot_bpjs->ViewValue ?></span>
 </span>
 </td>
 	</tr>
 <?php } ?>
 </table>
-<?php if (!$t_rumus_view->IsModal) { ?>
-<?php if ($t_rumus->Export == "") { ?>
-<?php if (!isset($t_rumus_view->Pager)) $t_rumus_view->Pager = new cPrevNextPager($t_rumus_view->StartRec, $t_rumus_view->DisplayRecs, $t_rumus_view->TotalRecs) ?>
-<?php if ($t_rumus_view->Pager->RecordCount > 0 && $t_rumus_view->Pager->Visible) { ?>
+<?php if (!$t_rumus2_view->IsModal) { ?>
+<?php if ($t_rumus2->Export == "") { ?>
+<?php if (!isset($t_rumus2_view->Pager)) $t_rumus2_view->Pager = new cPrevNextPager($t_rumus2_view->StartRec, $t_rumus2_view->DisplayRecs, $t_rumus2_view->TotalRecs) ?>
+<?php if ($t_rumus2_view->Pager->RecordCount > 0 && $t_rumus2_view->Pager->Visible) { ?>
 <div class="ewPager">
 <span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
 <div class="ewPrevNext"><div class="input-group">
 <div class="input-group-btn">
 <!--first page button-->
-	<?php if ($t_rumus_view->Pager->FirstButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_rumus_view->PageUrl() ?>start=<?php echo $t_rumus_view->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php if ($t_rumus2_view->Pager->FirstButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_rumus2_view->PageUrl() ?>start=<?php echo $t_rumus2_view->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
 <!--previous page button-->
-	<?php if ($t_rumus_view->Pager->PrevButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_rumus_view->PageUrl() ?>start=<?php echo $t_rumus_view->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php if ($t_rumus2_view->Pager->PrevButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_rumus2_view->PageUrl() ?>start=<?php echo $t_rumus2_view->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
 </div>
 <!--current page number-->
-	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_rumus_view->Pager->CurrentPage ?>">
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_rumus2_view->Pager->CurrentPage ?>">
 <div class="input-group-btn">
 <!--next page button-->
-	<?php if ($t_rumus_view->Pager->NextButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_rumus_view->PageUrl() ?>start=<?php echo $t_rumus_view->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php if ($t_rumus2_view->Pager->NextButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_rumus2_view->PageUrl() ?>start=<?php echo $t_rumus2_view->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
 <!--last page button-->
-	<?php if ($t_rumus_view->Pager->LastButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_rumus_view->PageUrl() ?>start=<?php echo $t_rumus_view->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php if ($t_rumus2_view->Pager->LastButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_rumus2_view->PageUrl() ?>start=<?php echo $t_rumus2_view->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
 </div>
 </div>
 </div>
-<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_rumus_view->Pager->PageCount ?></span>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_rumus2_view->Pager->PageCount ?></span>
 </div>
 <?php } ?>
 <div class="clearfix"></div>
 <?php } ?>
 <?php } ?>
 </form>
-<?php if ($t_rumus->Export == "") { ?>
+<?php if ($t_rumus2->Export == "") { ?>
 <script type="text/javascript">
-ft_rumusview.Init();
+ft_rumus2view.Init();
 </script>
 <?php } ?>
 <?php
-$t_rumus_view->ShowPageFooter();
+$t_rumus2_view->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
-<?php if ($t_rumus->Export == "") { ?>
+<?php if ($t_rumus2->Export == "") { ?>
 <script type="text/javascript">
 
 // Write your table-specific startup script here
@@ -1556,5 +1560,5 @@ if (EW_DEBUG_ENABLED)
 <?php } ?>
 <?php include_once "footer.php" ?>
 <?php
-$t_rumus_view->Page_Terminate();
+$t_rumus2_view->Page_Terminate();
 ?>

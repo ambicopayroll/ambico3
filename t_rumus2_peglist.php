@@ -5,7 +5,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "ewcfg13.php" ?>
 <?php include_once ((EW_USE_ADODB) ? "adodb5/adodb.inc.php" : "ewmysql13.php") ?>
 <?php include_once "phpfn13.php" ?>
-<?php include_once "t_rumus_peginfo.php" ?>
+<?php include_once "t_rumus2_peginfo.php" ?>
 <?php include_once "pegawaiinfo.php" ?>
 <?php include_once "t_userinfo.php" ?>
 <?php include_once "userfn13.php" ?>
@@ -15,9 +15,9 @@ ob_start(); // Turn on output buffering
 // Page class
 //
 
-$t_rumus_peg_list = NULL; // Initialize page object first
+$t_rumus2_peg_list = NULL; // Initialize page object first
 
-class ct_rumus_peg_list extends ct_rumus_peg {
+class ct_rumus2_peg_list extends ct_rumus2_peg {
 
 	// Page ID
 	var $PageID = 'list';
@@ -26,13 +26,13 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 	var $ProjectID = "{503C8825-3846-4E96-8DFF-03202C380E17}";
 
 	// Table name
-	var $TableName = 't_rumus_peg';
+	var $TableName = 't_rumus2_peg';
 
 	// Page object name
-	var $PageObjName = 't_rumus_peg_list';
+	var $PageObjName = 't_rumus2_peg_list';
 
 	// Grid form hidden field names
-	var $FormName = 'ft_rumus_peglist';
+	var $FormName = 'ft_rumus2_peglist';
 	var $FormActionName = 'k_action';
 	var $FormKeyName = 'k_key';
 	var $FormOldKeyName = 'k_oldkey';
@@ -267,10 +267,10 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		// Parent constuctor
 		parent::__construct();
 
-		// Table object (t_rumus_peg)
-		if (!isset($GLOBALS["t_rumus_peg"]) || get_class($GLOBALS["t_rumus_peg"]) == "ct_rumus_peg") {
-			$GLOBALS["t_rumus_peg"] = &$this;
-			$GLOBALS["Table"] = &$GLOBALS["t_rumus_peg"];
+		// Table object (t_rumus2_peg)
+		if (!isset($GLOBALS["t_rumus2_peg"]) || get_class($GLOBALS["t_rumus2_peg"]) == "ct_rumus2_peg") {
+			$GLOBALS["t_rumus2_peg"] = &$this;
+			$GLOBALS["Table"] = &$GLOBALS["t_rumus2_peg"];
 		}
 
 		// Initialize URLs
@@ -281,12 +281,12 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		$this->ExportXmlUrl = $this->PageUrl() . "export=xml";
 		$this->ExportCsvUrl = $this->PageUrl() . "export=csv";
 		$this->ExportPdfUrl = $this->PageUrl() . "export=pdf";
-		$this->AddUrl = "t_rumus_pegadd.php";
+		$this->AddUrl = "t_rumus2_pegadd.php";
 		$this->InlineAddUrl = $this->PageUrl() . "a=add";
 		$this->GridAddUrl = $this->PageUrl() . "a=gridadd";
 		$this->GridEditUrl = $this->PageUrl() . "a=gridedit";
-		$this->MultiDeleteUrl = "t_rumus_pegdelete.php";
-		$this->MultiUpdateUrl = "t_rumus_pegupdate.php";
+		$this->MultiDeleteUrl = "t_rumus2_pegdelete.php";
+		$this->MultiUpdateUrl = "t_rumus2_pegupdate.php";
 
 		// Table object (pegawai)
 		if (!isset($GLOBALS['pegawai'])) $GLOBALS['pegawai'] = new cpegawai();
@@ -300,7 +300,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 		// Table name (for backward compatibility)
 		if (!defined("EW_TABLE_NAME"))
-			define("EW_TABLE_NAME", 't_rumus_peg', TRUE);
+			define("EW_TABLE_NAME", 't_rumus2_peg', TRUE);
 
 		// Start timer
 		if (!isset($GLOBALS["gTimer"])) $GLOBALS["gTimer"] = new cTimer();
@@ -337,7 +337,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		// Filter options
 		$this->FilterOptions = new cListOptions();
 		$this->FilterOptions->Tag = "div";
-		$this->FilterOptions->TagClassName = "ewFilterOption ft_rumus_peglistsrch";
+		$this->FilterOptions->TagClassName = "ewFilterOption ft_rumus2_peglistsrch";
 
 		// List actions
 		$this->ListActions = new cListActions();
@@ -418,7 +418,8 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		// Setup export options
 		$this->SetupExportOptions();
 		$this->pegawai_id->SetVisibility();
-		$this->rumus_id->SetVisibility();
+		$this->gp->SetVisibility();
+		$this->rumus2_id->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -482,13 +483,13 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		Page_Unloaded();
 
 		// Export
-		global $EW_EXPORT, $t_rumus_peg;
+		global $EW_EXPORT, $t_rumus2_peg;
 		if ($this->CustomExport <> "" && $this->CustomExport == $this->Export && array_key_exists($this->CustomExport, $EW_EXPORT)) {
 				$sContent = ob_get_contents();
 			if ($gsExportFile == "") $gsExportFile = $this->TableVar;
 			$class = $EW_EXPORT[$this->CustomExport];
 			if (class_exists($class)) {
-				$doc = new $class($t_rumus_peg);
+				$doc = new $class($t_rumus2_peg);
 				$doc->Text = $sContent;
 				if ($this->Export == "email")
 					echo $this->ExportEmail($doc->Text);
@@ -817,7 +818,8 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 	//  Exit inline mode
 	function ClearInlineMode() {
-		$this->setKey("rumus_peg_id", ""); // Clear inline edit key
+		$this->setKey("rumus2_peg_id", ""); // Clear inline edit key
+		$this->gp->FormValue = ""; // Clear form value
 		$this->LastAction = $this->CurrentAction; // Save last action
 		$this->CurrentAction = ""; // Clear action
 		$_SESSION[EW_SESSION_INLINE_MODE] = ""; // Clear inline mode
@@ -839,14 +841,14 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		if (!$Security->CanEdit())
 			$this->Page_Terminate("login.php"); // Go to login page
 		$bInlineEdit = TRUE;
-		if (@$_GET["rumus_peg_id"] <> "") {
-			$this->rumus_peg_id->setQueryStringValue($_GET["rumus_peg_id"]);
+		if (@$_GET["rumus2_peg_id"] <> "") {
+			$this->rumus2_peg_id->setQueryStringValue($_GET["rumus2_peg_id"]);
 		} else {
 			$bInlineEdit = FALSE;
 		}
 		if ($bInlineEdit) {
 			if ($this->LoadRow()) {
-				$this->setKey("rumus_peg_id", $this->rumus_peg_id->CurrentValue); // Set up inline edit key
+				$this->setKey("rumus2_peg_id", $this->rumus2_peg_id->CurrentValue); // Set up inline edit key
 				$_SESSION[EW_SESSION_INLINE_MODE] = "edit"; // Enable inline edit
 			}
 		}
@@ -891,7 +893,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 	function CheckInlineEditKey() {
 
 		//CheckInlineEditKey = True
-		if (strval($this->getKey("rumus_peg_id")) <> strval($this->rumus_peg_id->CurrentValue))
+		if (strval($this->getKey("rumus2_peg_id")) <> strval($this->rumus2_peg_id->CurrentValue))
 			return FALSE;
 		return TRUE;
 	}
@@ -902,11 +904,11 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		if (!$Security->CanAdd())
 			$this->Page_Terminate("login.php"); // Return to login page
 		if ($this->CurrentAction == "copy") {
-			if (@$_GET["rumus_peg_id"] <> "") {
-				$this->rumus_peg_id->setQueryStringValue($_GET["rumus_peg_id"]);
-				$this->setKey("rumus_peg_id", $this->rumus_peg_id->CurrentValue); // Set up key
+			if (@$_GET["rumus2_peg_id"] <> "") {
+				$this->rumus2_peg_id->setQueryStringValue($_GET["rumus2_peg_id"]);
+				$this->setKey("rumus2_peg_id", $this->rumus2_peg_id->CurrentValue); // Set up key
 			} else {
-				$this->setKey("rumus_peg_id", ""); // Clear key
+				$this->setKey("rumus2_peg_id", ""); // Clear key
 				$this->CurrentAction = "add";
 			}
 		}
@@ -1074,8 +1076,8 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 	function SetupKeyValues($key) {
 		$arrKeyFlds = explode($GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"], $key);
 		if (count($arrKeyFlds) >= 1) {
-			$this->rumus_peg_id->setFormValue($arrKeyFlds[0]);
-			if (!is_numeric($this->rumus_peg_id->FormValue))
+			$this->rumus2_peg_id->setFormValue($arrKeyFlds[0]);
+			if (!is_numeric($this->rumus2_peg_id->FormValue))
 				return FALSE;
 		}
 		return TRUE;
@@ -1133,7 +1135,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 				}
 				if ($bGridInsert) {
 					if ($sKey <> "") $sKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-					$sKey .= $this->rumus_peg_id->CurrentValue;
+					$sKey .= $this->rumus2_peg_id->CurrentValue;
 
 					// Add filter for this record
 					$sFilter = $this->KeyFilter();
@@ -1180,7 +1182,9 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		global $objForm;
 		if ($objForm->HasValue("x_pegawai_id") && $objForm->HasValue("o_pegawai_id") && $this->pegawai_id->CurrentValue <> $this->pegawai_id->OldValue)
 			return FALSE;
-		if ($objForm->HasValue("x_rumus_id") && $objForm->HasValue("o_rumus_id") && $this->rumus_id->CurrentValue <> $this->rumus_id->OldValue)
+		if ($objForm->HasValue("x_gp") && $objForm->HasValue("o_gp") && $this->gp->CurrentValue <> $this->gp->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_rumus2_id") && $objForm->HasValue("o_rumus2_id") && $this->rumus2_id->CurrentValue <> $this->rumus2_id->OldValue)
 			return FALSE;
 		return TRUE;
 	}
@@ -1259,16 +1263,17 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 		// Load server side filters
 		if (EW_SEARCH_FILTER_OPTION == "Server") {
-			$sSavedFilterList = $UserProfile->GetSearchFilters(CurrentUserName(), "ft_rumus_peglistsrch");
+			$sSavedFilterList = $UserProfile->GetSearchFilters(CurrentUserName(), "ft_rumus2_peglistsrch");
 		} else {
 			$sSavedFilterList = "";
 		}
 
 		// Initialize
 		$sFilterList = "";
-		$sFilterList = ew_Concat($sFilterList, $this->rumus_peg_id->AdvancedSearch->ToJSON(), ","); // Field rumus_peg_id
+		$sFilterList = ew_Concat($sFilterList, $this->rumus2_peg_id->AdvancedSearch->ToJSON(), ","); // Field rumus2_peg_id
 		$sFilterList = ew_Concat($sFilterList, $this->pegawai_id->AdvancedSearch->ToJSON(), ","); // Field pegawai_id
-		$sFilterList = ew_Concat($sFilterList, $this->rumus_id->AdvancedSearch->ToJSON(), ","); // Field rumus_id
+		$sFilterList = ew_Concat($sFilterList, $this->gp->AdvancedSearch->ToJSON(), ","); // Field gp
+		$sFilterList = ew_Concat($sFilterList, $this->rumus2_id->AdvancedSearch->ToJSON(), ","); // Field rumus2_id
 		$sFilterList = preg_replace('/,$/', "", $sFilterList);
 
 		// Return filter list in json
@@ -1287,7 +1292,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		global $UserProfile;
 		if (@$_POST["ajax"] == "savefilters") { // Save filter request (Ajax)
 			$filters = ew_StripSlashes(@$_POST["filters"]);
-			$UserProfile->SetSearchFilters(CurrentUserName(), "ft_rumus_peglistsrch", $filters);
+			$UserProfile->SetSearchFilters(CurrentUserName(), "ft_rumus2_peglistsrch", $filters);
 
 			// Clean output buffer
 			if (!EW_DEBUG_ENABLED && ob_get_length())
@@ -1309,13 +1314,13 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		$filter = json_decode(ew_StripSlashes(@$_POST["filter"]), TRUE);
 		$this->Command = "search";
 
-		// Field rumus_peg_id
-		$this->rumus_peg_id->AdvancedSearch->SearchValue = @$filter["x_rumus_peg_id"];
-		$this->rumus_peg_id->AdvancedSearch->SearchOperator = @$filter["z_rumus_peg_id"];
-		$this->rumus_peg_id->AdvancedSearch->SearchCondition = @$filter["v_rumus_peg_id"];
-		$this->rumus_peg_id->AdvancedSearch->SearchValue2 = @$filter["y_rumus_peg_id"];
-		$this->rumus_peg_id->AdvancedSearch->SearchOperator2 = @$filter["w_rumus_peg_id"];
-		$this->rumus_peg_id->AdvancedSearch->Save();
+		// Field rumus2_peg_id
+		$this->rumus2_peg_id->AdvancedSearch->SearchValue = @$filter["x_rumus2_peg_id"];
+		$this->rumus2_peg_id->AdvancedSearch->SearchOperator = @$filter["z_rumus2_peg_id"];
+		$this->rumus2_peg_id->AdvancedSearch->SearchCondition = @$filter["v_rumus2_peg_id"];
+		$this->rumus2_peg_id->AdvancedSearch->SearchValue2 = @$filter["y_rumus2_peg_id"];
+		$this->rumus2_peg_id->AdvancedSearch->SearchOperator2 = @$filter["w_rumus2_peg_id"];
+		$this->rumus2_peg_id->AdvancedSearch->Save();
 
 		// Field pegawai_id
 		$this->pegawai_id->AdvancedSearch->SearchValue = @$filter["x_pegawai_id"];
@@ -1325,13 +1330,21 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		$this->pegawai_id->AdvancedSearch->SearchOperator2 = @$filter["w_pegawai_id"];
 		$this->pegawai_id->AdvancedSearch->Save();
 
-		// Field rumus_id
-		$this->rumus_id->AdvancedSearch->SearchValue = @$filter["x_rumus_id"];
-		$this->rumus_id->AdvancedSearch->SearchOperator = @$filter["z_rumus_id"];
-		$this->rumus_id->AdvancedSearch->SearchCondition = @$filter["v_rumus_id"];
-		$this->rumus_id->AdvancedSearch->SearchValue2 = @$filter["y_rumus_id"];
-		$this->rumus_id->AdvancedSearch->SearchOperator2 = @$filter["w_rumus_id"];
-		$this->rumus_id->AdvancedSearch->Save();
+		// Field gp
+		$this->gp->AdvancedSearch->SearchValue = @$filter["x_gp"];
+		$this->gp->AdvancedSearch->SearchOperator = @$filter["z_gp"];
+		$this->gp->AdvancedSearch->SearchCondition = @$filter["v_gp"];
+		$this->gp->AdvancedSearch->SearchValue2 = @$filter["y_gp"];
+		$this->gp->AdvancedSearch->SearchOperator2 = @$filter["w_gp"];
+		$this->gp->AdvancedSearch->Save();
+
+		// Field rumus2_id
+		$this->rumus2_id->AdvancedSearch->SearchValue = @$filter["x_rumus2_id"];
+		$this->rumus2_id->AdvancedSearch->SearchOperator = @$filter["z_rumus2_id"];
+		$this->rumus2_id->AdvancedSearch->SearchCondition = @$filter["v_rumus2_id"];
+		$this->rumus2_id->AdvancedSearch->SearchValue2 = @$filter["y_rumus2_id"];
+		$this->rumus2_id->AdvancedSearch->SearchOperator2 = @$filter["w_rumus2_id"];
+		$this->rumus2_id->AdvancedSearch->Save();
 	}
 
 	// Advanced search WHERE clause based on QueryString
@@ -1339,18 +1352,20 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		global $Security;
 		$sWhere = "";
 		if (!$Security->CanSearch()) return "";
-		$this->BuildSearchSql($sWhere, $this->rumus_peg_id, $Default, FALSE); // rumus_peg_id
+		$this->BuildSearchSql($sWhere, $this->rumus2_peg_id, $Default, FALSE); // rumus2_peg_id
 		$this->BuildSearchSql($sWhere, $this->pegawai_id, $Default, FALSE); // pegawai_id
-		$this->BuildSearchSql($sWhere, $this->rumus_id, $Default, FALSE); // rumus_id
+		$this->BuildSearchSql($sWhere, $this->gp, $Default, FALSE); // gp
+		$this->BuildSearchSql($sWhere, $this->rumus2_id, $Default, FALSE); // rumus2_id
 
 		// Set up search parm
 		if (!$Default && $sWhere <> "") {
 			$this->Command = "search";
 		}
 		if (!$Default && $this->Command == "search") {
-			$this->rumus_peg_id->AdvancedSearch->Save(); // rumus_peg_id
+			$this->rumus2_peg_id->AdvancedSearch->Save(); // rumus2_peg_id
 			$this->pegawai_id->AdvancedSearch->Save(); // pegawai_id
-			$this->rumus_id->AdvancedSearch->Save(); // rumus_id
+			$this->gp->AdvancedSearch->Save(); // gp
+			$this->rumus2_id->AdvancedSearch->Save(); // rumus2_id
 		}
 		return $sWhere;
 	}
@@ -1405,11 +1420,13 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 	// Check if search parm exists
 	function CheckSearchParms() {
-		if ($this->rumus_peg_id->AdvancedSearch->IssetSession())
+		if ($this->rumus2_peg_id->AdvancedSearch->IssetSession())
 			return TRUE;
 		if ($this->pegawai_id->AdvancedSearch->IssetSession())
 			return TRUE;
-		if ($this->rumus_id->AdvancedSearch->IssetSession())
+		if ($this->gp->AdvancedSearch->IssetSession())
+			return TRUE;
+		if ($this->rumus2_id->AdvancedSearch->IssetSession())
 			return TRUE;
 		return FALSE;
 	}
@@ -1432,9 +1449,10 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 	// Clear all advanced search parameters
 	function ResetAdvancedSearchParms() {
-		$this->rumus_peg_id->AdvancedSearch->UnsetSession();
+		$this->rumus2_peg_id->AdvancedSearch->UnsetSession();
 		$this->pegawai_id->AdvancedSearch->UnsetSession();
-		$this->rumus_id->AdvancedSearch->UnsetSession();
+		$this->gp->AdvancedSearch->UnsetSession();
+		$this->rumus2_id->AdvancedSearch->UnsetSession();
 	}
 
 	// Restore all search parameters
@@ -1442,9 +1460,10 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		$this->RestoreSearch = TRUE;
 
 		// Restore advanced search values
-		$this->rumus_peg_id->AdvancedSearch->Load();
+		$this->rumus2_peg_id->AdvancedSearch->Load();
 		$this->pegawai_id->AdvancedSearch->Load();
-		$this->rumus_id->AdvancedSearch->Load();
+		$this->gp->AdvancedSearch->Load();
+		$this->rumus2_id->AdvancedSearch->Load();
 	}
 
 	// Set up sort parameters
@@ -1458,7 +1477,8 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
 			$this->UpdateSort($this->pegawai_id, $bCtrl); // pegawai_id
-			$this->UpdateSort($this->rumus_id, $bCtrl); // rumus_id
+			$this->UpdateSort($this->gp, $bCtrl); // gp
+			$this->UpdateSort($this->rumus2_id, $bCtrl); // rumus2_id
 			$this->setStartRecordNumber(1); // Reset start position
 		}
 	}
@@ -1502,7 +1522,8 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 				$this->setSessionOrderBy($sOrderBy);
 				$this->setSessionOrderByList($sOrderBy);
 				$this->pegawai_id->setSort("");
-				$this->rumus_id->setSort("");
+				$this->gp->setSort("");
+				$this->rumus2_id->setSort("");
 			}
 
 			// Reset start position
@@ -1650,7 +1671,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 					"<a class=\"ewGridLink ewInlineUpdate\" title=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . ew_GetHashUrl($this->PageName(), $this->PageObjName . "_row_" . $this->RowCnt) . "');\">" . $Language->Phrase("UpdateLink") . "</a>&nbsp;" .
 					"<a class=\"ewGridLink ewInlineCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("CancelLink") . "</a>" .
 					"<input type=\"hidden\" name=\"a_list\" id=\"a_list\" value=\"update\"></div>";
-			$oListOpt->Body .= "<input type=\"hidden\" name=\"k" . $this->RowIndex . "_key\" id=\"k" . $this->RowIndex . "_key\" value=\"" . ew_HtmlEncode($this->rumus_peg_id->CurrentValue) . "\">";
+			$oListOpt->Body .= "<input type=\"hidden\" name=\"k" . $this->RowIndex . "_key\" id=\"k" . $this->RowIndex . "_key\" value=\"" . ew_HtmlEncode($this->rumus2_peg_id->CurrentValue) . "\">";
 			return;
 		}
 
@@ -1714,9 +1735,9 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
-		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->rumus_peg_id->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
+		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->rumus2_peg_id->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
 		if ($this->CurrentAction == "gridedit" && is_numeric($this->RowIndex)) {
-			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->rumus_peg_id->CurrentValue . "\">";
+			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->rumus2_peg_id->CurrentValue . "\">";
 		}
 		$this->RenderListOptionsExt();
 
@@ -1753,7 +1774,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 		// Add multi delete
 		$item = &$option->Add("multidelete");
-		$item->Body = "<a class=\"ewAction ewMultiDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteSelectedLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteSelectedLink")) . "\" href=\"\" onclick=\"ew_SubmitAction(event,{f:document.ft_rumus_peglist,url:'" . $this->MultiDeleteUrl . "'});return false;\">" . $Language->Phrase("DeleteSelectedLink") . "</a>";
+		$item->Body = "<a class=\"ewAction ewMultiDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteSelectedLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteSelectedLink")) . "\" href=\"\" onclick=\"ew_SubmitAction(event,{f:document.ft_rumus2_peglist,url:'" . $this->MultiDeleteUrl . "'});return false;\">" . $Language->Phrase("DeleteSelectedLink") . "</a>";
 		$item->Visible = ($Security->CanDelete());
 
 		// Set up options default
@@ -1772,10 +1793,10 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 		// Filter button
 		$item = &$this->FilterOptions->Add("savecurrentfilter");
-		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"ft_rumus_peglistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
+		$item->Body = "<a class=\"ewSaveFilter\" data-form=\"ft_rumus2_peglistsrch\" href=\"#\">" . $Language->Phrase("SaveCurrentFilter") . "</a>";
 		$item->Visible = TRUE;
 		$item = &$this->FilterOptions->Add("deletefilter");
-		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"ft_rumus_peglistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
+		$item->Body = "<a class=\"ewDeleteFilter\" data-form=\"ft_rumus2_peglistsrch\" href=\"#\">" . $Language->Phrase("DeleteFilter") . "</a>";
 		$item->Visible = TRUE;
 		$this->FilterOptions->UseDropDownButton = TRUE;
 		$this->FilterOptions->UseButtonGroup = !$this->FilterOptions->UseDropDownButton;
@@ -1800,7 +1821,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 					$item = &$option->Add("custom_" . $listaction->Action);
 					$caption = $listaction->Caption;
 					$icon = ($listaction->Icon <> "") ? "<span class=\"" . ew_HtmlEncode($listaction->Icon) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\"></span> " : $caption;
-					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.ft_rumus_peglist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
+					$item->Body = "<a class=\"ewAction ewListAction\" title=\"" . ew_HtmlEncode($caption) . "\" data-caption=\"" . ew_HtmlEncode($caption) . "\" href=\"\" onclick=\"ew_SubmitAction(event,jQuery.extend({f:document.ft_rumus2_peglist}," . $listaction->ToJson(TRUE) . "));return false;\">" . $icon . "</a>";
 					$item->Visible = $listaction->Allow;
 				}
 			}
@@ -1954,7 +1975,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		// Search button
 		$item = &$this->SearchOptions->Add("searchtoggle");
 		$SearchToggleClass = ($this->SearchWhere <> "") ? " active" : " active";
-		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"ft_rumus_peglistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
+		$item->Body = "<button type=\"button\" class=\"btn btn-default ewSearchToggle" . $SearchToggleClass . "\" title=\"" . $Language->Phrase("SearchPanel") . "\" data-caption=\"" . $Language->Phrase("SearchPanel") . "\" data-toggle=\"button\" data-form=\"ft_rumus2_peglistsrch\">" . $Language->Phrase("SearchBtn") . "</button>";
 		$item->Visible = TRUE;
 
 		// Show all button
@@ -2031,8 +2052,10 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 	function LoadDefaultValues() {
 		$this->pegawai_id->CurrentValue = NULL;
 		$this->pegawai_id->OldValue = $this->pegawai_id->CurrentValue;
-		$this->rumus_id->CurrentValue = NULL;
-		$this->rumus_id->OldValue = $this->rumus_id->CurrentValue;
+		$this->gp->CurrentValue = 0.00;
+		$this->gp->OldValue = $this->gp->CurrentValue;
+		$this->rumus2_id->CurrentValue = NULL;
+		$this->rumus2_id->OldValue = $this->rumus2_id->CurrentValue;
 	}
 
 	// Load search values for validation
@@ -2040,21 +2063,26 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		global $objForm;
 
 		// Load search values
-		// rumus_peg_id
+		// rumus2_peg_id
 
-		$this->rumus_peg_id->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_rumus_peg_id"]);
-		if ($this->rumus_peg_id->AdvancedSearch->SearchValue <> "") $this->Command = "search";
-		$this->rumus_peg_id->AdvancedSearch->SearchOperator = @$_GET["z_rumus_peg_id"];
+		$this->rumus2_peg_id->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_rumus2_peg_id"]);
+		if ($this->rumus2_peg_id->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->rumus2_peg_id->AdvancedSearch->SearchOperator = @$_GET["z_rumus2_peg_id"];
 
 		// pegawai_id
 		$this->pegawai_id->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_pegawai_id"]);
 		if ($this->pegawai_id->AdvancedSearch->SearchValue <> "") $this->Command = "search";
 		$this->pegawai_id->AdvancedSearch->SearchOperator = @$_GET["z_pegawai_id"];
 
-		// rumus_id
-		$this->rumus_id->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_rumus_id"]);
-		if ($this->rumus_id->AdvancedSearch->SearchValue <> "") $this->Command = "search";
-		$this->rumus_id->AdvancedSearch->SearchOperator = @$_GET["z_rumus_id"];
+		// gp
+		$this->gp->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_gp"]);
+		if ($this->gp->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->gp->AdvancedSearch->SearchOperator = @$_GET["z_gp"];
+
+		// rumus2_id
+		$this->rumus2_id->AdvancedSearch->SearchValue = ew_StripSlashes(@$_GET["x_rumus2_id"]);
+		if ($this->rumus2_id->AdvancedSearch->SearchValue <> "") $this->Command = "search";
+		$this->rumus2_id->AdvancedSearch->SearchOperator = @$_GET["z_rumus2_id"];
 	}
 
 	// Load form values
@@ -2066,21 +2094,26 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			$this->pegawai_id->setFormValue($objForm->GetValue("x_pegawai_id"));
 		}
 		$this->pegawai_id->setOldValue($objForm->GetValue("o_pegawai_id"));
-		if (!$this->rumus_id->FldIsDetailKey) {
-			$this->rumus_id->setFormValue($objForm->GetValue("x_rumus_id"));
+		if (!$this->gp->FldIsDetailKey) {
+			$this->gp->setFormValue($objForm->GetValue("x_gp"));
 		}
-		$this->rumus_id->setOldValue($objForm->GetValue("o_rumus_id"));
-		if (!$this->rumus_peg_id->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
-			$this->rumus_peg_id->setFormValue($objForm->GetValue("x_rumus_peg_id"));
+		$this->gp->setOldValue($objForm->GetValue("o_gp"));
+		if (!$this->rumus2_id->FldIsDetailKey) {
+			$this->rumus2_id->setFormValue($objForm->GetValue("x_rumus2_id"));
+		}
+		$this->rumus2_id->setOldValue($objForm->GetValue("o_rumus2_id"));
+		if (!$this->rumus2_peg_id->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->rumus2_peg_id->setFormValue($objForm->GetValue("x_rumus2_peg_id"));
 	}
 
 	// Restore form values
 	function RestoreFormValues() {
 		global $objForm;
 		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
-			$this->rumus_peg_id->CurrentValue = $this->rumus_peg_id->FormValue;
+			$this->rumus2_peg_id->CurrentValue = $this->rumus2_peg_id->FormValue;
 		$this->pegawai_id->CurrentValue = $this->pegawai_id->FormValue;
-		$this->rumus_id->CurrentValue = $this->rumus_id->FormValue;
+		$this->gp->CurrentValue = $this->gp->FormValue;
+		$this->rumus2_id->CurrentValue = $this->rumus2_id->FormValue;
 	}
 
 	// Load recordset
@@ -2138,18 +2171,19 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
-		$this->rumus_peg_id->setDbValue($rs->fields('rumus_peg_id'));
+		$this->rumus2_peg_id->setDbValue($rs->fields('rumus2_peg_id'));
 		$this->pegawai_id->setDbValue($rs->fields('pegawai_id'));
 		if (array_key_exists('EV__pegawai_id', $rs->fields)) {
 			$this->pegawai_id->VirtualValue = $rs->fields('EV__pegawai_id'); // Set up virtual field value
 		} else {
 			$this->pegawai_id->VirtualValue = ""; // Clear value
 		}
-		$this->rumus_id->setDbValue($rs->fields('rumus_id'));
-		if (array_key_exists('EV__rumus_id', $rs->fields)) {
-			$this->rumus_id->VirtualValue = $rs->fields('EV__rumus_id'); // Set up virtual field value
+		$this->gp->setDbValue($rs->fields('gp'));
+		$this->rumus2_id->setDbValue($rs->fields('rumus2_id'));
+		if (array_key_exists('EV__rumus2_id', $rs->fields)) {
+			$this->rumus2_id->VirtualValue = $rs->fields('EV__rumus2_id'); // Set up virtual field value
 		} else {
-			$this->rumus_id->VirtualValue = ""; // Clear value
+			$this->rumus2_id->VirtualValue = ""; // Clear value
 		}
 	}
 
@@ -2157,9 +2191,10 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 	function LoadDbValues(&$rs) {
 		if (!$rs || !is_array($rs) && $rs->EOF) return;
 		$row = is_array($rs) ? $rs : $rs->fields;
-		$this->rumus_peg_id->DbValue = $row['rumus_peg_id'];
+		$this->rumus2_peg_id->DbValue = $row['rumus2_peg_id'];
 		$this->pegawai_id->DbValue = $row['pegawai_id'];
-		$this->rumus_id->DbValue = $row['rumus_id'];
+		$this->gp->DbValue = $row['gp'];
+		$this->rumus2_id->DbValue = $row['rumus2_id'];
 	}
 
 	// Load old record
@@ -2167,8 +2202,8 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 		// Load key values from Session
 		$bValidKey = TRUE;
-		if (strval($this->getKey("rumus_peg_id")) <> "")
-			$this->rumus_peg_id->CurrentValue = $this->getKey("rumus_peg_id"); // rumus_peg_id
+		if (strval($this->getKey("rumus2_peg_id")) <> "")
+			$this->rumus2_peg_id->CurrentValue = $this->getKey("rumus2_peg_id"); // rumus2_peg_id
 		else
 			$bValidKey = FALSE;
 
@@ -2197,19 +2232,24 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		$this->InlineCopyUrl = $this->GetInlineCopyUrl();
 		$this->DeleteUrl = $this->GetDeleteUrl();
 
+		// Convert decimal values if posted back
+		if ($this->gp->FormValue == $this->gp->CurrentValue && is_numeric(ew_StrToFloat($this->gp->CurrentValue)))
+			$this->gp->CurrentValue = ew_StrToFloat($this->gp->CurrentValue);
+
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
 		// Common render codes for all row types
-		// rumus_peg_id
+		// rumus2_peg_id
 		// pegawai_id
-		// rumus_id
+		// gp
+		// rumus2_id
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
-		// rumus_peg_id
-		$this->rumus_peg_id->ViewValue = $this->rumus_peg_id->CurrentValue;
-		$this->rumus_peg_id->ViewCustomAttributes = "";
+		// rumus2_peg_id
+		$this->rumus2_peg_id->ViewValue = $this->rumus2_peg_id->CurrentValue;
+		$this->rumus2_peg_id->ViewCustomAttributes = "";
 
 		// pegawai_id
 		if ($this->pegawai_id->VirtualValue <> "") {
@@ -2239,42 +2279,53 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		}
 		$this->pegawai_id->ViewCustomAttributes = "";
 
-		// rumus_id
-		if ($this->rumus_id->VirtualValue <> "") {
-			$this->rumus_id->ViewValue = $this->rumus_id->VirtualValue;
+		// gp
+		$this->gp->ViewValue = $this->gp->CurrentValue;
+		$this->gp->ViewValue = ew_FormatNumber($this->gp->ViewValue, 0, -2, -2, -2);
+		$this->gp->CellCssStyle .= "text-align: right;";
+		$this->gp->ViewCustomAttributes = "";
+
+		// rumus2_id
+		if ($this->rumus2_id->VirtualValue <> "") {
+			$this->rumus2_id->ViewValue = $this->rumus2_id->VirtualValue;
 		} else {
-		if (strval($this->rumus_id->CurrentValue) <> "") {
-			$sFilterWrk = "`rumus_id`" . ew_SearchString("=", $this->rumus_id->CurrentValue, EW_DATATYPE_NUMBER, "");
-		$sSqlWrk = "SELECT `rumus_id`, `rumus_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `t_rumus`";
+		if (strval($this->rumus2_id->CurrentValue) <> "") {
+			$sFilterWrk = "`rumus2_id`" . ew_SearchString("=", $this->rumus2_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `rumus2_id`, `rumus2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `t_rumus2`";
 		$sWhereWrk = "";
-		$this->rumus_id->LookupFilters = array("dx1" => '`rumus_nama`');
+		$this->rumus2_id->LookupFilters = array("dx1" => '`rumus2_nama`');
 		ew_AddFilter($sWhereWrk, $sFilterWrk);
-		$this->Lookup_Selecting($this->rumus_id, $sWhereWrk); // Call Lookup selecting
+		$this->Lookup_Selecting($this->rumus2_id, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
 				$arwrk = array();
 				$arwrk[1] = $rswrk->fields('DispFld');
-				$this->rumus_id->ViewValue = $this->rumus_id->DisplayValue($arwrk);
+				$this->rumus2_id->ViewValue = $this->rumus2_id->DisplayValue($arwrk);
 				$rswrk->Close();
 			} else {
-				$this->rumus_id->ViewValue = $this->rumus_id->CurrentValue;
+				$this->rumus2_id->ViewValue = $this->rumus2_id->CurrentValue;
 			}
 		} else {
-			$this->rumus_id->ViewValue = NULL;
+			$this->rumus2_id->ViewValue = NULL;
 		}
 		}
-		$this->rumus_id->ViewCustomAttributes = "";
+		$this->rumus2_id->ViewCustomAttributes = "";
 
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
 			$this->pegawai_id->TooltipValue = "";
 
-			// rumus_id
-			$this->rumus_id->LinkCustomAttributes = "";
-			$this->rumus_id->HrefValue = "";
-			$this->rumus_id->TooltipValue = "";
+			// gp
+			$this->gp->LinkCustomAttributes = "";
+			$this->gp->HrefValue = "";
+			$this->gp->TooltipValue = "";
+
+			// rumus2_id
+			$this->rumus2_id->LinkCustomAttributes = "";
+			$this->rumus2_id->HrefValue = "";
+			$this->rumus2_id->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
 			// pegawai_id
@@ -2334,30 +2385,40 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
 			}
 
-			// rumus_id
-			$this->rumus_id->EditCustomAttributes = "";
-			if (trim(strval($this->rumus_id->CurrentValue)) == "") {
+			// gp
+			$this->gp->EditAttrs["class"] = "form-control";
+			$this->gp->EditCustomAttributes = "";
+			$this->gp->EditValue = ew_HtmlEncode($this->gp->CurrentValue);
+			$this->gp->PlaceHolder = ew_RemoveHtml($this->gp->FldCaption());
+			if (strval($this->gp->EditValue) <> "" && is_numeric($this->gp->EditValue)) {
+			$this->gp->EditValue = ew_FormatNumber($this->gp->EditValue, -2, -2, -2, -2);
+			$this->gp->OldValue = $this->gp->EditValue;
+			}
+
+			// rumus2_id
+			$this->rumus2_id->EditCustomAttributes = "";
+			if (trim(strval($this->rumus2_id->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`rumus_id`" . ew_SearchString("=", $this->rumus_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+				$sFilterWrk = "`rumus2_id`" . ew_SearchString("=", $this->rumus2_id->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
-			$sSqlWrk = "SELECT `rumus_id`, `rumus_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `t_rumus`";
+			$sSqlWrk = "SELECT `rumus2_id`, `rumus2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `t_rumus2`";
 			$sWhereWrk = "";
-			$this->rumus_id->LookupFilters = array("dx1" => '`rumus_nama`');
+			$this->rumus2_id->LookupFilters = array("dx1" => '`rumus2_nama`');
 			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->rumus_id, $sWhereWrk); // Call Lookup selecting
+			$this->Lookup_Selecting($this->rumus2_id, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
 				$arwrk = array();
 				$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
-				$this->rumus_id->ViewValue = $this->rumus_id->DisplayValue($arwrk);
+				$this->rumus2_id->ViewValue = $this->rumus2_id->DisplayValue($arwrk);
 			} else {
-				$this->rumus_id->ViewValue = $Language->Phrase("PleaseSelect");
+				$this->rumus2_id->ViewValue = $Language->Phrase("PleaseSelect");
 			}
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
-			$this->rumus_id->EditValue = $arwrk;
+			$this->rumus2_id->EditValue = $arwrk;
 
 			// Add refer script
 			// pegawai_id
@@ -2365,9 +2426,13 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
 
-			// rumus_id
-			$this->rumus_id->LinkCustomAttributes = "";
-			$this->rumus_id->HrefValue = "";
+			// gp
+			$this->gp->LinkCustomAttributes = "";
+			$this->gp->HrefValue = "";
+
+			// rumus2_id
+			$this->rumus2_id->LinkCustomAttributes = "";
+			$this->rumus2_id->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
 			// pegawai_id
@@ -2427,30 +2492,40 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
 			}
 
-			// rumus_id
-			$this->rumus_id->EditCustomAttributes = "";
-			if (trim(strval($this->rumus_id->CurrentValue)) == "") {
+			// gp
+			$this->gp->EditAttrs["class"] = "form-control";
+			$this->gp->EditCustomAttributes = "";
+			$this->gp->EditValue = ew_HtmlEncode($this->gp->CurrentValue);
+			$this->gp->PlaceHolder = ew_RemoveHtml($this->gp->FldCaption());
+			if (strval($this->gp->EditValue) <> "" && is_numeric($this->gp->EditValue)) {
+			$this->gp->EditValue = ew_FormatNumber($this->gp->EditValue, -2, -2, -2, -2);
+			$this->gp->OldValue = $this->gp->EditValue;
+			}
+
+			// rumus2_id
+			$this->rumus2_id->EditCustomAttributes = "";
+			if (trim(strval($this->rumus2_id->CurrentValue)) == "") {
 				$sFilterWrk = "0=1";
 			} else {
-				$sFilterWrk = "`rumus_id`" . ew_SearchString("=", $this->rumus_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+				$sFilterWrk = "`rumus2_id`" . ew_SearchString("=", $this->rumus2_id->CurrentValue, EW_DATATYPE_NUMBER, "");
 			}
-			$sSqlWrk = "SELECT `rumus_id`, `rumus_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `t_rumus`";
+			$sSqlWrk = "SELECT `rumus2_id`, `rumus2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld`, '' AS `SelectFilterFld`, '' AS `SelectFilterFld2`, '' AS `SelectFilterFld3`, '' AS `SelectFilterFld4` FROM `t_rumus2`";
 			$sWhereWrk = "";
-			$this->rumus_id->LookupFilters = array("dx1" => '`rumus_nama`');
+			$this->rumus2_id->LookupFilters = array("dx1" => '`rumus2_nama`');
 			ew_AddFilter($sWhereWrk, $sFilterWrk);
-			$this->Lookup_Selecting($this->rumus_id, $sWhereWrk); // Call Lookup selecting
+			$this->Lookup_Selecting($this->rumus2_id, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			$rswrk = Conn()->Execute($sSqlWrk);
 			if ($rswrk && !$rswrk->EOF) { // Lookup values found
 				$arwrk = array();
 				$arwrk[1] = ew_HtmlEncode($rswrk->fields('DispFld'));
-				$this->rumus_id->ViewValue = $this->rumus_id->DisplayValue($arwrk);
+				$this->rumus2_id->ViewValue = $this->rumus2_id->DisplayValue($arwrk);
 			} else {
-				$this->rumus_id->ViewValue = $Language->Phrase("PleaseSelect");
+				$this->rumus2_id->ViewValue = $Language->Phrase("PleaseSelect");
 			}
 			$arwrk = ($rswrk) ? $rswrk->GetRows() : array();
 			if ($rswrk) $rswrk->Close();
-			$this->rumus_id->EditValue = $arwrk;
+			$this->rumus2_id->EditValue = $arwrk;
 
 			// Edit refer script
 			// pegawai_id
@@ -2458,9 +2533,13 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
 
-			// rumus_id
-			$this->rumus_id->LinkCustomAttributes = "";
-			$this->rumus_id->HrefValue = "";
+			// gp
+			$this->gp->LinkCustomAttributes = "";
+			$this->gp->HrefValue = "";
+
+			// rumus2_id
+			$this->rumus2_id->LinkCustomAttributes = "";
+			$this->rumus2_id->HrefValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_SEARCH) { // Search row
 
 			// pegawai_id
@@ -2469,11 +2548,17 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			$this->pegawai_id->EditValue = ew_HtmlEncode($this->pegawai_id->AdvancedSearch->SearchValue);
 			$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
 
-			// rumus_id
-			$this->rumus_id->EditAttrs["class"] = "form-control";
-			$this->rumus_id->EditCustomAttributes = "";
-			$this->rumus_id->EditValue = ew_HtmlEncode($this->rumus_id->AdvancedSearch->SearchValue);
-			$this->rumus_id->PlaceHolder = ew_RemoveHtml($this->rumus_id->FldCaption());
+			// gp
+			$this->gp->EditAttrs["class"] = "form-control";
+			$this->gp->EditCustomAttributes = "";
+			$this->gp->EditValue = ew_HtmlEncode($this->gp->AdvancedSearch->SearchValue);
+			$this->gp->PlaceHolder = ew_RemoveHtml($this->gp->FldCaption());
+
+			// rumus2_id
+			$this->rumus2_id->EditAttrs["class"] = "form-control";
+			$this->rumus2_id->EditCustomAttributes = "";
+			$this->rumus2_id->EditValue = ew_HtmlEncode($this->rumus2_id->AdvancedSearch->SearchValue);
+			$this->rumus2_id->PlaceHolder = ew_RemoveHtml($this->rumus2_id->FldCaption());
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -2522,8 +2607,14 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		if (!$this->pegawai_id->FldIsDetailKey && !is_null($this->pegawai_id->FormValue) && $this->pegawai_id->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->pegawai_id->FldCaption(), $this->pegawai_id->ReqErrMsg));
 		}
-		if (!$this->rumus_id->FldIsDetailKey && !is_null($this->rumus_id->FormValue) && $this->rumus_id->FormValue == "") {
-			ew_AddMessage($gsFormError, str_replace("%s", $this->rumus_id->FldCaption(), $this->rumus_id->ReqErrMsg));
+		if (!$this->gp->FldIsDetailKey && !is_null($this->gp->FormValue) && $this->gp->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->gp->FldCaption(), $this->gp->ReqErrMsg));
+		}
+		if (!ew_CheckNumber($this->gp->FormValue)) {
+			ew_AddMessage($gsFormError, $this->gp->FldErrMsg());
+		}
+		if (!$this->rumus2_id->FldIsDetailKey && !is_null($this->rumus2_id->FormValue) && $this->rumus2_id->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->rumus2_id->FldCaption(), $this->rumus2_id->ReqErrMsg));
 		}
 
 		// Return validate result
@@ -2584,7 +2675,7 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			foreach ($rsold as $row) {
 				$sThisKey = "";
 				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-				$sThisKey .= $row['rumus_peg_id'];
+				$sThisKey .= $row['rumus2_peg_id'];
 				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 				$DeleteRows = $this->Delete($row); // Delete
 				$conn->raiseErrorFn = '';
@@ -2646,8 +2737,11 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			// pegawai_id
 			$this->pegawai_id->SetDbValueDef($rsnew, $this->pegawai_id->CurrentValue, 0, $this->pegawai_id->ReadOnly);
 
-			// rumus_id
-			$this->rumus_id->SetDbValueDef($rsnew, $this->rumus_id->CurrentValue, 0, $this->rumus_id->ReadOnly);
+			// gp
+			$this->gp->SetDbValueDef($rsnew, $this->gp->CurrentValue, 0, $this->gp->ReadOnly);
+
+			// rumus2_id
+			$this->rumus2_id->SetDbValueDef($rsnew, $this->rumus2_id->CurrentValue, 0, $this->rumus2_id->ReadOnly);
 
 			// Call Row Updating event
 			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
@@ -2695,8 +2789,11 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		// pegawai_id
 		$this->pegawai_id->SetDbValueDef($rsnew, $this->pegawai_id->CurrentValue, 0, FALSE);
 
-		// rumus_id
-		$this->rumus_id->SetDbValueDef($rsnew, $this->rumus_id->CurrentValue, 0, FALSE);
+		// gp
+		$this->gp->SetDbValueDef($rsnew, $this->gp->CurrentValue, 0, strval($this->gp->CurrentValue) == "");
+
+		// rumus2_id
+		$this->rumus2_id->SetDbValueDef($rsnew, $this->rumus2_id->CurrentValue, 0, FALSE);
 
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
@@ -2730,9 +2827,10 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 
 	// Load advanced search
 	function LoadAdvancedSearch() {
-		$this->rumus_peg_id->AdvancedSearch->Load();
+		$this->rumus2_peg_id->AdvancedSearch->Load();
 		$this->pegawai_id->AdvancedSearch->Load();
-		$this->rumus_id->AdvancedSearch->Load();
+		$this->gp->AdvancedSearch->Load();
+		$this->rumus2_id->AdvancedSearch->Load();
 	}
 
 	// Set up export options
@@ -2772,12 +2870,12 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		// Export to Pdf
 		$item = &$this->ExportOptions->Add("pdf");
 		$item->Body = "<a href=\"" . $this->ExportPdfUrl . "\" class=\"ewExportLink ewPdf\" title=\"" . ew_HtmlEncode($Language->Phrase("ExportToPDFText")) . "\" data-caption=\"" . ew_HtmlEncode($Language->Phrase("ExportToPDFText")) . "\">" . $Language->Phrase("ExportToPDF") . "</a>";
-		$item->Visible = FALSE;
+		$item->Visible = TRUE;
 
 		// Export to Email
 		$item = &$this->ExportOptions->Add("email");
 		$url = "";
-		$item->Body = "<button id=\"emf_t_rumus_peg\" class=\"ewExportLink ewEmail\" title=\"" . $Language->Phrase("ExportToEmailText") . "\" data-caption=\"" . $Language->Phrase("ExportToEmailText") . "\" onclick=\"ew_EmailDialogShow({lnk:'emf_t_rumus_peg',hdr:ewLanguage.Phrase('ExportToEmailText'),f:document.ft_rumus_peglist,sel:false" . $url . "});\">" . $Language->Phrase("ExportToEmail") . "</button>";
+		$item->Body = "<button id=\"emf_t_rumus2_peg\" class=\"ewExportLink ewEmail\" title=\"" . $Language->Phrase("ExportToEmailText") . "\" data-caption=\"" . $Language->Phrase("ExportToEmailText") . "\" onclick=\"ew_EmailDialogShow({lnk:'emf_t_rumus2_peg',hdr:ewLanguage.Phrase('ExportToEmailText'),f:document.ft_rumus2_peglist,sel:false" . $url . "});\">" . $Language->Phrase("ExportToEmail") . "</button>";
 		$item->Visible = TRUE;
 
 		// Drop down button for export
@@ -3003,9 +3101,10 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 		$sQry = "export=html";
 
 		// Build QueryString for search
-		$this->AddSearchQueryString($sQry, $this->rumus_peg_id); // rumus_peg_id
+		$this->AddSearchQueryString($sQry, $this->rumus2_peg_id); // rumus2_peg_id
 		$this->AddSearchQueryString($sQry, $this->pegawai_id); // pegawai_id
-		$this->AddSearchQueryString($sQry, $this->rumus_id); // rumus_id
+		$this->AddSearchQueryString($sQry, $this->gp); // gp
+		$this->AddSearchQueryString($sQry, $this->rumus2_id); // rumus2_id
 
 		// Build QueryString for pager
 		$sQry .= "&" . EW_TABLE_REC_PER_PAGE . "=" . urlencode($this->getRecordsPerPage()) . "&" . EW_TABLE_START_REC . "=" . urlencode($this->getStartRecordNumber());
@@ -3121,14 +3220,14 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 			if ($sSqlWrk <> "")
 				$fld->LookupFilters["s"] .= $sSqlWrk;
 			break;
-		case "x_rumus_id":
+		case "x_rumus2_id":
 			$sSqlWrk = "";
-			$sSqlWrk = "SELECT `rumus_id` AS `LinkFld`, `rumus_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `t_rumus`";
+			$sSqlWrk = "SELECT `rumus2_id` AS `LinkFld`, `rumus2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `t_rumus2`";
 			$sWhereWrk = "{filter}";
-			$this->rumus_id->LookupFilters = array("dx1" => '`rumus_nama`');
-			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "", "f0" => '`rumus_id` = {filter_value}', "t0" => "3", "fn0" => "");
+			$this->rumus2_id->LookupFilters = array("dx1" => '`rumus2_nama`');
+			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "", "f0" => '`rumus2_id` = {filter_value}', "t0" => "3", "fn0" => "");
 			$sSqlWrk = "";
-			$this->Lookup_Selecting($this->rumus_id, $sWhereWrk); // Call Lookup selecting
+			$this->Lookup_Selecting($this->rumus2_id, $sWhereWrk); // Call Lookup selecting
 			if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
 			if ($sSqlWrk <> "")
 				$fld->LookupFilters["s"] .= $sSqlWrk;
@@ -3315,31 +3414,31 @@ class ct_rumus_peg_list extends ct_rumus_peg {
 <?php
 
 // Create page object
-if (!isset($t_rumus_peg_list)) $t_rumus_peg_list = new ct_rumus_peg_list();
+if (!isset($t_rumus2_peg_list)) $t_rumus2_peg_list = new ct_rumus2_peg_list();
 
 // Page init
-$t_rumus_peg_list->Page_Init();
+$t_rumus2_peg_list->Page_Init();
 
 // Page main
-$t_rumus_peg_list->Page_Main();
+$t_rumus2_peg_list->Page_Main();
 
 // Global Page Rendering event (in userfn*.php)
 Page_Rendering();
 
 // Page Rendering event
-$t_rumus_peg_list->Page_Render();
+$t_rumus2_peg_list->Page_Render();
 ?>
 <?php include_once "header.php" ?>
-<?php if ($t_rumus_peg->Export == "") { ?>
+<?php if ($t_rumus2_peg->Export == "") { ?>
 <script type="text/javascript">
 
 // Form object
 var CurrentPageID = EW_PAGE_ID = "list";
-var CurrentForm = ft_rumus_peglist = new ew_Form("ft_rumus_peglist", "list");
-ft_rumus_peglist.FormKeyCountName = '<?php echo $t_rumus_peg_list->FormKeyCountName ?>';
+var CurrentForm = ft_rumus2_peglist = new ew_Form("ft_rumus2_peglist", "list");
+ft_rumus2_peglist.FormKeyCountName = '<?php echo $t_rumus2_peg_list->FormKeyCountName ?>';
 
 // Validate form
-ft_rumus_peglist.Validate = function() {
+ft_rumus2_peglist.Validate = function() {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
@@ -3358,10 +3457,16 @@ ft_rumus_peglist.Validate = function() {
 			addcnt++;
 			elm = this.GetElements("x" + infix + "_pegawai_id");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus_peg->pegawai_id->FldCaption(), $t_rumus_peg->pegawai_id->ReqErrMsg)) ?>");
-			elm = this.GetElements("x" + infix + "_rumus_id");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus2_peg->pegawai_id->FldCaption(), $t_rumus2_peg->pegawai_id->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_gp");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
-				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus_peg->rumus_id->FldCaption(), $t_rumus_peg->rumus_id->ReqErrMsg)) ?>");
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus2_peg->gp->FldCaption(), $t_rumus2_peg->gp->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_gp");
+			if (elm && !ew_CheckNumber(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus2_peg->gp->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_rumus2_id");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus2_peg->rumus2_id->FldCaption(), $t_rumus2_peg->rumus2_id->ReqErrMsg)) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -3376,15 +3481,16 @@ ft_rumus_peglist.Validate = function() {
 }
 
 // Check empty row
-ft_rumus_peglist.EmptyRow = function(infix) {
+ft_rumus2_peglist.EmptyRow = function(infix) {
 	var fobj = this.Form;
 	if (ew_ValueChanged(fobj, infix, "pegawai_id", false)) return false;
-	if (ew_ValueChanged(fobj, infix, "rumus_id", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "gp", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "rumus2_id", false)) return false;
 	return true;
 }
 
 // Form_CustomValidate event
-ft_rumus_peglist.Form_CustomValidate = 
+ft_rumus2_peglist.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -3393,20 +3499,20 @@ ft_rumus_peglist.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-ft_rumus_peglist.ValidateRequired = true;
+ft_rumus2_peglist.ValidateRequired = true;
 <?php } else { ?>
-ft_rumus_peglist.ValidateRequired = false; 
+ft_rumus2_peglist.ValidateRequired = false; 
 <?php } ?>
 
 // Dynamic selection lists
-ft_rumus_peglist.Lists["x_pegawai_id"] = {"LinkField":"x_pegawai_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pegawai_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pegawai"};
-ft_rumus_peglist.Lists["x_rumus_id"] = {"LinkField":"x_rumus_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_rumus_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"t_rumus"};
+ft_rumus2_peglist.Lists["x_pegawai_id"] = {"LinkField":"x_pegawai_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pegawai_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pegawai"};
+ft_rumus2_peglist.Lists["x_rumus2_id"] = {"LinkField":"x_rumus2_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_rumus2_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"t_rumus2"};
 
 // Form object for search
-var CurrentSearchForm = ft_rumus_peglistsrch = new ew_Form("ft_rumus_peglistsrch");
+var CurrentSearchForm = ft_rumus2_peglistsrch = new ew_Form("ft_rumus2_peglistsrch");
 
 // Validate function for search
-ft_rumus_peglistsrch.Validate = function(fobj) {
+ft_rumus2_peglistsrch.Validate = function(fobj) {
 	if (!this.ValidateRequired)
 		return true; // Ignore validation
 	fobj = fobj || this.Form;
@@ -3419,7 +3525,7 @@ ft_rumus_peglistsrch.Validate = function(fobj) {
 }
 
 // Form_CustomValidate event
-ft_rumus_peglistsrch.Form_CustomValidate = 
+ft_rumus2_peglistsrch.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
 
  	// Your custom validation code here, return false if invalid. 
@@ -3428,43 +3534,43 @@ ft_rumus_peglistsrch.Form_CustomValidate =
 
 // Use JavaScript validation or not
 <?php if (EW_CLIENT_VALIDATE) { ?>
-ft_rumus_peglistsrch.ValidateRequired = true; // Use JavaScript validation
+ft_rumus2_peglistsrch.ValidateRequired = true; // Use JavaScript validation
 <?php } else { ?>
-ft_rumus_peglistsrch.ValidateRequired = false; // No JavaScript validation
+ft_rumus2_peglistsrch.ValidateRequired = false; // No JavaScript validation
 <?php } ?>
 
 // Dynamic selection lists
-ft_rumus_peglistsrch.Lists["x_pegawai_id"] = {"LinkField":"x_pegawai_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pegawai_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pegawai"};
+ft_rumus2_peglistsrch.Lists["x_pegawai_id"] = {"LinkField":"x_pegawai_id","Ajax":true,"AutoFill":false,"DisplayFields":["x_pegawai_nama","","",""],"ParentFields":[],"ChildFields":[],"FilterFields":[],"Options":[],"Template":"","LinkTable":"pegawai"};
 </script>
 <script type="text/javascript">
 
 // Write your client script here, no need to add script tags.
 </script>
 <?php } ?>
-<?php if ($t_rumus_peg->Export == "") { ?>
+<?php if ($t_rumus2_peg->Export == "") { ?>
 <div class="ewToolbar">
-<?php if ($t_rumus_peg->Export == "") { ?>
+<?php if ($t_rumus2_peg->Export == "") { ?>
 <?php $Breadcrumb->Render(); ?>
 <?php } ?>
-<?php if ($t_rumus_peg_list->TotalRecs > 0 && $t_rumus_peg_list->ExportOptions->Visible()) { ?>
-<?php $t_rumus_peg_list->ExportOptions->Render("body") ?>
+<?php if ($t_rumus2_peg_list->TotalRecs > 0 && $t_rumus2_peg_list->ExportOptions->Visible()) { ?>
+<?php $t_rumus2_peg_list->ExportOptions->Render("body") ?>
 <?php } ?>
-<?php if ($t_rumus_peg_list->SearchOptions->Visible()) { ?>
-<?php $t_rumus_peg_list->SearchOptions->Render("body") ?>
+<?php if ($t_rumus2_peg_list->SearchOptions->Visible()) { ?>
+<?php $t_rumus2_peg_list->SearchOptions->Render("body") ?>
 <?php } ?>
-<?php if ($t_rumus_peg_list->FilterOptions->Visible()) { ?>
-<?php $t_rumus_peg_list->FilterOptions->Render("body") ?>
+<?php if ($t_rumus2_peg_list->FilterOptions->Visible()) { ?>
+<?php $t_rumus2_peg_list->FilterOptions->Render("body") ?>
 <?php } ?>
-<?php if ($t_rumus_peg->Export == "") { ?>
+<?php if ($t_rumus2_peg->Export == "") { ?>
 <?php echo $Language->SelectionForm(); ?>
 <?php } ?>
 <div class="clearfix"></div>
 </div>
 <?php } ?>
-<?php if (($t_rumus_peg->Export == "") || (EW_EXPORT_MASTER_RECORD && $t_rumus_peg->Export == "print")) { ?>
+<?php if (($t_rumus2_peg->Export == "") || (EW_EXPORT_MASTER_RECORD && $t_rumus2_peg->Export == "print")) { ?>
 <?php
-if ($t_rumus_peg_list->DbMasterFilter <> "" && $t_rumus_peg->getCurrentMasterTable() == "pegawai") {
-	if ($t_rumus_peg_list->MasterRecordExists) {
+if ($t_rumus2_peg_list->DbMasterFilter <> "" && $t_rumus2_peg->getCurrentMasterTable() == "pegawai") {
+	if ($t_rumus2_peg_list->MasterRecordExists) {
 ?>
 <?php include_once "pegawaimaster.php" ?>
 <?php
@@ -3473,88 +3579,88 @@ if ($t_rumus_peg_list->DbMasterFilter <> "" && $t_rumus_peg->getCurrentMasterTab
 ?>
 <?php } ?>
 <?php
-if ($t_rumus_peg->CurrentAction == "gridadd") {
-	$t_rumus_peg->CurrentFilter = "0=1";
-	$t_rumus_peg_list->StartRec = 1;
-	$t_rumus_peg_list->DisplayRecs = $t_rumus_peg->GridAddRowCount;
-	$t_rumus_peg_list->TotalRecs = $t_rumus_peg_list->DisplayRecs;
-	$t_rumus_peg_list->StopRec = $t_rumus_peg_list->DisplayRecs;
+if ($t_rumus2_peg->CurrentAction == "gridadd") {
+	$t_rumus2_peg->CurrentFilter = "0=1";
+	$t_rumus2_peg_list->StartRec = 1;
+	$t_rumus2_peg_list->DisplayRecs = $t_rumus2_peg->GridAddRowCount;
+	$t_rumus2_peg_list->TotalRecs = $t_rumus2_peg_list->DisplayRecs;
+	$t_rumus2_peg_list->StopRec = $t_rumus2_peg_list->DisplayRecs;
 } else {
-	$bSelectLimit = $t_rumus_peg_list->UseSelectLimit;
+	$bSelectLimit = $t_rumus2_peg_list->UseSelectLimit;
 	if ($bSelectLimit) {
-		if ($t_rumus_peg_list->TotalRecs <= 0)
-			$t_rumus_peg_list->TotalRecs = $t_rumus_peg->SelectRecordCount();
+		if ($t_rumus2_peg_list->TotalRecs <= 0)
+			$t_rumus2_peg_list->TotalRecs = $t_rumus2_peg->SelectRecordCount();
 	} else {
-		if (!$t_rumus_peg_list->Recordset && ($t_rumus_peg_list->Recordset = $t_rumus_peg_list->LoadRecordset()))
-			$t_rumus_peg_list->TotalRecs = $t_rumus_peg_list->Recordset->RecordCount();
+		if (!$t_rumus2_peg_list->Recordset && ($t_rumus2_peg_list->Recordset = $t_rumus2_peg_list->LoadRecordset()))
+			$t_rumus2_peg_list->TotalRecs = $t_rumus2_peg_list->Recordset->RecordCount();
 	}
-	$t_rumus_peg_list->StartRec = 1;
-	if ($t_rumus_peg_list->DisplayRecs <= 0 || ($t_rumus_peg->Export <> "" && $t_rumus_peg->ExportAll)) // Display all records
-		$t_rumus_peg_list->DisplayRecs = $t_rumus_peg_list->TotalRecs;
-	if (!($t_rumus_peg->Export <> "" && $t_rumus_peg->ExportAll))
-		$t_rumus_peg_list->SetUpStartRec(); // Set up start record position
+	$t_rumus2_peg_list->StartRec = 1;
+	if ($t_rumus2_peg_list->DisplayRecs <= 0 || ($t_rumus2_peg->Export <> "" && $t_rumus2_peg->ExportAll)) // Display all records
+		$t_rumus2_peg_list->DisplayRecs = $t_rumus2_peg_list->TotalRecs;
+	if (!($t_rumus2_peg->Export <> "" && $t_rumus2_peg->ExportAll))
+		$t_rumus2_peg_list->SetUpStartRec(); // Set up start record position
 	if ($bSelectLimit)
-		$t_rumus_peg_list->Recordset = $t_rumus_peg_list->LoadRecordset($t_rumus_peg_list->StartRec-1, $t_rumus_peg_list->DisplayRecs);
+		$t_rumus2_peg_list->Recordset = $t_rumus2_peg_list->LoadRecordset($t_rumus2_peg_list->StartRec-1, $t_rumus2_peg_list->DisplayRecs);
 
 	// Set no record found message
-	if ($t_rumus_peg->CurrentAction == "" && $t_rumus_peg_list->TotalRecs == 0) {
+	if ($t_rumus2_peg->CurrentAction == "" && $t_rumus2_peg_list->TotalRecs == 0) {
 		if (!$Security->CanList())
-			$t_rumus_peg_list->setWarningMessage(ew_DeniedMsg());
-		if ($t_rumus_peg_list->SearchWhere == "0=101")
-			$t_rumus_peg_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
+			$t_rumus2_peg_list->setWarningMessage(ew_DeniedMsg());
+		if ($t_rumus2_peg_list->SearchWhere == "0=101")
+			$t_rumus2_peg_list->setWarningMessage($Language->Phrase("EnterSearchCriteria"));
 		else
-			$t_rumus_peg_list->setWarningMessage($Language->Phrase("NoRecord"));
+			$t_rumus2_peg_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
 
 	// Audit trail on search
-	if ($t_rumus_peg_list->AuditTrailOnSearch && $t_rumus_peg_list->Command == "search" && !$t_rumus_peg_list->RestoreSearch) {
+	if ($t_rumus2_peg_list->AuditTrailOnSearch && $t_rumus2_peg_list->Command == "search" && !$t_rumus2_peg_list->RestoreSearch) {
 		$searchparm = ew_ServerVar("QUERY_STRING");
-		$searchsql = $t_rumus_peg_list->getSessionWhere();
-		$t_rumus_peg_list->WriteAuditTrailOnSearch($searchparm, $searchsql);
+		$searchsql = $t_rumus2_peg_list->getSessionWhere();
+		$t_rumus2_peg_list->WriteAuditTrailOnSearch($searchparm, $searchsql);
 	}
 }
-$t_rumus_peg_list->RenderOtherOptions();
+$t_rumus2_peg_list->RenderOtherOptions();
 ?>
 <?php if ($Security->CanSearch()) { ?>
-<?php if ($t_rumus_peg->Export == "" && $t_rumus_peg->CurrentAction == "") { ?>
-<form name="ft_rumus_peglistsrch" id="ft_rumus_peglistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
-<?php $SearchPanelClass = ($t_rumus_peg_list->SearchWhere <> "") ? " in" : " in"; ?>
-<div id="ft_rumus_peglistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
+<?php if ($t_rumus2_peg->Export == "" && $t_rumus2_peg->CurrentAction == "") { ?>
+<form name="ft_rumus2_peglistsrch" id="ft_rumus2_peglistsrch" class="form-inline ewForm" action="<?php echo ew_CurrentPage() ?>">
+<?php $SearchPanelClass = ($t_rumus2_peg_list->SearchWhere <> "") ? " in" : " in"; ?>
+<div id="ft_rumus2_peglistsrch_SearchPanel" class="ewSearchPanel collapse<?php echo $SearchPanelClass ?>">
 <input type="hidden" name="cmd" value="search">
-<input type="hidden" name="t" value="t_rumus_peg">
+<input type="hidden" name="t" value="t_rumus2_peg">
 	<div class="ewBasicSearch">
 <?php
 if ($gsSearchError == "")
-	$t_rumus_peg_list->LoadAdvancedSearch(); // Load advanced search
+	$t_rumus2_peg_list->LoadAdvancedSearch(); // Load advanced search
 
 // Render for search
-$t_rumus_peg->RowType = EW_ROWTYPE_SEARCH;
+$t_rumus2_peg->RowType = EW_ROWTYPE_SEARCH;
 
 // Render row
-$t_rumus_peg->ResetAttrs();
-$t_rumus_peg_list->RenderRow();
+$t_rumus2_peg->ResetAttrs();
+$t_rumus2_peg_list->RenderRow();
 ?>
 <div id="xsr_1" class="ewRow">
-<?php if ($t_rumus_peg->pegawai_id->Visible) { // pegawai_id ?>
+<?php if ($t_rumus2_peg->pegawai_id->Visible) { // pegawai_id ?>
 	<div id="xsc_pegawai_id" class="ewCell form-group">
-		<label class="ewSearchCaption ewLabel"><?php echo $t_rumus_peg->pegawai_id->FldCaption() ?></label>
+		<label class="ewSearchCaption ewLabel"><?php echo $t_rumus2_peg->pegawai_id->FldCaption() ?></label>
 		<span class="ewSearchOperator"><?php echo $Language->Phrase("=") ?><input type="hidden" name="z_pegawai_id" id="z_pegawai_id" value="="></span>
 		<span class="ewSearchField">
 <?php
-$wrkonchange = trim(" " . @$t_rumus_peg->pegawai_id->EditAttrs["onchange"]);
+$wrkonchange = trim(" " . @$t_rumus2_peg->pegawai_id->EditAttrs["onchange"]);
 if ($wrkonchange <> "") $wrkonchange = " onchange=\"" . ew_JsEncode2($wrkonchange) . "\"";
-$t_rumus_peg->pegawai_id->EditAttrs["onchange"] = "";
+$t_rumus2_peg->pegawai_id->EditAttrs["onchange"] = "";
 ?>
 <span id="as_x_pegawai_id" style="white-space: nowrap; z-index: 8980">
-	<input type="text" name="sv_x_pegawai_id" id="sv_x_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus_peg->pegawai_id->EditAttributes() ?>>
+	<input type="text" name="sv_x_pegawai_id" id="sv_x_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus2_peg->pegawai_id->EditAttributes() ?>>
 </span>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x_pegawai_id" id="x_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->AdvancedSearch->SearchValue) ?>"<?php echo $wrkonchange ?>>
-<input type="hidden" name="q_x_pegawai_id" id="q_x_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(true, "extbs") ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus2_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x_pegawai_id" id="x_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->AdvancedSearch->SearchValue) ?>"<?php echo $wrkonchange ?>>
+<input type="hidden" name="q_x_pegawai_id" id="q_x_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(true, "extbs") ?>">
 <script type="text/javascript">
-ft_rumus_peglistsrch.CreateAutoSuggest({"id":"x_pegawai_id","forceSelect":false});
+ft_rumus2_peglistsrch.CreateAutoSuggest({"id":"x_pegawai_id","forceSelect":false});
 </script>
-<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x_pegawai_id',m:0,n:10,srch:true});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" name="s_x_pegawai_id" id="s_x_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(false, "extbs") ?>">
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus2_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x_pegawai_id',m:0,n:10,srch:true});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" name="s_x_pegawai_id" id="s_x_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(false, "extbs") ?>">
 </span>
 	</div>
 <?php } ?>
@@ -3567,69 +3673,69 @@ ft_rumus_peglistsrch.CreateAutoSuggest({"id":"x_pegawai_id","forceSelect":false}
 </form>
 <?php } ?>
 <?php } ?>
-<?php $t_rumus_peg_list->ShowPageHeader(); ?>
+<?php $t_rumus2_peg_list->ShowPageHeader(); ?>
 <?php
-$t_rumus_peg_list->ShowMessage();
+$t_rumus2_peg_list->ShowMessage();
 ?>
-<?php if ($t_rumus_peg_list->TotalRecs > 0 || $t_rumus_peg->CurrentAction <> "") { ?>
-<div class="panel panel-default ewGrid t_rumus_peg">
-<?php if ($t_rumus_peg->Export == "") { ?>
+<?php if ($t_rumus2_peg_list->TotalRecs > 0 || $t_rumus2_peg->CurrentAction <> "") { ?>
+<div class="panel panel-default ewGrid t_rumus2_peg">
+<?php if ($t_rumus2_peg->Export == "") { ?>
 <div class="panel-heading ewGridUpperPanel">
-<?php if ($t_rumus_peg->CurrentAction <> "gridadd" && $t_rumus_peg->CurrentAction <> "gridedit") { ?>
+<?php if ($t_rumus2_peg->CurrentAction <> "gridadd" && $t_rumus2_peg->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="form-inline ewForm ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($t_rumus_peg_list->Pager)) $t_rumus_peg_list->Pager = new cPrevNextPager($t_rumus_peg_list->StartRec, $t_rumus_peg_list->DisplayRecs, $t_rumus_peg_list->TotalRecs) ?>
-<?php if ($t_rumus_peg_list->Pager->RecordCount > 0 && $t_rumus_peg_list->Pager->Visible) { ?>
+<?php if (!isset($t_rumus2_peg_list->Pager)) $t_rumus2_peg_list->Pager = new cPrevNextPager($t_rumus2_peg_list->StartRec, $t_rumus2_peg_list->DisplayRecs, $t_rumus2_peg_list->TotalRecs) ?>
+<?php if ($t_rumus2_peg_list->Pager->RecordCount > 0 && $t_rumus2_peg_list->Pager->Visible) { ?>
 <div class="ewPager">
 <span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
 <div class="ewPrevNext"><div class="input-group">
 <div class="input-group-btn">
 <!--first page button-->
-	<?php if ($t_rumus_peg_list->Pager->FirstButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_rumus_peg_list->PageUrl() ?>start=<?php echo $t_rumus_peg_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php if ($t_rumus2_peg_list->Pager->FirstButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_rumus2_peg_list->PageUrl() ?>start=<?php echo $t_rumus2_peg_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
 <!--previous page button-->
-	<?php if ($t_rumus_peg_list->Pager->PrevButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_rumus_peg_list->PageUrl() ?>start=<?php echo $t_rumus_peg_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php if ($t_rumus2_peg_list->Pager->PrevButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_rumus2_peg_list->PageUrl() ?>start=<?php echo $t_rumus2_peg_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
 </div>
 <!--current page number-->
-	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_rumus_peg_list->Pager->CurrentPage ?>">
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_rumus2_peg_list->Pager->CurrentPage ?>">
 <div class="input-group-btn">
 <!--next page button-->
-	<?php if ($t_rumus_peg_list->Pager->NextButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_rumus_peg_list->PageUrl() ?>start=<?php echo $t_rumus_peg_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php if ($t_rumus2_peg_list->Pager->NextButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_rumus2_peg_list->PageUrl() ?>start=<?php echo $t_rumus2_peg_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
 <!--last page button-->
-	<?php if ($t_rumus_peg_list->Pager->LastButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_rumus_peg_list->PageUrl() ?>start=<?php echo $t_rumus_peg_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php if ($t_rumus2_peg_list->Pager->LastButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_rumus2_peg_list->PageUrl() ?>start=<?php echo $t_rumus2_peg_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
 </div>
 </div>
 </div>
-<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_rumus_peg_list->Pager->PageCount ?></span>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_rumus2_peg_list->Pager->PageCount ?></span>
 </div>
 <div class="ewPager ewRec">
-	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $t_rumus_peg_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $t_rumus_peg_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $t_rumus_peg_list->Pager->RecordCount ?></span>
+	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $t_rumus2_peg_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $t_rumus2_peg_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $t_rumus2_peg_list->Pager->RecordCount ?></span>
 </div>
 <?php } ?>
-<?php if ($t_rumus_peg_list->TotalRecs > 0 && (!EW_AUTO_HIDE_PAGE_SIZE_SELECTOR || $t_rumus_peg_list->Pager->Visible)) { ?>
+<?php if ($t_rumus2_peg_list->TotalRecs > 0 && (!EW_AUTO_HIDE_PAGE_SIZE_SELECTOR || $t_rumus2_peg_list->Pager->Visible)) { ?>
 <div class="ewPager">
-<input type="hidden" name="t" value="t_rumus_peg">
+<input type="hidden" name="t" value="t_rumus2_peg">
 <select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm ewTooltip" title="<?php echo $Language->Phrase("RecordsPerPage") ?>" onchange="this.form.submit();">
-<option value="10"<?php if ($t_rumus_peg_list->DisplayRecs == 10) { ?> selected<?php } ?>>10</option>
-<option value="20"<?php if ($t_rumus_peg_list->DisplayRecs == 20) { ?> selected<?php } ?>>20</option>
-<option value="50"<?php if ($t_rumus_peg_list->DisplayRecs == 50) { ?> selected<?php } ?>>50</option>
-<option value="100"<?php if ($t_rumus_peg_list->DisplayRecs == 100) { ?> selected<?php } ?>>100</option>
-<option value="200"<?php if ($t_rumus_peg_list->DisplayRecs == 200) { ?> selected<?php } ?>>200</option>
-<option value="ALL"<?php if ($t_rumus_peg->getRecordsPerPage() == -1) { ?> selected<?php } ?>><?php echo $Language->Phrase("AllRecords") ?></option>
+<option value="10"<?php if ($t_rumus2_peg_list->DisplayRecs == 10) { ?> selected<?php } ?>>10</option>
+<option value="20"<?php if ($t_rumus2_peg_list->DisplayRecs == 20) { ?> selected<?php } ?>>20</option>
+<option value="50"<?php if ($t_rumus2_peg_list->DisplayRecs == 50) { ?> selected<?php } ?>>50</option>
+<option value="100"<?php if ($t_rumus2_peg_list->DisplayRecs == 100) { ?> selected<?php } ?>>100</option>
+<option value="200"<?php if ($t_rumus2_peg_list->DisplayRecs == 200) { ?> selected<?php } ?>>200</option>
+<option value="ALL"<?php if ($t_rumus2_peg->getRecordsPerPage() == -1) { ?> selected<?php } ?>><?php echo $Language->Phrase("AllRecords") ?></option>
 </select>
 </div>
 <?php } ?>
@@ -3637,361 +3743,399 @@ $t_rumus_peg_list->ShowMessage();
 <?php } ?>
 <div class="ewListOtherOptions">
 <?php
-	foreach ($t_rumus_peg_list->OtherOptions as &$option)
+	foreach ($t_rumus2_peg_list->OtherOptions as &$option)
 		$option->Render("body");
 ?>
 </div>
 <div class="clearfix"></div>
 </div>
 <?php } ?>
-<form name="ft_rumus_peglist" id="ft_rumus_peglist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
-<?php if ($t_rumus_peg_list->CheckToken) { ?>
-<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $t_rumus_peg_list->Token ?>">
+<form name="ft_rumus2_peglist" id="ft_rumus2_peglist" class="form-inline ewForm ewListForm" action="<?php echo ew_CurrentPage() ?>" method="post">
+<?php if ($t_rumus2_peg_list->CheckToken) { ?>
+<input type="hidden" name="<?php echo EW_TOKEN_NAME ?>" value="<?php echo $t_rumus2_peg_list->Token ?>">
 <?php } ?>
-<input type="hidden" name="t" value="t_rumus_peg">
-<?php if ($t_rumus_peg->getCurrentMasterTable() == "pegawai" && $t_rumus_peg->CurrentAction <> "") { ?>
+<input type="hidden" name="t" value="t_rumus2_peg">
+<?php if ($t_rumus2_peg->getCurrentMasterTable() == "pegawai" && $t_rumus2_peg->CurrentAction <> "") { ?>
 <input type="hidden" name="<?php echo EW_TABLE_SHOW_MASTER ?>" value="pegawai">
-<input type="hidden" name="fk_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->getSessionValue() ?>">
+<input type="hidden" name="fk_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->getSessionValue() ?>">
 <?php } ?>
-<div id="gmp_t_rumus_peg" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
-<?php if ($t_rumus_peg_list->TotalRecs > 0 || $t_rumus_peg->CurrentAction == "add" || $t_rumus_peg->CurrentAction == "copy" || $t_rumus_peg->CurrentAction == "gridedit") { ?>
-<table id="tbl_t_rumus_peglist" class="table ewTable">
-<?php echo $t_rumus_peg->TableCustomInnerHtml ?>
+<div id="gmp_t_rumus2_peg" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
+<?php if ($t_rumus2_peg_list->TotalRecs > 0 || $t_rumus2_peg->CurrentAction == "add" || $t_rumus2_peg->CurrentAction == "copy" || $t_rumus2_peg->CurrentAction == "gridedit") { ?>
+<table id="tbl_t_rumus2_peglist" class="table ewTable">
+<?php echo $t_rumus2_peg->TableCustomInnerHtml ?>
 <thead><!-- Table header -->
 	<tr class="ewTableHeader">
 <?php
 
 // Header row
-$t_rumus_peg_list->RowType = EW_ROWTYPE_HEADER;
+$t_rumus2_peg_list->RowType = EW_ROWTYPE_HEADER;
 
 // Render list options
-$t_rumus_peg_list->RenderListOptions();
+$t_rumus2_peg_list->RenderListOptions();
 
 // Render list options (header, left)
-$t_rumus_peg_list->ListOptions->Render("header", "left");
+$t_rumus2_peg_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($t_rumus_peg->pegawai_id->Visible) { // pegawai_id ?>
-	<?php if ($t_rumus_peg->SortUrl($t_rumus_peg->pegawai_id) == "") { ?>
-		<th data-name="pegawai_id"><div id="elh_t_rumus_peg_pegawai_id" class="t_rumus_peg_pegawai_id"><div class="ewTableHeaderCaption"><?php echo $t_rumus_peg->pegawai_id->FldCaption() ?></div></div></th>
+<?php if ($t_rumus2_peg->pegawai_id->Visible) { // pegawai_id ?>
+	<?php if ($t_rumus2_peg->SortUrl($t_rumus2_peg->pegawai_id) == "") { ?>
+		<th data-name="pegawai_id"><div id="elh_t_rumus2_peg_pegawai_id" class="t_rumus2_peg_pegawai_id"><div class="ewTableHeaderCaption"><?php echo $t_rumus2_peg->pegawai_id->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="pegawai_id"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $t_rumus_peg->SortUrl($t_rumus_peg->pegawai_id) ?>',2);"><div id="elh_t_rumus_peg_pegawai_id" class="t_rumus_peg_pegawai_id">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_rumus_peg->pegawai_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($t_rumus_peg->pegawai_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_rumus_peg->pegawai_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="pegawai_id"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $t_rumus2_peg->SortUrl($t_rumus2_peg->pegawai_id) ?>',2);"><div id="elh_t_rumus2_peg_pegawai_id" class="t_rumus2_peg_pegawai_id">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_rumus2_peg->pegawai_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($t_rumus2_peg->pegawai_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_rumus2_peg->pegawai_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
-<?php if ($t_rumus_peg->rumus_id->Visible) { // rumus_id ?>
-	<?php if ($t_rumus_peg->SortUrl($t_rumus_peg->rumus_id) == "") { ?>
-		<th data-name="rumus_id"><div id="elh_t_rumus_peg_rumus_id" class="t_rumus_peg_rumus_id"><div class="ewTableHeaderCaption"><?php echo $t_rumus_peg->rumus_id->FldCaption() ?></div></div></th>
+<?php if ($t_rumus2_peg->gp->Visible) { // gp ?>
+	<?php if ($t_rumus2_peg->SortUrl($t_rumus2_peg->gp) == "") { ?>
+		<th data-name="gp"><div id="elh_t_rumus2_peg_gp" class="t_rumus2_peg_gp"><div class="ewTableHeaderCaption"><?php echo $t_rumus2_peg->gp->FldCaption() ?></div></div></th>
 	<?php } else { ?>
-		<th data-name="rumus_id"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $t_rumus_peg->SortUrl($t_rumus_peg->rumus_id) ?>',2);"><div id="elh_t_rumus_peg_rumus_id" class="t_rumus_peg_rumus_id">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_rumus_peg->rumus_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($t_rumus_peg->rumus_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_rumus_peg->rumus_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+		<th data-name="gp"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $t_rumus2_peg->SortUrl($t_rumus2_peg->gp) ?>',2);"><div id="elh_t_rumus2_peg_gp" class="t_rumus2_peg_gp">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_rumus2_peg->gp->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($t_rumus2_peg->gp->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_rumus2_peg->gp->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($t_rumus2_peg->rumus2_id->Visible) { // rumus2_id ?>
+	<?php if ($t_rumus2_peg->SortUrl($t_rumus2_peg->rumus2_id) == "") { ?>
+		<th data-name="rumus2_id"><div id="elh_t_rumus2_peg_rumus2_id" class="t_rumus2_peg_rumus2_id"><div class="ewTableHeaderCaption"><?php echo $t_rumus2_peg->rumus2_id->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="rumus2_id"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $t_rumus2_peg->SortUrl($t_rumus2_peg->rumus2_id) ?>',2);"><div id="elh_t_rumus2_peg_rumus2_id" class="t_rumus2_peg_rumus2_id">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_rumus2_peg->rumus2_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($t_rumus2_peg->rumus2_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_rumus2_peg->rumus2_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
 <?php
 
 // Render list options (header, right)
-$t_rumus_peg_list->ListOptions->Render("header", "right");
+$t_rumus2_peg_list->ListOptions->Render("header", "right");
 ?>
 	</tr>
 </thead>
 <tbody>
 <?php
-	if ($t_rumus_peg->CurrentAction == "add" || $t_rumus_peg->CurrentAction == "copy") {
-		$t_rumus_peg_list->RowIndex = 0;
-		$t_rumus_peg_list->KeyCount = $t_rumus_peg_list->RowIndex;
-		if ($t_rumus_peg->CurrentAction == "copy" && !$t_rumus_peg_list->LoadRow())
-				$t_rumus_peg->CurrentAction = "add";
-		if ($t_rumus_peg->CurrentAction == "add")
-			$t_rumus_peg_list->LoadDefaultValues();
-		if ($t_rumus_peg->EventCancelled) // Insert failed
-			$t_rumus_peg_list->RestoreFormValues(); // Restore form values
+	if ($t_rumus2_peg->CurrentAction == "add" || $t_rumus2_peg->CurrentAction == "copy") {
+		$t_rumus2_peg_list->RowIndex = 0;
+		$t_rumus2_peg_list->KeyCount = $t_rumus2_peg_list->RowIndex;
+		if ($t_rumus2_peg->CurrentAction == "copy" && !$t_rumus2_peg_list->LoadRow())
+				$t_rumus2_peg->CurrentAction = "add";
+		if ($t_rumus2_peg->CurrentAction == "add")
+			$t_rumus2_peg_list->LoadDefaultValues();
+		if ($t_rumus2_peg->EventCancelled) // Insert failed
+			$t_rumus2_peg_list->RestoreFormValues(); // Restore form values
 
 		// Set row properties
-		$t_rumus_peg->ResetAttrs();
-		$t_rumus_peg->RowAttrs = array_merge($t_rumus_peg->RowAttrs, array('data-rowindex'=>0, 'id'=>'r0_t_rumus_peg', 'data-rowtype'=>EW_ROWTYPE_ADD));
-		$t_rumus_peg->RowType = EW_ROWTYPE_ADD;
+		$t_rumus2_peg->ResetAttrs();
+		$t_rumus2_peg->RowAttrs = array_merge($t_rumus2_peg->RowAttrs, array('data-rowindex'=>0, 'id'=>'r0_t_rumus2_peg', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		$t_rumus2_peg->RowType = EW_ROWTYPE_ADD;
 
 		// Render row
-		$t_rumus_peg_list->RenderRow();
+		$t_rumus2_peg_list->RenderRow();
 
 		// Render list options
-		$t_rumus_peg_list->RenderListOptions();
-		$t_rumus_peg_list->StartRowCnt = 0;
+		$t_rumus2_peg_list->RenderListOptions();
+		$t_rumus2_peg_list->StartRowCnt = 0;
 ?>
-	<tr<?php echo $t_rumus_peg->RowAttributes() ?>>
+	<tr<?php echo $t_rumus2_peg->RowAttributes() ?>>
 <?php
 
 // Render list options (body, left)
-$t_rumus_peg_list->ListOptions->Render("body", "left", $t_rumus_peg_list->RowCnt);
+$t_rumus2_peg_list->ListOptions->Render("body", "left", $t_rumus2_peg_list->RowCnt);
 ?>
-	<?php if ($t_rumus_peg->pegawai_id->Visible) { // pegawai_id ?>
+	<?php if ($t_rumus2_peg->pegawai_id->Visible) { // pegawai_id ?>
 		<td data-name="pegawai_id">
-<?php if ($t_rumus_peg->pegawai_id->getSessionValue() <> "") { ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_pegawai_id" class="form-group t_rumus_peg_pegawai_id">
-<span<?php echo $t_rumus_peg->pegawai_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_rumus_peg->pegawai_id->ViewValue ?></p></span>
+<?php if ($t_rumus2_peg->pegawai_id->getSessionValue() <> "") { ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_pegawai_id" class="form-group t_rumus2_peg_pegawai_id">
+<span<?php echo $t_rumus2_peg->pegawai_id->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $t_rumus2_peg->pegawai_id->ViewValue ?></p></span>
 </span>
-<input type="hidden" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->CurrentValue) ?>">
+<input type="hidden" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->CurrentValue) ?>">
 <?php } else { ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_pegawai_id" class="form-group t_rumus_peg_pegawai_id">
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_pegawai_id" class="form-group t_rumus2_peg_pegawai_id">
 <?php
-$wrkonchange = trim(" " . @$t_rumus_peg->pegawai_id->EditAttrs["onchange"]);
+$wrkonchange = trim(" " . @$t_rumus2_peg->pegawai_id->EditAttrs["onchange"]);
 if ($wrkonchange <> "") $wrkonchange = " onchange=\"" . ew_JsEncode2($wrkonchange) . "\"";
-$t_rumus_peg->pegawai_id->EditAttrs["onchange"] = "";
+$t_rumus2_peg->pegawai_id->EditAttrs["onchange"] = "";
 ?>
-<span id="as_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" style="white-space: nowrap; z-index: <?php echo (9000 - $t_rumus_peg_list->RowCnt * 10) ?>">
-	<input type="text" name="sv_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="sv_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus_peg->pegawai_id->EditAttributes() ?>>
+<span id="as_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" style="white-space: nowrap; z-index: <?php echo (9000 - $t_rumus2_peg_list->RowCnt * 10) ?>">
+	<input type="text" name="sv_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="sv_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus2_peg->pegawai_id->EditAttributes() ?>>
 </span>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->CurrentValue) ?>"<?php echo $wrkonchange ?>>
-<input type="hidden" name="q_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="q_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(true) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus2_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->CurrentValue) ?>"<?php echo $wrkonchange ?>>
+<input type="hidden" name="q_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="q_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(true) ?>">
 <script type="text/javascript">
-ft_rumus_peglist.CreateAutoSuggest({"id":"x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id","forceSelect":true});
+ft_rumus2_peglist.CreateAutoSuggest({"id":"x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id","forceSelect":true});
 </script>
-<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" name="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(false) ?>">
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus2_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" name="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(false) ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_pegawai_id" name="o<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="o<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->OldValue) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_pegawai_id" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->OldValue) ?>">
 </td>
 	<?php } ?>
-	<?php if ($t_rumus_peg->rumus_id->Visible) { // rumus_id ?>
-		<td data-name="rumus_id">
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_rumus_id" class="form-group t_rumus_peg_rumus_id">
+	<?php if ($t_rumus2_peg->gp->Visible) { // gp ?>
+		<td data-name="gp">
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_gp" class="form-group t_rumus2_peg_gp">
+<input type="text" data-table="t_rumus2_peg" data-field="x_gp" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->gp->getPlaceHolder()) ?>" value="<?php echo $t_rumus2_peg->gp->EditValue ?>"<?php echo $t_rumus2_peg->gp->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_gp" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" value="<?php echo ew_HtmlEncode($t_rumus2_peg->gp->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus2_peg->rumus2_id->Visible) { // rumus2_id ?>
+		<td data-name="rumus2_id">
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_rumus2_id" class="form-group t_rumus2_peg_rumus2_id">
 <span class="ewLookupList">
-	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id"><?php echo (strval($t_rumus_peg->rumus_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $t_rumus_peg->rumus_id->ViewValue); ?></span>
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id"><?php echo (strval($t_rumus2_peg->rumus2_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $t_rumus2_peg->rumus2_id->ViewValue); ?></span>
 </span>
-<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus_peg->rumus_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus_peg->rumus_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo $t_rumus_peg->rumus_id->CurrentValue ?>"<?php echo $t_rumus_peg->rumus_id->EditAttributes() ?>>
-<input type="hidden" name="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo $t_rumus_peg->rumus_id->LookupFilterQuery() ?>">
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus2_peg->rumus2_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus2_peg->rumus2_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo $t_rumus2_peg->rumus2_id->CurrentValue ?>"<?php echo $t_rumus2_peg->rumus2_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo $t_rumus2_peg->rumus2_id->LookupFilterQuery() ?>">
 </span>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_id" name="o<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="o<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->rumus_id->OldValue) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_id" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->rumus2_id->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
 
 // Render list options (body, right)
-$t_rumus_peg_list->ListOptions->Render("body", "right", $t_rumus_peg_list->RowCnt);
+$t_rumus2_peg_list->ListOptions->Render("body", "right", $t_rumus2_peg_list->RowCnt);
 ?>
 <script type="text/javascript">
-ft_rumus_peglist.UpdateOpts(<?php echo $t_rumus_peg_list->RowIndex ?>);
+ft_rumus2_peglist.UpdateOpts(<?php echo $t_rumus2_peg_list->RowIndex ?>);
 </script>
 	</tr>
 <?php
 }
 ?>
 <?php
-if ($t_rumus_peg->ExportAll && $t_rumus_peg->Export <> "") {
-	$t_rumus_peg_list->StopRec = $t_rumus_peg_list->TotalRecs;
+if ($t_rumus2_peg->ExportAll && $t_rumus2_peg->Export <> "") {
+	$t_rumus2_peg_list->StopRec = $t_rumus2_peg_list->TotalRecs;
 } else {
 
 	// Set the last record to display
-	if ($t_rumus_peg_list->TotalRecs > $t_rumus_peg_list->StartRec + $t_rumus_peg_list->DisplayRecs - 1)
-		$t_rumus_peg_list->StopRec = $t_rumus_peg_list->StartRec + $t_rumus_peg_list->DisplayRecs - 1;
+	if ($t_rumus2_peg_list->TotalRecs > $t_rumus2_peg_list->StartRec + $t_rumus2_peg_list->DisplayRecs - 1)
+		$t_rumus2_peg_list->StopRec = $t_rumus2_peg_list->StartRec + $t_rumus2_peg_list->DisplayRecs - 1;
 	else
-		$t_rumus_peg_list->StopRec = $t_rumus_peg_list->TotalRecs;
+		$t_rumus2_peg_list->StopRec = $t_rumus2_peg_list->TotalRecs;
 }
 
 // Restore number of post back records
 if ($objForm) {
 	$objForm->Index = -1;
-	if ($objForm->HasValue($t_rumus_peg_list->FormKeyCountName) && ($t_rumus_peg->CurrentAction == "gridadd" || $t_rumus_peg->CurrentAction == "gridedit" || $t_rumus_peg->CurrentAction == "F")) {
-		$t_rumus_peg_list->KeyCount = $objForm->GetValue($t_rumus_peg_list->FormKeyCountName);
-		$t_rumus_peg_list->StopRec = $t_rumus_peg_list->StartRec + $t_rumus_peg_list->KeyCount - 1;
+	if ($objForm->HasValue($t_rumus2_peg_list->FormKeyCountName) && ($t_rumus2_peg->CurrentAction == "gridadd" || $t_rumus2_peg->CurrentAction == "gridedit" || $t_rumus2_peg->CurrentAction == "F")) {
+		$t_rumus2_peg_list->KeyCount = $objForm->GetValue($t_rumus2_peg_list->FormKeyCountName);
+		$t_rumus2_peg_list->StopRec = $t_rumus2_peg_list->StartRec + $t_rumus2_peg_list->KeyCount - 1;
 	}
 }
-$t_rumus_peg_list->RecCnt = $t_rumus_peg_list->StartRec - 1;
-if ($t_rumus_peg_list->Recordset && !$t_rumus_peg_list->Recordset->EOF) {
-	$t_rumus_peg_list->Recordset->MoveFirst();
-	$bSelectLimit = $t_rumus_peg_list->UseSelectLimit;
-	if (!$bSelectLimit && $t_rumus_peg_list->StartRec > 1)
-		$t_rumus_peg_list->Recordset->Move($t_rumus_peg_list->StartRec - 1);
-} elseif (!$t_rumus_peg->AllowAddDeleteRow && $t_rumus_peg_list->StopRec == 0) {
-	$t_rumus_peg_list->StopRec = $t_rumus_peg->GridAddRowCount;
+$t_rumus2_peg_list->RecCnt = $t_rumus2_peg_list->StartRec - 1;
+if ($t_rumus2_peg_list->Recordset && !$t_rumus2_peg_list->Recordset->EOF) {
+	$t_rumus2_peg_list->Recordset->MoveFirst();
+	$bSelectLimit = $t_rumus2_peg_list->UseSelectLimit;
+	if (!$bSelectLimit && $t_rumus2_peg_list->StartRec > 1)
+		$t_rumus2_peg_list->Recordset->Move($t_rumus2_peg_list->StartRec - 1);
+} elseif (!$t_rumus2_peg->AllowAddDeleteRow && $t_rumus2_peg_list->StopRec == 0) {
+	$t_rumus2_peg_list->StopRec = $t_rumus2_peg->GridAddRowCount;
 }
 
 // Initialize aggregate
-$t_rumus_peg->RowType = EW_ROWTYPE_AGGREGATEINIT;
-$t_rumus_peg->ResetAttrs();
-$t_rumus_peg_list->RenderRow();
-$t_rumus_peg_list->EditRowCnt = 0;
-if ($t_rumus_peg->CurrentAction == "edit")
-	$t_rumus_peg_list->RowIndex = 1;
-if ($t_rumus_peg->CurrentAction == "gridadd")
-	$t_rumus_peg_list->RowIndex = 0;
-if ($t_rumus_peg->CurrentAction == "gridedit")
-	$t_rumus_peg_list->RowIndex = 0;
-while ($t_rumus_peg_list->RecCnt < $t_rumus_peg_list->StopRec) {
-	$t_rumus_peg_list->RecCnt++;
-	if (intval($t_rumus_peg_list->RecCnt) >= intval($t_rumus_peg_list->StartRec)) {
-		$t_rumus_peg_list->RowCnt++;
-		if ($t_rumus_peg->CurrentAction == "gridadd" || $t_rumus_peg->CurrentAction == "gridedit" || $t_rumus_peg->CurrentAction == "F") {
-			$t_rumus_peg_list->RowIndex++;
-			$objForm->Index = $t_rumus_peg_list->RowIndex;
-			if ($objForm->HasValue($t_rumus_peg_list->FormActionName))
-				$t_rumus_peg_list->RowAction = strval($objForm->GetValue($t_rumus_peg_list->FormActionName));
-			elseif ($t_rumus_peg->CurrentAction == "gridadd")
-				$t_rumus_peg_list->RowAction = "insert";
+$t_rumus2_peg->RowType = EW_ROWTYPE_AGGREGATEINIT;
+$t_rumus2_peg->ResetAttrs();
+$t_rumus2_peg_list->RenderRow();
+$t_rumus2_peg_list->EditRowCnt = 0;
+if ($t_rumus2_peg->CurrentAction == "edit")
+	$t_rumus2_peg_list->RowIndex = 1;
+if ($t_rumus2_peg->CurrentAction == "gridadd")
+	$t_rumus2_peg_list->RowIndex = 0;
+if ($t_rumus2_peg->CurrentAction == "gridedit")
+	$t_rumus2_peg_list->RowIndex = 0;
+while ($t_rumus2_peg_list->RecCnt < $t_rumus2_peg_list->StopRec) {
+	$t_rumus2_peg_list->RecCnt++;
+	if (intval($t_rumus2_peg_list->RecCnt) >= intval($t_rumus2_peg_list->StartRec)) {
+		$t_rumus2_peg_list->RowCnt++;
+		if ($t_rumus2_peg->CurrentAction == "gridadd" || $t_rumus2_peg->CurrentAction == "gridedit" || $t_rumus2_peg->CurrentAction == "F") {
+			$t_rumus2_peg_list->RowIndex++;
+			$objForm->Index = $t_rumus2_peg_list->RowIndex;
+			if ($objForm->HasValue($t_rumus2_peg_list->FormActionName))
+				$t_rumus2_peg_list->RowAction = strval($objForm->GetValue($t_rumus2_peg_list->FormActionName));
+			elseif ($t_rumus2_peg->CurrentAction == "gridadd")
+				$t_rumus2_peg_list->RowAction = "insert";
 			else
-				$t_rumus_peg_list->RowAction = "";
+				$t_rumus2_peg_list->RowAction = "";
 		}
 
 		// Set up key count
-		$t_rumus_peg_list->KeyCount = $t_rumus_peg_list->RowIndex;
+		$t_rumus2_peg_list->KeyCount = $t_rumus2_peg_list->RowIndex;
 
 		// Init row class and style
-		$t_rumus_peg->ResetAttrs();
-		$t_rumus_peg->CssClass = "";
-		if ($t_rumus_peg->CurrentAction == "gridadd") {
-			$t_rumus_peg_list->LoadDefaultValues(); // Load default values
+		$t_rumus2_peg->ResetAttrs();
+		$t_rumus2_peg->CssClass = "";
+		if ($t_rumus2_peg->CurrentAction == "gridadd") {
+			$t_rumus2_peg_list->LoadDefaultValues(); // Load default values
 		} else {
-			$t_rumus_peg_list->LoadRowValues($t_rumus_peg_list->Recordset); // Load row values
+			$t_rumus2_peg_list->LoadRowValues($t_rumus2_peg_list->Recordset); // Load row values
 		}
-		$t_rumus_peg->RowType = EW_ROWTYPE_VIEW; // Render view
-		if ($t_rumus_peg->CurrentAction == "gridadd") // Grid add
-			$t_rumus_peg->RowType = EW_ROWTYPE_ADD; // Render add
-		if ($t_rumus_peg->CurrentAction == "gridadd" && $t_rumus_peg->EventCancelled && !$objForm->HasValue("k_blankrow")) // Insert failed
-			$t_rumus_peg_list->RestoreCurrentRowFormValues($t_rumus_peg_list->RowIndex); // Restore form values
-		if ($t_rumus_peg->CurrentAction == "edit") {
-			if ($t_rumus_peg_list->CheckInlineEditKey() && $t_rumus_peg_list->EditRowCnt == 0) { // Inline edit
-				$t_rumus_peg->RowType = EW_ROWTYPE_EDIT; // Render edit
+		$t_rumus2_peg->RowType = EW_ROWTYPE_VIEW; // Render view
+		if ($t_rumus2_peg->CurrentAction == "gridadd") // Grid add
+			$t_rumus2_peg->RowType = EW_ROWTYPE_ADD; // Render add
+		if ($t_rumus2_peg->CurrentAction == "gridadd" && $t_rumus2_peg->EventCancelled && !$objForm->HasValue("k_blankrow")) // Insert failed
+			$t_rumus2_peg_list->RestoreCurrentRowFormValues($t_rumus2_peg_list->RowIndex); // Restore form values
+		if ($t_rumus2_peg->CurrentAction == "edit") {
+			if ($t_rumus2_peg_list->CheckInlineEditKey() && $t_rumus2_peg_list->EditRowCnt == 0) { // Inline edit
+				$t_rumus2_peg->RowType = EW_ROWTYPE_EDIT; // Render edit
 			}
 		}
-		if ($t_rumus_peg->CurrentAction == "gridedit") { // Grid edit
-			if ($t_rumus_peg->EventCancelled) {
-				$t_rumus_peg_list->RestoreCurrentRowFormValues($t_rumus_peg_list->RowIndex); // Restore form values
+		if ($t_rumus2_peg->CurrentAction == "gridedit") { // Grid edit
+			if ($t_rumus2_peg->EventCancelled) {
+				$t_rumus2_peg_list->RestoreCurrentRowFormValues($t_rumus2_peg_list->RowIndex); // Restore form values
 			}
-			if ($t_rumus_peg_list->RowAction == "insert")
-				$t_rumus_peg->RowType = EW_ROWTYPE_ADD; // Render add
+			if ($t_rumus2_peg_list->RowAction == "insert")
+				$t_rumus2_peg->RowType = EW_ROWTYPE_ADD; // Render add
 			else
-				$t_rumus_peg->RowType = EW_ROWTYPE_EDIT; // Render edit
+				$t_rumus2_peg->RowType = EW_ROWTYPE_EDIT; // Render edit
 		}
-		if ($t_rumus_peg->CurrentAction == "edit" && $t_rumus_peg->RowType == EW_ROWTYPE_EDIT && $t_rumus_peg->EventCancelled) { // Update failed
+		if ($t_rumus2_peg->CurrentAction == "edit" && $t_rumus2_peg->RowType == EW_ROWTYPE_EDIT && $t_rumus2_peg->EventCancelled) { // Update failed
 			$objForm->Index = 1;
-			$t_rumus_peg_list->RestoreFormValues(); // Restore form values
+			$t_rumus2_peg_list->RestoreFormValues(); // Restore form values
 		}
-		if ($t_rumus_peg->CurrentAction == "gridedit" && ($t_rumus_peg->RowType == EW_ROWTYPE_EDIT || $t_rumus_peg->RowType == EW_ROWTYPE_ADD) && $t_rumus_peg->EventCancelled) // Update failed
-			$t_rumus_peg_list->RestoreCurrentRowFormValues($t_rumus_peg_list->RowIndex); // Restore form values
-		if ($t_rumus_peg->RowType == EW_ROWTYPE_EDIT) // Edit row
-			$t_rumus_peg_list->EditRowCnt++;
+		if ($t_rumus2_peg->CurrentAction == "gridedit" && ($t_rumus2_peg->RowType == EW_ROWTYPE_EDIT || $t_rumus2_peg->RowType == EW_ROWTYPE_ADD) && $t_rumus2_peg->EventCancelled) // Update failed
+			$t_rumus2_peg_list->RestoreCurrentRowFormValues($t_rumus2_peg_list->RowIndex); // Restore form values
+		if ($t_rumus2_peg->RowType == EW_ROWTYPE_EDIT) // Edit row
+			$t_rumus2_peg_list->EditRowCnt++;
 
 		// Set up row id / data-rowindex
-		$t_rumus_peg->RowAttrs = array_merge($t_rumus_peg->RowAttrs, array('data-rowindex'=>$t_rumus_peg_list->RowCnt, 'id'=>'r' . $t_rumus_peg_list->RowCnt . '_t_rumus_peg', 'data-rowtype'=>$t_rumus_peg->RowType));
+		$t_rumus2_peg->RowAttrs = array_merge($t_rumus2_peg->RowAttrs, array('data-rowindex'=>$t_rumus2_peg_list->RowCnt, 'id'=>'r' . $t_rumus2_peg_list->RowCnt . '_t_rumus2_peg', 'data-rowtype'=>$t_rumus2_peg->RowType));
 
 		// Render row
-		$t_rumus_peg_list->RenderRow();
+		$t_rumus2_peg_list->RenderRow();
 
 		// Render list options
-		$t_rumus_peg_list->RenderListOptions();
+		$t_rumus2_peg_list->RenderListOptions();
 
 		// Skip delete row / empty row for confirm page
-		if ($t_rumus_peg_list->RowAction <> "delete" && $t_rumus_peg_list->RowAction <> "insertdelete" && !($t_rumus_peg_list->RowAction == "insert" && $t_rumus_peg->CurrentAction == "F" && $t_rumus_peg_list->EmptyRow())) {
+		if ($t_rumus2_peg_list->RowAction <> "delete" && $t_rumus2_peg_list->RowAction <> "insertdelete" && !($t_rumus2_peg_list->RowAction == "insert" && $t_rumus2_peg->CurrentAction == "F" && $t_rumus2_peg_list->EmptyRow())) {
 ?>
-	<tr<?php echo $t_rumus_peg->RowAttributes() ?>>
+	<tr<?php echo $t_rumus2_peg->RowAttributes() ?>>
 <?php
 
 // Render list options (body, left)
-$t_rumus_peg_list->ListOptions->Render("body", "left", $t_rumus_peg_list->RowCnt);
+$t_rumus2_peg_list->ListOptions->Render("body", "left", $t_rumus2_peg_list->RowCnt);
 ?>
-	<?php if ($t_rumus_peg->pegawai_id->Visible) { // pegawai_id ?>
-		<td data-name="pegawai_id"<?php echo $t_rumus_peg->pegawai_id->CellAttributes() ?>>
-<?php if ($t_rumus_peg->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<?php if ($t_rumus_peg->pegawai_id->getSessionValue() <> "") { ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_pegawai_id" class="form-group t_rumus_peg_pegawai_id">
-<span<?php echo $t_rumus_peg->pegawai_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_rumus_peg->pegawai_id->ViewValue ?></p></span>
+	<?php if ($t_rumus2_peg->pegawai_id->Visible) { // pegawai_id ?>
+		<td data-name="pegawai_id"<?php echo $t_rumus2_peg->pegawai_id->CellAttributes() ?>>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<?php if ($t_rumus2_peg->pegawai_id->getSessionValue() <> "") { ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_pegawai_id" class="form-group t_rumus2_peg_pegawai_id">
+<span<?php echo $t_rumus2_peg->pegawai_id->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $t_rumus2_peg->pegawai_id->ViewValue ?></p></span>
 </span>
-<input type="hidden" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->CurrentValue) ?>">
+<input type="hidden" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->CurrentValue) ?>">
 <?php } else { ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_pegawai_id" class="form-group t_rumus_peg_pegawai_id">
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_pegawai_id" class="form-group t_rumus2_peg_pegawai_id">
 <?php
-$wrkonchange = trim(" " . @$t_rumus_peg->pegawai_id->EditAttrs["onchange"]);
+$wrkonchange = trim(" " . @$t_rumus2_peg->pegawai_id->EditAttrs["onchange"]);
 if ($wrkonchange <> "") $wrkonchange = " onchange=\"" . ew_JsEncode2($wrkonchange) . "\"";
-$t_rumus_peg->pegawai_id->EditAttrs["onchange"] = "";
+$t_rumus2_peg->pegawai_id->EditAttrs["onchange"] = "";
 ?>
-<span id="as_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" style="white-space: nowrap; z-index: <?php echo (9000 - $t_rumus_peg_list->RowCnt * 10) ?>">
-	<input type="text" name="sv_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="sv_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus_peg->pegawai_id->EditAttributes() ?>>
+<span id="as_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" style="white-space: nowrap; z-index: <?php echo (9000 - $t_rumus2_peg_list->RowCnt * 10) ?>">
+	<input type="text" name="sv_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="sv_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus2_peg->pegawai_id->EditAttributes() ?>>
 </span>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->CurrentValue) ?>"<?php echo $wrkonchange ?>>
-<input type="hidden" name="q_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="q_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(true) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus2_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->CurrentValue) ?>"<?php echo $wrkonchange ?>>
+<input type="hidden" name="q_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="q_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(true) ?>">
 <script type="text/javascript">
-ft_rumus_peglist.CreateAutoSuggest({"id":"x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id","forceSelect":true});
+ft_rumus2_peglist.CreateAutoSuggest({"id":"x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id","forceSelect":true});
 </script>
-<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" name="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(false) ?>">
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus2_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" name="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(false) ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_pegawai_id" name="o<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="o<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->OldValue) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_pegawai_id" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->OldValue) ?>">
 <?php } ?>
-<?php if ($t_rumus_peg->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<?php if ($t_rumus_peg->pegawai_id->getSessionValue() <> "") { ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_pegawai_id" class="form-group t_rumus_peg_pegawai_id">
-<span<?php echo $t_rumus_peg->pegawai_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_rumus_peg->pegawai_id->ViewValue ?></p></span>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<?php if ($t_rumus2_peg->pegawai_id->getSessionValue() <> "") { ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_pegawai_id" class="form-group t_rumus2_peg_pegawai_id">
+<span<?php echo $t_rumus2_peg->pegawai_id->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $t_rumus2_peg->pegawai_id->ViewValue ?></p></span>
 </span>
-<input type="hidden" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->CurrentValue) ?>">
+<input type="hidden" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->CurrentValue) ?>">
 <?php } else { ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_pegawai_id" class="form-group t_rumus_peg_pegawai_id">
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_pegawai_id" class="form-group t_rumus2_peg_pegawai_id">
 <?php
-$wrkonchange = trim(" " . @$t_rumus_peg->pegawai_id->EditAttrs["onchange"]);
+$wrkonchange = trim(" " . @$t_rumus2_peg->pegawai_id->EditAttrs["onchange"]);
 if ($wrkonchange <> "") $wrkonchange = " onchange=\"" . ew_JsEncode2($wrkonchange) . "\"";
-$t_rumus_peg->pegawai_id->EditAttrs["onchange"] = "";
+$t_rumus2_peg->pegawai_id->EditAttrs["onchange"] = "";
 ?>
-<span id="as_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" style="white-space: nowrap; z-index: <?php echo (9000 - $t_rumus_peg_list->RowCnt * 10) ?>">
-	<input type="text" name="sv_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="sv_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus_peg->pegawai_id->EditAttributes() ?>>
+<span id="as_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" style="white-space: nowrap; z-index: <?php echo (9000 - $t_rumus2_peg_list->RowCnt * 10) ?>">
+	<input type="text" name="sv_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="sv_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus2_peg->pegawai_id->EditAttributes() ?>>
 </span>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->CurrentValue) ?>"<?php echo $wrkonchange ?>>
-<input type="hidden" name="q_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="q_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(true) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus2_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->CurrentValue) ?>"<?php echo $wrkonchange ?>>
+<input type="hidden" name="q_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="q_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(true) ?>">
 <script type="text/javascript">
-ft_rumus_peglist.CreateAutoSuggest({"id":"x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id","forceSelect":true});
+ft_rumus2_peglist.CreateAutoSuggest({"id":"x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id","forceSelect":true});
 </script>
-<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" name="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(false) ?>">
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus2_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" name="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(false) ?>">
 </span>
 <?php } ?>
 <?php } ?>
-<?php if ($t_rumus_peg->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_pegawai_id" class="t_rumus_peg_pegawai_id">
-<span<?php echo $t_rumus_peg->pegawai_id->ViewAttributes() ?>>
-<?php echo $t_rumus_peg->pegawai_id->ListViewValue() ?></span>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_pegawai_id" class="t_rumus2_peg_pegawai_id">
+<span<?php echo $t_rumus2_peg->pegawai_id->ViewAttributes() ?>>
+<?php echo $t_rumus2_peg->pegawai_id->ListViewValue() ?></span>
 </span>
 <?php } ?>
-<a id="<?php echo $t_rumus_peg_list->PageObjName . "_row_" . $t_rumus_peg_list->RowCnt ?>"></a></td>
+<a id="<?php echo $t_rumus2_peg_list->PageObjName . "_row_" . $t_rumus2_peg_list->RowCnt ?>"></a></td>
 	<?php } ?>
-<?php if ($t_rumus_peg->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_peg_id" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_peg_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_peg_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->rumus_peg_id->CurrentValue) ?>">
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_peg_id" name="o<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_peg_id" id="o<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_peg_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->rumus_peg_id->OldValue) ?>">
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_peg_id" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_peg_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_peg_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->rumus2_peg_id->CurrentValue) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_peg_id" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_peg_id" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_peg_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->rumus2_peg_id->OldValue) ?>">
 <?php } ?>
-<?php if ($t_rumus_peg->RowType == EW_ROWTYPE_EDIT || $t_rumus_peg->CurrentMode == "edit") { ?>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_peg_id" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_peg_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_peg_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->rumus_peg_id->CurrentValue) ?>">
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_EDIT || $t_rumus2_peg->CurrentMode == "edit") { ?>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_peg_id" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_peg_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_peg_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->rumus2_peg_id->CurrentValue) ?>">
 <?php } ?>
-	<?php if ($t_rumus_peg->rumus_id->Visible) { // rumus_id ?>
-		<td data-name="rumus_id"<?php echo $t_rumus_peg->rumus_id->CellAttributes() ?>>
-<?php if ($t_rumus_peg->RowType == EW_ROWTYPE_ADD) { // Add record ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_rumus_id" class="form-group t_rumus_peg_rumus_id">
+	<?php if ($t_rumus2_peg->gp->Visible) { // gp ?>
+		<td data-name="gp"<?php echo $t_rumus2_peg->gp->CellAttributes() ?>>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_gp" class="form-group t_rumus2_peg_gp">
+<input type="text" data-table="t_rumus2_peg" data-field="x_gp" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->gp->getPlaceHolder()) ?>" value="<?php echo $t_rumus2_peg->gp->EditValue ?>"<?php echo $t_rumus2_peg->gp->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_gp" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" value="<?php echo ew_HtmlEncode($t_rumus2_peg->gp->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_gp" class="form-group t_rumus2_peg_gp">
+<input type="text" data-table="t_rumus2_peg" data-field="x_gp" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->gp->getPlaceHolder()) ?>" value="<?php echo $t_rumus2_peg->gp->EditValue ?>"<?php echo $t_rumus2_peg->gp->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_gp" class="t_rumus2_peg_gp">
+<span<?php echo $t_rumus2_peg->gp->ViewAttributes() ?>>
+<?php echo $t_rumus2_peg->gp->ListViewValue() ?></span>
+</span>
+<?php } ?>
+</td>
+	<?php } ?>
+	<?php if ($t_rumus2_peg->rumus2_id->Visible) { // rumus2_id ?>
+		<td data-name="rumus2_id"<?php echo $t_rumus2_peg->rumus2_id->CellAttributes() ?>>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_rumus2_id" class="form-group t_rumus2_peg_rumus2_id">
 <span class="ewLookupList">
-	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id"><?php echo (strval($t_rumus_peg->rumus_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $t_rumus_peg->rumus_id->ViewValue); ?></span>
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id"><?php echo (strval($t_rumus2_peg->rumus2_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $t_rumus2_peg->rumus2_id->ViewValue); ?></span>
 </span>
-<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus_peg->rumus_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus_peg->rumus_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo $t_rumus_peg->rumus_id->CurrentValue ?>"<?php echo $t_rumus_peg->rumus_id->EditAttributes() ?>>
-<input type="hidden" name="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo $t_rumus_peg->rumus_id->LookupFilterQuery() ?>">
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus2_peg->rumus2_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus2_peg->rumus2_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo $t_rumus2_peg->rumus2_id->CurrentValue ?>"<?php echo $t_rumus2_peg->rumus2_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo $t_rumus2_peg->rumus2_id->LookupFilterQuery() ?>">
 </span>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_id" name="o<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="o<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->rumus_id->OldValue) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_id" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->rumus2_id->OldValue) ?>">
 <?php } ?>
-<?php if ($t_rumus_peg->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_rumus_id" class="form-group t_rumus_peg_rumus_id">
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_rumus2_id" class="form-group t_rumus2_peg_rumus2_id">
 <span class="ewLookupList">
-	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id"><?php echo (strval($t_rumus_peg->rumus_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $t_rumus_peg->rumus_id->ViewValue); ?></span>
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id"><?php echo (strval($t_rumus2_peg->rumus2_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $t_rumus2_peg->rumus2_id->ViewValue); ?></span>
 </span>
-<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus_peg->rumus_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus_peg->rumus_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo $t_rumus_peg->rumus_id->CurrentValue ?>"<?php echo $t_rumus_peg->rumus_id->EditAttributes() ?>>
-<input type="hidden" name="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo $t_rumus_peg->rumus_id->LookupFilterQuery() ?>">
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus2_peg->rumus2_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus2_peg->rumus2_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo $t_rumus2_peg->rumus2_id->CurrentValue ?>"<?php echo $t_rumus2_peg->rumus2_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo $t_rumus2_peg->rumus2_id->LookupFilterQuery() ?>">
 </span>
 <?php } ?>
-<?php if ($t_rumus_peg->RowType == EW_ROWTYPE_VIEW) { // View record ?>
-<span id="el<?php echo $t_rumus_peg_list->RowCnt ?>_t_rumus_peg_rumus_id" class="t_rumus_peg_rumus_id">
-<span<?php echo $t_rumus_peg->rumus_id->ViewAttributes() ?>>
-<?php echo $t_rumus_peg->rumus_id->ListViewValue() ?></span>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $t_rumus2_peg_list->RowCnt ?>_t_rumus2_peg_rumus2_id" class="t_rumus2_peg_rumus2_id">
+<span<?php echo $t_rumus2_peg->rumus2_id->ViewAttributes() ?>>
+<?php echo $t_rumus2_peg->rumus2_id->ListViewValue() ?></span>
 </span>
 <?php } ?>
 </td>
@@ -3999,95 +4143,103 @@ ft_rumus_peglist.CreateAutoSuggest({"id":"x<?php echo $t_rumus_peg_list->RowInde
 <?php
 
 // Render list options (body, right)
-$t_rumus_peg_list->ListOptions->Render("body", "right", $t_rumus_peg_list->RowCnt);
+$t_rumus2_peg_list->ListOptions->Render("body", "right", $t_rumus2_peg_list->RowCnt);
 ?>
 	</tr>
-<?php if ($t_rumus_peg->RowType == EW_ROWTYPE_ADD || $t_rumus_peg->RowType == EW_ROWTYPE_EDIT) { ?>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_ADD || $t_rumus2_peg->RowType == EW_ROWTYPE_EDIT) { ?>
 <script type="text/javascript">
-ft_rumus_peglist.UpdateOpts(<?php echo $t_rumus_peg_list->RowIndex ?>);
+ft_rumus2_peglist.UpdateOpts(<?php echo $t_rumus2_peg_list->RowIndex ?>);
 </script>
 <?php } ?>
 <?php
 	}
 	} // End delete row checking
-	if ($t_rumus_peg->CurrentAction <> "gridadd")
-		if (!$t_rumus_peg_list->Recordset->EOF) $t_rumus_peg_list->Recordset->MoveNext();
+	if ($t_rumus2_peg->CurrentAction <> "gridadd")
+		if (!$t_rumus2_peg_list->Recordset->EOF) $t_rumus2_peg_list->Recordset->MoveNext();
 }
 ?>
 <?php
-	if ($t_rumus_peg->CurrentAction == "gridadd" || $t_rumus_peg->CurrentAction == "gridedit") {
-		$t_rumus_peg_list->RowIndex = '$rowindex$';
-		$t_rumus_peg_list->LoadDefaultValues();
+	if ($t_rumus2_peg->CurrentAction == "gridadd" || $t_rumus2_peg->CurrentAction == "gridedit") {
+		$t_rumus2_peg_list->RowIndex = '$rowindex$';
+		$t_rumus2_peg_list->LoadDefaultValues();
 
 		// Set row properties
-		$t_rumus_peg->ResetAttrs();
-		$t_rumus_peg->RowAttrs = array_merge($t_rumus_peg->RowAttrs, array('data-rowindex'=>$t_rumus_peg_list->RowIndex, 'id'=>'r0_t_rumus_peg', 'data-rowtype'=>EW_ROWTYPE_ADD));
-		ew_AppendClass($t_rumus_peg->RowAttrs["class"], "ewTemplate");
-		$t_rumus_peg->RowType = EW_ROWTYPE_ADD;
+		$t_rumus2_peg->ResetAttrs();
+		$t_rumus2_peg->RowAttrs = array_merge($t_rumus2_peg->RowAttrs, array('data-rowindex'=>$t_rumus2_peg_list->RowIndex, 'id'=>'r0_t_rumus2_peg', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		ew_AppendClass($t_rumus2_peg->RowAttrs["class"], "ewTemplate");
+		$t_rumus2_peg->RowType = EW_ROWTYPE_ADD;
 
 		// Render row
-		$t_rumus_peg_list->RenderRow();
+		$t_rumus2_peg_list->RenderRow();
 
 		// Render list options
-		$t_rumus_peg_list->RenderListOptions();
-		$t_rumus_peg_list->StartRowCnt = 0;
+		$t_rumus2_peg_list->RenderListOptions();
+		$t_rumus2_peg_list->StartRowCnt = 0;
 ?>
-	<tr<?php echo $t_rumus_peg->RowAttributes() ?>>
+	<tr<?php echo $t_rumus2_peg->RowAttributes() ?>>
 <?php
 
 // Render list options (body, left)
-$t_rumus_peg_list->ListOptions->Render("body", "left", $t_rumus_peg_list->RowIndex);
+$t_rumus2_peg_list->ListOptions->Render("body", "left", $t_rumus2_peg_list->RowIndex);
 ?>
-	<?php if ($t_rumus_peg->pegawai_id->Visible) { // pegawai_id ?>
+	<?php if ($t_rumus2_peg->pegawai_id->Visible) { // pegawai_id ?>
 		<td data-name="pegawai_id">
-<?php if ($t_rumus_peg->pegawai_id->getSessionValue() <> "") { ?>
-<span id="el$rowindex$_t_rumus_peg_pegawai_id" class="form-group t_rumus_peg_pegawai_id">
-<span<?php echo $t_rumus_peg->pegawai_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_rumus_peg->pegawai_id->ViewValue ?></p></span>
+<?php if ($t_rumus2_peg->pegawai_id->getSessionValue() <> "") { ?>
+<span id="el$rowindex$_t_rumus2_peg_pegawai_id" class="form-group t_rumus2_peg_pegawai_id">
+<span<?php echo $t_rumus2_peg->pegawai_id->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $t_rumus2_peg->pegawai_id->ViewValue ?></p></span>
 </span>
-<input type="hidden" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->CurrentValue) ?>">
+<input type="hidden" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->CurrentValue) ?>">
 <?php } else { ?>
-<span id="el$rowindex$_t_rumus_peg_pegawai_id" class="form-group t_rumus_peg_pegawai_id">
+<span id="el$rowindex$_t_rumus2_peg_pegawai_id" class="form-group t_rumus2_peg_pegawai_id">
 <?php
-$wrkonchange = trim(" " . @$t_rumus_peg->pegawai_id->EditAttrs["onchange"]);
+$wrkonchange = trim(" " . @$t_rumus2_peg->pegawai_id->EditAttrs["onchange"]);
 if ($wrkonchange <> "") $wrkonchange = " onchange=\"" . ew_JsEncode2($wrkonchange) . "\"";
-$t_rumus_peg->pegawai_id->EditAttrs["onchange"] = "";
+$t_rumus2_peg->pegawai_id->EditAttrs["onchange"] = "";
 ?>
-<span id="as_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" style="white-space: nowrap; z-index: <?php echo (9000 - $t_rumus_peg_list->RowCnt * 10) ?>">
-	<input type="text" name="sv_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="sv_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus_peg->pegawai_id->EditAttributes() ?>>
+<span id="as_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" style="white-space: nowrap; z-index: <?php echo (9000 - $t_rumus2_peg_list->RowCnt * 10) ?>">
+	<input type="text" name="sv_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="sv_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->EditValue ?>" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>" data-placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->getPlaceHolder()) ?>"<?php echo $t_rumus2_peg->pegawai_id->EditAttributes() ?>>
 </span>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->CurrentValue) ?>"<?php echo $wrkonchange ?>>
-<input type="hidden" name="q_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="q_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(true) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_pegawai_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus2_peg->pegawai_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->CurrentValue) ?>"<?php echo $wrkonchange ?>>
+<input type="hidden" name="q_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="q_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(true) ?>">
 <script type="text/javascript">
-ft_rumus_peglist.CreateAutoSuggest({"id":"x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id","forceSelect":true});
+ft_rumus2_peglist.CreateAutoSuggest({"id":"x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id","forceSelect":true});
 </script>
-<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" name="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus_peg->pegawai_id->LookupFilterQuery(false) ?>">
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus2_peg->pegawai_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id',m:0,n:10,srch:false});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" name="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo $t_rumus2_peg->pegawai_id->LookupFilterQuery(false) ?>">
 </span>
 <?php } ?>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_pegawai_id" name="o<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" id="o<?php echo $t_rumus_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->pegawai_id->OldValue) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_pegawai_id" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_pegawai_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->pegawai_id->OldValue) ?>">
 </td>
 	<?php } ?>
-	<?php if ($t_rumus_peg->rumus_id->Visible) { // rumus_id ?>
-		<td data-name="rumus_id">
-<span id="el$rowindex$_t_rumus_peg_rumus_id" class="form-group t_rumus_peg_rumus_id">
+	<?php if ($t_rumus2_peg->gp->Visible) { // gp ?>
+		<td data-name="gp">
+<span id="el$rowindex$_t_rumus2_peg_gp" class="form-group t_rumus2_peg_gp">
+<input type="text" data-table="t_rumus2_peg" data-field="x_gp" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->gp->getPlaceHolder()) ?>" value="<?php echo $t_rumus2_peg->gp->EditValue ?>"<?php echo $t_rumus2_peg->gp->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_gp" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_gp" value="<?php echo ew_HtmlEncode($t_rumus2_peg->gp->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus2_peg->rumus2_id->Visible) { // rumus2_id ?>
+		<td data-name="rumus2_id">
+<span id="el$rowindex$_t_rumus2_peg_rumus2_id" class="form-group t_rumus2_peg_rumus2_id">
 <span class="ewLookupList">
-	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id"><?php echo (strval($t_rumus_peg->rumus_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $t_rumus_peg->rumus_id->ViewValue); ?></span>
+	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id"><?php echo (strval($t_rumus2_peg->rumus2_id->ViewValue) == "" ? $Language->Phrase("PleaseSelect") : $t_rumus2_peg->rumus2_id->ViewValue); ?></span>
 </span>
-<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus_peg->rumus_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus_peg->rumus_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo $t_rumus_peg->rumus_id->CurrentValue ?>"<?php echo $t_rumus_peg->rumus_id->EditAttributes() ?>>
-<input type="hidden" name="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="s_x<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo $t_rumus_peg->rumus_id->LookupFilterQuery() ?>">
+<button type="button" title="<?php echo ew_HtmlEncode(str_replace("%s", ew_RemoveHtml($t_rumus2_peg->rumus2_id->FldCaption()), $Language->Phrase("LookupLink", TRUE))) ?>" onclick="ew_ModalLookupShow({lnk:this,el:'x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_id" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $t_rumus2_peg->rumus2_id->DisplayValueSeparatorAttribute() ?>" name="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo $t_rumus2_peg->rumus2_id->CurrentValue ?>"<?php echo $t_rumus2_peg->rumus2_id->EditAttributes() ?>>
+<input type="hidden" name="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="s_x<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo $t_rumus2_peg->rumus2_id->LookupFilterQuery() ?>">
 </span>
-<input type="hidden" data-table="t_rumus_peg" data-field="x_rumus_id" name="o<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" id="o<?php echo $t_rumus_peg_list->RowIndex ?>_rumus_id" value="<?php echo ew_HtmlEncode($t_rumus_peg->rumus_id->OldValue) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_id" name="o<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" id="o<?php echo $t_rumus2_peg_list->RowIndex ?>_rumus2_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->rumus2_id->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php
 
 // Render list options (body, right)
-$t_rumus_peg_list->ListOptions->Render("body", "right", $t_rumus_peg_list->RowCnt);
+$t_rumus2_peg_list->ListOptions->Render("body", "right", $t_rumus2_peg_list->RowCnt);
 ?>
 <script type="text/javascript">
-ft_rumus_peglist.UpdateOpts(<?php echo $t_rumus_peg_list->RowIndex ?>);
+ft_rumus2_peglist.UpdateOpts(<?php echo $t_rumus2_peg_list->RowIndex ?>);
 </script>
 	</tr>
 <?php
@@ -4096,23 +4248,23 @@ ft_rumus_peglist.UpdateOpts(<?php echo $t_rumus_peg_list->RowIndex ?>);
 </tbody>
 </table>
 <?php } ?>
-<?php if ($t_rumus_peg->CurrentAction == "add" || $t_rumus_peg->CurrentAction == "copy") { ?>
-<input type="hidden" name="<?php echo $t_rumus_peg_list->FormKeyCountName ?>" id="<?php echo $t_rumus_peg_list->FormKeyCountName ?>" value="<?php echo $t_rumus_peg_list->KeyCount ?>">
+<?php if ($t_rumus2_peg->CurrentAction == "add" || $t_rumus2_peg->CurrentAction == "copy") { ?>
+<input type="hidden" name="<?php echo $t_rumus2_peg_list->FormKeyCountName ?>" id="<?php echo $t_rumus2_peg_list->FormKeyCountName ?>" value="<?php echo $t_rumus2_peg_list->KeyCount ?>">
 <?php } ?>
-<?php if ($t_rumus_peg->CurrentAction == "gridadd") { ?>
+<?php if ($t_rumus2_peg->CurrentAction == "gridadd") { ?>
 <input type="hidden" name="a_list" id="a_list" value="gridinsert">
-<input type="hidden" name="<?php echo $t_rumus_peg_list->FormKeyCountName ?>" id="<?php echo $t_rumus_peg_list->FormKeyCountName ?>" value="<?php echo $t_rumus_peg_list->KeyCount ?>">
-<?php echo $t_rumus_peg_list->MultiSelectKey ?>
+<input type="hidden" name="<?php echo $t_rumus2_peg_list->FormKeyCountName ?>" id="<?php echo $t_rumus2_peg_list->FormKeyCountName ?>" value="<?php echo $t_rumus2_peg_list->KeyCount ?>">
+<?php echo $t_rumus2_peg_list->MultiSelectKey ?>
 <?php } ?>
-<?php if ($t_rumus_peg->CurrentAction == "edit") { ?>
-<input type="hidden" name="<?php echo $t_rumus_peg_list->FormKeyCountName ?>" id="<?php echo $t_rumus_peg_list->FormKeyCountName ?>" value="<?php echo $t_rumus_peg_list->KeyCount ?>">
+<?php if ($t_rumus2_peg->CurrentAction == "edit") { ?>
+<input type="hidden" name="<?php echo $t_rumus2_peg_list->FormKeyCountName ?>" id="<?php echo $t_rumus2_peg_list->FormKeyCountName ?>" value="<?php echo $t_rumus2_peg_list->KeyCount ?>">
 <?php } ?>
-<?php if ($t_rumus_peg->CurrentAction == "gridedit") { ?>
+<?php if ($t_rumus2_peg->CurrentAction == "gridedit") { ?>
 <input type="hidden" name="a_list" id="a_list" value="gridupdate">
-<input type="hidden" name="<?php echo $t_rumus_peg_list->FormKeyCountName ?>" id="<?php echo $t_rumus_peg_list->FormKeyCountName ?>" value="<?php echo $t_rumus_peg_list->KeyCount ?>">
-<?php echo $t_rumus_peg_list->MultiSelectKey ?>
+<input type="hidden" name="<?php echo $t_rumus2_peg_list->FormKeyCountName ?>" id="<?php echo $t_rumus2_peg_list->FormKeyCountName ?>" value="<?php echo $t_rumus2_peg_list->KeyCount ?>">
+<?php echo $t_rumus2_peg_list->MultiSelectKey ?>
 <?php } ?>
-<?php if ($t_rumus_peg->CurrentAction == "") { ?>
+<?php if ($t_rumus2_peg->CurrentAction == "") { ?>
 <input type="hidden" name="a_list" id="a_list" value="">
 <?php } ?>
 </div>
@@ -4120,66 +4272,66 @@ ft_rumus_peglist.UpdateOpts(<?php echo $t_rumus_peg_list->RowIndex ?>);
 <?php
 
 // Close recordset
-if ($t_rumus_peg_list->Recordset)
-	$t_rumus_peg_list->Recordset->Close();
+if ($t_rumus2_peg_list->Recordset)
+	$t_rumus2_peg_list->Recordset->Close();
 ?>
-<?php if ($t_rumus_peg->Export == "") { ?>
+<?php if ($t_rumus2_peg->Export == "") { ?>
 <div class="panel-footer ewGridLowerPanel">
-<?php if ($t_rumus_peg->CurrentAction <> "gridadd" && $t_rumus_peg->CurrentAction <> "gridedit") { ?>
+<?php if ($t_rumus2_peg->CurrentAction <> "gridadd" && $t_rumus2_peg->CurrentAction <> "gridedit") { ?>
 <form name="ewPagerForm" class="ewForm form-inline ewPagerForm" action="<?php echo ew_CurrentPage() ?>">
-<?php if (!isset($t_rumus_peg_list->Pager)) $t_rumus_peg_list->Pager = new cPrevNextPager($t_rumus_peg_list->StartRec, $t_rumus_peg_list->DisplayRecs, $t_rumus_peg_list->TotalRecs) ?>
-<?php if ($t_rumus_peg_list->Pager->RecordCount > 0 && $t_rumus_peg_list->Pager->Visible) { ?>
+<?php if (!isset($t_rumus2_peg_list->Pager)) $t_rumus2_peg_list->Pager = new cPrevNextPager($t_rumus2_peg_list->StartRec, $t_rumus2_peg_list->DisplayRecs, $t_rumus2_peg_list->TotalRecs) ?>
+<?php if ($t_rumus2_peg_list->Pager->RecordCount > 0 && $t_rumus2_peg_list->Pager->Visible) { ?>
 <div class="ewPager">
 <span><?php echo $Language->Phrase("Page") ?>&nbsp;</span>
 <div class="ewPrevNext"><div class="input-group">
 <div class="input-group-btn">
 <!--first page button-->
-	<?php if ($t_rumus_peg_list->Pager->FirstButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_rumus_peg_list->PageUrl() ?>start=<?php echo $t_rumus_peg_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
+	<?php if ($t_rumus2_peg_list->Pager->FirstButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerFirst") ?>" href="<?php echo $t_rumus2_peg_list->PageUrl() ?>start=<?php echo $t_rumus2_peg_list->Pager->FirstButton->Start ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerFirst") ?>"><span class="icon-first ewIcon"></span></a>
 	<?php } ?>
 <!--previous page button-->
-	<?php if ($t_rumus_peg_list->Pager->PrevButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_rumus_peg_list->PageUrl() ?>start=<?php echo $t_rumus_peg_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
+	<?php if ($t_rumus2_peg_list->Pager->PrevButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerPrevious") ?>" href="<?php echo $t_rumus2_peg_list->PageUrl() ?>start=<?php echo $t_rumus2_peg_list->Pager->PrevButton->Start ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerPrevious") ?>"><span class="icon-prev ewIcon"></span></a>
 	<?php } ?>
 </div>
 <!--current page number-->
-	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_rumus_peg_list->Pager->CurrentPage ?>">
+	<input class="form-control input-sm" type="text" name="<?php echo EW_TABLE_PAGE_NO ?>" value="<?php echo $t_rumus2_peg_list->Pager->CurrentPage ?>">
 <div class="input-group-btn">
 <!--next page button-->
-	<?php if ($t_rumus_peg_list->Pager->NextButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_rumus_peg_list->PageUrl() ?>start=<?php echo $t_rumus_peg_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
+	<?php if ($t_rumus2_peg_list->Pager->NextButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerNext") ?>" href="<?php echo $t_rumus2_peg_list->PageUrl() ?>start=<?php echo $t_rumus2_peg_list->Pager->NextButton->Start ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerNext") ?>"><span class="icon-next ewIcon"></span></a>
 	<?php } ?>
 <!--last page button-->
-	<?php if ($t_rumus_peg_list->Pager->LastButton->Enabled) { ?>
-	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_rumus_peg_list->PageUrl() ?>start=<?php echo $t_rumus_peg_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
+	<?php if ($t_rumus2_peg_list->Pager->LastButton->Enabled) { ?>
+	<a class="btn btn-default btn-sm" title="<?php echo $Language->Phrase("PagerLast") ?>" href="<?php echo $t_rumus2_peg_list->PageUrl() ?>start=<?php echo $t_rumus2_peg_list->Pager->LastButton->Start ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } else { ?>
 	<a class="btn btn-default btn-sm disabled" title="<?php echo $Language->Phrase("PagerLast") ?>"><span class="icon-last ewIcon"></span></a>
 	<?php } ?>
 </div>
 </div>
 </div>
-<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_rumus_peg_list->Pager->PageCount ?></span>
+<span>&nbsp;<?php echo $Language->Phrase("of") ?>&nbsp;<?php echo $t_rumus2_peg_list->Pager->PageCount ?></span>
 </div>
 <div class="ewPager ewRec">
-	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $t_rumus_peg_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $t_rumus_peg_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $t_rumus_peg_list->Pager->RecordCount ?></span>
+	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $t_rumus2_peg_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $t_rumus2_peg_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $t_rumus2_peg_list->Pager->RecordCount ?></span>
 </div>
 <?php } ?>
-<?php if ($t_rumus_peg_list->TotalRecs > 0 && (!EW_AUTO_HIDE_PAGE_SIZE_SELECTOR || $t_rumus_peg_list->Pager->Visible)) { ?>
+<?php if ($t_rumus2_peg_list->TotalRecs > 0 && (!EW_AUTO_HIDE_PAGE_SIZE_SELECTOR || $t_rumus2_peg_list->Pager->Visible)) { ?>
 <div class="ewPager">
-<input type="hidden" name="t" value="t_rumus_peg">
+<input type="hidden" name="t" value="t_rumus2_peg">
 <select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm ewTooltip" title="<?php echo $Language->Phrase("RecordsPerPage") ?>" onchange="this.form.submit();">
-<option value="10"<?php if ($t_rumus_peg_list->DisplayRecs == 10) { ?> selected<?php } ?>>10</option>
-<option value="20"<?php if ($t_rumus_peg_list->DisplayRecs == 20) { ?> selected<?php } ?>>20</option>
-<option value="50"<?php if ($t_rumus_peg_list->DisplayRecs == 50) { ?> selected<?php } ?>>50</option>
-<option value="100"<?php if ($t_rumus_peg_list->DisplayRecs == 100) { ?> selected<?php } ?>>100</option>
-<option value="200"<?php if ($t_rumus_peg_list->DisplayRecs == 200) { ?> selected<?php } ?>>200</option>
-<option value="ALL"<?php if ($t_rumus_peg->getRecordsPerPage() == -1) { ?> selected<?php } ?>><?php echo $Language->Phrase("AllRecords") ?></option>
+<option value="10"<?php if ($t_rumus2_peg_list->DisplayRecs == 10) { ?> selected<?php } ?>>10</option>
+<option value="20"<?php if ($t_rumus2_peg_list->DisplayRecs == 20) { ?> selected<?php } ?>>20</option>
+<option value="50"<?php if ($t_rumus2_peg_list->DisplayRecs == 50) { ?> selected<?php } ?>>50</option>
+<option value="100"<?php if ($t_rumus2_peg_list->DisplayRecs == 100) { ?> selected<?php } ?>>100</option>
+<option value="200"<?php if ($t_rumus2_peg_list->DisplayRecs == 200) { ?> selected<?php } ?>>200</option>
+<option value="ALL"<?php if ($t_rumus2_peg->getRecordsPerPage() == -1) { ?> selected<?php } ?>><?php echo $Language->Phrase("AllRecords") ?></option>
 </select>
 </div>
 <?php } ?>
@@ -4187,7 +4339,7 @@ if ($t_rumus_peg_list->Recordset)
 <?php } ?>
 <div class="ewListOtherOptions">
 <?php
-	foreach ($t_rumus_peg_list->OtherOptions as &$option)
+	foreach ($t_rumus2_peg_list->OtherOptions as &$option)
 		$option->Render("body", "bottom");
 ?>
 </div>
@@ -4196,10 +4348,10 @@ if ($t_rumus_peg_list->Recordset)
 <?php } ?>
 </div>
 <?php } ?>
-<?php if ($t_rumus_peg_list->TotalRecs == 0 && $t_rumus_peg->CurrentAction == "") { // Show other options ?>
+<?php if ($t_rumus2_peg_list->TotalRecs == 0 && $t_rumus2_peg->CurrentAction == "") { // Show other options ?>
 <div class="ewListOtherOptions">
 <?php
-	foreach ($t_rumus_peg_list->OtherOptions as &$option) {
+	foreach ($t_rumus2_peg_list->OtherOptions as &$option) {
 		$option->ButtonClass = "";
 		$option->Render("body", "");
 	}
@@ -4207,19 +4359,19 @@ if ($t_rumus_peg_list->Recordset)
 </div>
 <div class="clearfix"></div>
 <?php } ?>
-<?php if ($t_rumus_peg->Export == "") { ?>
+<?php if ($t_rumus2_peg->Export == "") { ?>
 <script type="text/javascript">
-ft_rumus_peglistsrch.FilterList = <?php echo $t_rumus_peg_list->GetFilterList() ?>;
-ft_rumus_peglistsrch.Init();
-ft_rumus_peglist.Init();
+ft_rumus2_peglistsrch.FilterList = <?php echo $t_rumus2_peg_list->GetFilterList() ?>;
+ft_rumus2_peglistsrch.Init();
+ft_rumus2_peglist.Init();
 </script>
 <?php } ?>
 <?php
-$t_rumus_peg_list->ShowPageFooter();
+$t_rumus2_peg_list->ShowPageFooter();
 if (EW_DEBUG_ENABLED)
 	echo ew_DebugMsg();
 ?>
-<?php if ($t_rumus_peg->Export == "") { ?>
+<?php if ($t_rumus2_peg->Export == "") { ?>
 <script type="text/javascript">
 
 // Write your table-specific startup script here
@@ -4229,5 +4381,5 @@ if (EW_DEBUG_ENABLED)
 <?php } ?>
 <?php include_once "footer.php" ?>
 <?php
-$t_rumus_peg_list->Page_Terminate();
+$t_rumus2_peg_list->Page_Terminate();
 ?>

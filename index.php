@@ -296,6 +296,10 @@ class cdefault {
 			$this->Page_Terminate("gen_rekon_.php");
 		if ($Security->AllowList(CurrentProjectID() . 'lap_gaji_.php'))
 			$this->Page_Terminate("lap_gaji_.php");
+		if ($Security->AllowList(CurrentProjectID() . 't_rumus2_peg'))
+			$this->Page_Terminate("t_rumus2_peglist.php");
+		if ($Security->AllowList(CurrentProjectID() . 't_rumus2'))
+			$this->Page_Terminate("t_rumus2list.php");
 		if ($Security->IsLoggedIn()) {
 			$this->setFailureMessage(ew_DeniedMsg() . "<br><br><a href=\"logout.php\">" . $Language->Phrase("BackToLogin") . "</a>");
 		} else {

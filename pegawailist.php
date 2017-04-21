@@ -9,6 +9,7 @@ ob_start(); // Turn on output buffering
 <?php include_once "t_userinfo.php" ?>
 <?php include_once "t_jdw_krj_peggridcls.php" ?>
 <?php include_once "t_rumus_peggridcls.php" ?>
+<?php include_once "t_rumus2_peggridcls.php" ?>
 <?php include_once "userfn13.php" ?>
 <?php
 
@@ -451,6 +452,14 @@ class cpegawai_list extends cpegawai {
 			if (@$_POST["grid"] == "ft_rumus_peggrid") {
 				if (!isset($GLOBALS["t_rumus_peg_grid"])) $GLOBALS["t_rumus_peg_grid"] = new ct_rumus_peg_grid;
 				$GLOBALS["t_rumus_peg_grid"]->Page_Init();
+				$this->Page_Terminate();
+				exit();
+			}
+
+			// Process auto fill for detail table 't_rumus2_peg'
+			if (@$_POST["grid"] == "ft_rumus2_peggrid") {
+				if (!isset($GLOBALS["t_rumus2_peg_grid"])) $GLOBALS["t_rumus2_peg_grid"] = new ct_rumus2_peg_grid;
+				$GLOBALS["t_rumus2_peg_grid"]->Page_Init();
 				$this->Page_Terminate();
 				exit();
 			}
@@ -1815,6 +1824,14 @@ class cpegawai_list extends cpegawai {
 		$item->ShowInButtonGroup = FALSE;
 		if (!isset($GLOBALS["t_rumus_peg_grid"])) $GLOBALS["t_rumus_peg_grid"] = new ct_rumus_peg_grid;
 
+		// "detail_t_rumus2_peg"
+		$item = &$this->ListOptions->Add("detail_t_rumus2_peg");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = $Security->AllowList(CurrentProjectID() . 't_rumus2_peg') && !$this->ShowMultipleDetails;
+		$item->OnLeft = TRUE;
+		$item->ShowInButtonGroup = FALSE;
+		if (!isset($GLOBALS["t_rumus2_peg_grid"])) $GLOBALS["t_rumus2_peg_grid"] = new ct_rumus2_peg_grid;
+
 		// Multiple details
 		if ($this->ShowMultipleDetails) {
 			$item = &$this->ListOptions->Add("details");
@@ -1828,6 +1845,7 @@ class cpegawai_list extends cpegawai {
 		$pages = new cSubPages();
 		$pages->Add("t_jdw_krj_peg");
 		$pages->Add("t_rumus_peg");
+		$pages->Add("t_rumus2_peg");
 		$this->DetailPages = $pages;
 
 		// List actions
@@ -2057,6 +2075,36 @@ class cpegawai_list extends cpegawai {
 			$oListOpt->Body = $body;
 			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
 		}
+
+		// "detail_t_rumus2_peg"
+		$oListOpt = &$this->ListOptions->Items["detail_t_rumus2_peg"];
+		if ($Security->AllowList(CurrentProjectID() . 't_rumus2_peg')) {
+			$body = $Language->Phrase("DetailLink") . $Language->TablePhrase("t_rumus2_peg", "TblCaption");
+			$body = "<a class=\"btn btn-default btn-sm ewRowLink ewDetail\" data-action=\"list\" href=\"" . ew_HtmlEncode("t_rumus2_peglist.php?" . EW_TABLE_SHOW_MASTER . "=pegawai&fk_pegawai_id=" . urlencode(strval($this->pegawai_id->CurrentValue)) . "") . "\">" . $body . "</a>";
+			$links = "";
+			if ($GLOBALS["t_rumus2_peg_grid"]->DetailView && $Security->CanView() && $Security->AllowView(CurrentProjectID() . 't_rumus2_peg')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailView\" data-action=\"view\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailViewLink")) . "\" href=\"" . ew_HtmlEncode($this->GetViewUrl(EW_TABLE_SHOW_DETAIL . "=t_rumus2_peg")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailViewLink")) . "</a></li>";
+				if ($DetailViewTblVar <> "") $DetailViewTblVar .= ",";
+				$DetailViewTblVar .= "t_rumus2_peg";
+			}
+			if ($GLOBALS["t_rumus2_peg_grid"]->DetailEdit && $Security->CanEdit() && $Security->AllowEdit(CurrentProjectID() . 't_rumus2_peg')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailEdit\" data-action=\"edit\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GetEditUrl(EW_TABLE_SHOW_DETAIL . "=t_rumus2_peg")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailEditLink")) . "</a></li>";
+				if ($DetailEditTblVar <> "") $DetailEditTblVar .= ",";
+				$DetailEditTblVar .= "t_rumus2_peg";
+			}
+			if ($GLOBALS["t_rumus2_peg_grid"]->DetailAdd && $Security->CanAdd() && $Security->AllowAdd(CurrentProjectID() . 't_rumus2_peg')) {
+				$links .= "<li><a class=\"ewRowLink ewDetailCopy\" data-action=\"add\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("MasterDetailCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->GetCopyUrl(EW_TABLE_SHOW_DETAIL . "=t_rumus2_peg")) . "\">" . ew_HtmlImageAndText($Language->Phrase("MasterDetailCopyLink")) . "</a></li>";
+				if ($DetailCopyTblVar <> "") $DetailCopyTblVar .= ",";
+				$DetailCopyTblVar .= "t_rumus2_peg";
+			}
+			if ($links <> "") {
+				$body .= "<button class=\"dropdown-toggle btn btn-default btn-sm ewDetail\" data-toggle=\"dropdown\"><b class=\"caret\"></b></button>";
+				$body .= "<ul class=\"dropdown-menu\">". $links . "</ul>";
+			}
+			$body = "<div class=\"btn-group\">" . $body . "</div>";
+			$oListOpt->Body = $body;
+			if ($this->ShowMultipleDetails) $oListOpt->Visible = FALSE;
+		}
 		if ($this->ShowMultipleDetails) {
 			$body = $Language->Phrase("MultipleMasterDetails");
 			$body = "<div class=\"btn-group\">";
@@ -2131,6 +2179,15 @@ class cpegawai_list extends cpegawai {
 		if ($item->Visible) {
 			if ($DetailTableLink <> "") $DetailTableLink .= ",";
 			$DetailTableLink .= "t_rumus_peg";
+		}
+		$item = &$option->Add("detailadd_t_rumus2_peg");
+		$url = $this->GetAddUrl(EW_TABLE_SHOW_DETAIL . "=t_rumus2_peg");
+		$caption = $Language->Phrase("Add") . "&nbsp;" . $this->TableCaption() . "/" . $GLOBALS["t_rumus2_peg"]->TableCaption();
+		$item->Body = "<a class=\"ewDetailAddGroup ewDetailAdd\" title=\"" . ew_HtmlTitle($caption) . "\" data-caption=\"" . ew_HtmlTitle($caption) . "\" href=\"" . ew_HtmlEncode($url) . "\">" . $caption . "</a>";
+		$item->Visible = ($GLOBALS["t_rumus2_peg"]->DetailAdd && $Security->AllowAdd(CurrentProjectID() . 't_rumus2_peg') && $Security->CanAdd());
+		if ($item->Visible) {
+			if ($DetailTableLink <> "") $DetailTableLink .= ",";
+			$DetailTableLink .= "t_rumus2_peg";
 		}
 
 		// Add multiple details

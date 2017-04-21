@@ -1,28 +1,22 @@
 <?php
 
 // Global variable for table object
-$t_rumus = NULL;
+$t_rumus2_peg = NULL;
 
 //
-// Table class for t_rumus
+// Table class for t_rumus2_peg
 //
-class ct_rumus extends cTable {
+class ct_rumus2_peg extends cTable {
 	var $AuditTrailOnAdd = TRUE;
 	var $AuditTrailOnEdit = TRUE;
 	var $AuditTrailOnDelete = TRUE;
 	var $AuditTrailOnView = FALSE;
 	var $AuditTrailOnViewData = FALSE;
 	var $AuditTrailOnSearch = FALSE;
-	var $rumus_id;
-	var $rumus_nama;
-	var $hk_gol;
-	var $umr;
-	var $hk_jml;
-	var $upah;
-	var $premi_hadir;
-	var $premi_malam;
-	var $pot_absen;
-	var $lembur;
+	var $rumus2_peg_id;
+	var $pegawai_id;
+	var $gp;
+	var $rumus2_id;
 
 	//
 	// Table class constructor
@@ -32,12 +26,12 @@ class ct_rumus extends cTable {
 
 		// Language object
 		if (!isset($Language)) $Language = new cLanguage();
-		$this->TableVar = 't_rumus';
-		$this->TableName = 't_rumus';
+		$this->TableVar = 't_rumus2_peg';
+		$this->TableName = 't_rumus2_peg';
 		$this->TableType = 'TABLE';
 
 		// Update Table
-		$this->UpdateTable = "`t_rumus`";
+		$this->UpdateTable = "`t_rumus2_peg`";
 		$this->DBID = 'DB';
 		$this->ExportAll = TRUE;
 		$this->ExportPageBreakCount = 0; // Page break per every n record (PDF only)
@@ -45,74 +39,40 @@ class ct_rumus extends cTable {
 		$this->ExportPageSize = "a4"; // Page size (PDF only)
 		$this->ExportExcelPageOrientation = ""; // Page orientation (PHPExcel only)
 		$this->ExportExcelPageSize = ""; // Page size (PHPExcel only)
-		$this->DetailAdd = FALSE; // Allow detail add
-		$this->DetailEdit = FALSE; // Allow detail edit
-		$this->DetailView = FALSE; // Allow detail view
+		$this->DetailAdd = TRUE; // Allow detail add
+		$this->DetailEdit = TRUE; // Allow detail edit
+		$this->DetailView = TRUE; // Allow detail view
 		$this->ShowMultipleDetails = FALSE; // Show multiple details
 		$this->GridAddRowCount = 5;
 		$this->AllowAddDeleteRow = ew_AllowAddDeleteRow(); // Allow add/delete row
 		$this->UserIDAllowSecurity = 0; // User ID Allow
 		$this->BasicSearch = new cBasicSearch($this->TableVar);
 
-		// rumus_id
-		$this->rumus_id = new cField('t_rumus', 't_rumus', 'x_rumus_id', 'rumus_id', '`rumus_id`', '`rumus_id`', 3, -1, FALSE, '`rumus_id`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
-		$this->rumus_id->Sortable = TRUE; // Allow sort
-		$this->rumus_id->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['rumus_id'] = &$this->rumus_id;
+		// rumus2_peg_id
+		$this->rumus2_peg_id = new cField('t_rumus2_peg', 't_rumus2_peg', 'x_rumus2_peg_id', 'rumus2_peg_id', '`rumus2_peg_id`', '`rumus2_peg_id`', 3, -1, FALSE, '`rumus2_peg_id`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'NO');
+		$this->rumus2_peg_id->Sortable = TRUE; // Allow sort
+		$this->rumus2_peg_id->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['rumus2_peg_id'] = &$this->rumus2_peg_id;
 
-		// rumus_nama
-		$this->rumus_nama = new cField('t_rumus', 't_rumus', 'x_rumus_nama', 'rumus_nama', '`rumus_nama`', '`rumus_nama`', 200, -1, FALSE, '`rumus_nama`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->rumus_nama->Sortable = TRUE; // Allow sort
-		$this->fields['rumus_nama'] = &$this->rumus_nama;
+		// pegawai_id
+		$this->pegawai_id = new cField('t_rumus2_peg', 't_rumus2_peg', 'x_pegawai_id', 'pegawai_id', '`pegawai_id`', '`pegawai_id`', 3, -1, FALSE, '`EV__pegawai_id`', TRUE, TRUE, TRUE, 'FORMATTED TEXT', 'TEXT');
+		$this->pegawai_id->Sortable = TRUE; // Allow sort
+		$this->pegawai_id->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['pegawai_id'] = &$this->pegawai_id;
 
-		// hk_gol
-		$this->hk_gol = new cField('t_rumus', 't_rumus', 'x_hk_gol', 'hk_gol', '`hk_gol`', '`hk_gol`', 16, -1, FALSE, '`hk_gol`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'RADIO');
-		$this->hk_gol->Sortable = TRUE; // Allow sort
-		$this->hk_gol->OptionCount = 2;
-		$this->hk_gol->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['hk_gol'] = &$this->hk_gol;
+		// gp
+		$this->gp = new cField('t_rumus2_peg', 't_rumus2_peg', 'x_gp', 'gp', '`gp`', '`gp`', 4, -1, FALSE, '`gp`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->gp->Sortable = TRUE; // Allow sort
+		$this->gp->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
+		$this->fields['gp'] = &$this->gp;
 
-		// umr
-		$this->umr = new cField('t_rumus', 't_rumus', 'x_umr', 'umr', '`umr`', '`umr`', 4, -1, FALSE, '`umr`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->umr->Sortable = TRUE; // Allow sort
-		$this->umr->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['umr'] = &$this->umr;
-
-		// hk_jml
-		$this->hk_jml = new cField('t_rumus', 't_rumus', 'x_hk_jml', 'hk_jml', '`hk_jml`', '`hk_jml`', 2, -1, FALSE, '`hk_jml`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->hk_jml->Sortable = TRUE; // Allow sort
-		$this->hk_jml->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
-		$this->fields['hk_jml'] = &$this->hk_jml;
-
-		// upah
-		$this->upah = new cField('t_rumus', 't_rumus', 'x_upah', 'upah', '`upah`', '`upah`', 4, -1, FALSE, '`upah`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->upah->Sortable = TRUE; // Allow sort
-		$this->upah->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['upah'] = &$this->upah;
-
-		// premi_hadir
-		$this->premi_hadir = new cField('t_rumus', 't_rumus', 'x_premi_hadir', 'premi_hadir', '`premi_hadir`', '`premi_hadir`', 4, -1, FALSE, '`premi_hadir`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->premi_hadir->Sortable = TRUE; // Allow sort
-		$this->premi_hadir->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['premi_hadir'] = &$this->premi_hadir;
-
-		// premi_malam
-		$this->premi_malam = new cField('t_rumus', 't_rumus', 'x_premi_malam', 'premi_malam', '`premi_malam`', '`premi_malam`', 4, -1, FALSE, '`premi_malam`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->premi_malam->Sortable = TRUE; // Allow sort
-		$this->premi_malam->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['premi_malam'] = &$this->premi_malam;
-
-		// pot_absen
-		$this->pot_absen = new cField('t_rumus', 't_rumus', 'x_pot_absen', 'pot_absen', '`pot_absen`', '`pot_absen`', 4, -1, FALSE, '`pot_absen`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->pot_absen->Sortable = TRUE; // Allow sort
-		$this->pot_absen->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['pot_absen'] = &$this->pot_absen;
-
-		// lembur
-		$this->lembur = new cField('t_rumus', 't_rumus', 'x_lembur', 'lembur', '`lembur`', '`lembur`', 4, -1, FALSE, '`lembur`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
-		$this->lembur->Sortable = TRUE; // Allow sort
-		$this->lembur->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
-		$this->fields['lembur'] = &$this->lembur;
+		// rumus2_id
+		$this->rumus2_id = new cField('t_rumus2_peg', 't_rumus2_peg', 'x_rumus2_id', 'rumus2_id', '`rumus2_id`', '`rumus2_id`', 3, -1, FALSE, '`EV__rumus2_id`', TRUE, TRUE, TRUE, 'FORMATTED TEXT', 'SELECT');
+		$this->rumus2_id->Sortable = TRUE; // Allow sort
+		$this->rumus2_id->UsePleaseSelect = TRUE; // Use PleaseSelect by default
+		$this->rumus2_id->PleaseSelectText = $Language->Phrase("PleaseSelect"); // PleaseSelect text
+		$this->rumus2_id->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
+		$this->fields['rumus2_id'] = &$this->rumus2_id;
 	}
 
 	// Set Field Visibility
@@ -144,16 +104,85 @@ class ct_rumus extends cTable {
 			} else {
 				$this->setSessionOrderBy($sSortField . " " . $sThisSort); // Save to Session
 			}
+			$sSortFieldList = ($ofld->FldVirtualExpression <> "") ? $ofld->FldVirtualExpression : $sSortField;
+			if ($ctrl) {
+				$sOrderByList = $this->getSessionOrderByList();
+				if (strpos($sOrderByList, $sSortFieldList . " " . $sLastSort) !== FALSE) {
+					$sOrderByList = str_replace($sSortFieldList . " " . $sLastSort, $sSortFieldList . " " . $sThisSort, $sOrderByList);
+				} else {
+					if ($sOrderByList <> "") $sOrderByList .= ", ";
+					$sOrderByList .= $sSortFieldList . " " . $sThisSort;
+				}
+				$this->setSessionOrderByList($sOrderByList); // Save to Session
+			} else {
+				$this->setSessionOrderByList($sSortFieldList . " " . $sThisSort); // Save to Session
+			}
 		} else {
 			if (!$ctrl) $ofld->setSort("");
 		}
+	}
+
+	// Session ORDER BY for List page
+	function getSessionOrderByList() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_ORDER_BY_LIST];
+	}
+
+	function setSessionOrderByList($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_ORDER_BY_LIST] = $v;
+	}
+
+	// Current master table name
+	function getCurrentMasterTable() {
+		return @$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE];
+	}
+
+	function setCurrentMasterTable($v) {
+		$_SESSION[EW_PROJECT_NAME . "_" . $this->TableVar . "_" . EW_TABLE_MASTER_TABLE] = $v;
+	}
+
+	// Session master WHERE clause
+	function GetMasterFilter() {
+
+		// Master filter
+		$sMasterFilter = "";
+		if ($this->getCurrentMasterTable() == "pegawai") {
+			if ($this->pegawai_id->getSessionValue() <> "")
+				$sMasterFilter .= "`pegawai_id`=" . ew_QuotedValue($this->pegawai_id->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
+		return $sMasterFilter;
+	}
+
+	// Session detail WHERE clause
+	function GetDetailFilter() {
+
+		// Detail filter
+		$sDetailFilter = "";
+		if ($this->getCurrentMasterTable() == "pegawai") {
+			if ($this->pegawai_id->getSessionValue() <> "")
+				$sDetailFilter .= "`pegawai_id`=" . ew_QuotedValue($this->pegawai_id->getSessionValue(), EW_DATATYPE_NUMBER, "DB");
+			else
+				return "";
+		}
+		return $sDetailFilter;
+	}
+
+	// Master filter
+	function SqlMasterFilter_pegawai() {
+		return "`pegawai_id`=@pegawai_id@";
+	}
+
+	// Detail filter
+	function SqlDetailFilter_pegawai() {
+		return "`pegawai_id`=@pegawai_id@";
 	}
 
 	// Table level SQL
 	var $_SqlFrom = "";
 
 	function getSqlFrom() { // From
-		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`t_rumus`";
+		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`t_rumus2_peg`";
 	}
 
 	function SqlFrom() { // For backward compatibility
@@ -175,6 +204,23 @@ class ct_rumus extends cTable {
 
 	function setSqlSelect($v) {
 		$this->_SqlSelect = $v;
+	}
+	var $_SqlSelectList = "";
+
+	function getSqlSelectList() { // Select for List page
+		$select = "";
+		$select = "SELECT * FROM (" .
+			"SELECT *, (SELECT `pegawai_nama` FROM `pegawai` `EW_TMP_LOOKUPTABLE` WHERE `EW_TMP_LOOKUPTABLE`.`pegawai_id` = `t_rumus2_peg`.`pegawai_id` LIMIT 1) AS `EV__pegawai_id`, (SELECT `rumus2_nama` FROM `t_rumus2` `EW_TMP_LOOKUPTABLE` WHERE `EW_TMP_LOOKUPTABLE`.`rumus2_id` = `t_rumus2_peg`.`rumus2_id` LIMIT 1) AS `EV__rumus2_id` FROM `t_rumus2_peg`" .
+			") `EW_TMP_TABLE`";
+		return ($this->_SqlSelectList <> "") ? $this->_SqlSelectList : $select;
+	}
+
+	function SqlSelectList() { // For backward compatibility
+		return $this->getSqlSelectList();
+	}
+
+	function setSqlSelectList($v) {
+		$this->_SqlSelectList = $v;
 	}
 	var $_SqlWhere = "";
 
@@ -221,7 +267,7 @@ class ct_rumus extends cTable {
 	var $_SqlOrderBy = "";
 
 	function getSqlOrderBy() { // Order By
-		return ($this->_SqlOrderBy <> "") ? $this->_SqlOrderBy : "";
+		return ($this->_SqlOrderBy <> "") ? $this->_SqlOrderBy : "`pegawai_id` ASC";
 	}
 
 	function SqlOrderBy() { // For backward compatibility
@@ -287,15 +333,44 @@ class ct_rumus extends cTable {
 		ew_AddFilter($sFilter, $this->CurrentFilter);
 		$sFilter = $this->ApplyUserIDFilters($sFilter);
 		$this->Recordset_Selecting($sFilter);
-		$sSort = $this->getSessionOrderBy();
-		return ew_BuildSelectSql($this->getSqlSelect(), $this->getSqlWhere(), $this->getSqlGroupBy(),
-			$this->getSqlHaving(), $this->getSqlOrderBy(), $sFilter, $sSort);
+		if ($this->UseVirtualFields()) {
+			$sSort = $this->getSessionOrderByList();
+			return ew_BuildSelectSql($this->getSqlSelectList(), $this->getSqlWhere(), $this->getSqlGroupBy(),
+				$this->getSqlHaving(), $this->getSqlOrderBy(), $sFilter, $sSort);
+		} else {
+			$sSort = $this->getSessionOrderBy();
+			return ew_BuildSelectSql($this->getSqlSelect(), $this->getSqlWhere(), $this->getSqlGroupBy(),
+				$this->getSqlHaving(), $this->getSqlOrderBy(), $sFilter, $sSort);
+		}
 	}
 
 	// Get ORDER BY clause
 	function GetOrderBy() {
-		$sSort = $this->getSessionOrderBy();
+		$sSort = ($this->UseVirtualFields()) ? $this->getSessionOrderByList() : $this->getSessionOrderBy();
 		return ew_BuildSelectSql("", "", "", "", $this->getSqlOrderBy(), "", $sSort);
+	}
+
+	// Check if virtual fields is used in SQL
+	function UseVirtualFields() {
+		$sWhere = $this->getSessionWhere();
+		$sOrderBy = $this->getSessionOrderByList();
+		if ($sWhere <> "")
+			$sWhere = " " . str_replace(array("(",")"), array("",""), $sWhere) . " ";
+		if ($sOrderBy <> "")
+			$sOrderBy = " " . str_replace(array("(",")"), array("",""), $sOrderBy) . " ";
+		if ($this->pegawai_id->AdvancedSearch->SearchValue <> "" ||
+			$this->pegawai_id->AdvancedSearch->SearchValue2 <> "" ||
+			strpos($sWhere, " " . $this->pegawai_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		if (strpos($sOrderBy, " " . $this->pegawai_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		if ($this->rumus2_id->AdvancedSearch->SearchValue <> "" ||
+			$this->rumus2_id->AdvancedSearch->SearchValue2 <> "" ||
+			strpos($sWhere, " " . $this->rumus2_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		if (strpos($sOrderBy, " " . $this->rumus2_id->FldVirtualExpression . " ") !== FALSE)
+			return TRUE;
+		return FALSE;
 	}
 
 	// Try to get record count
@@ -376,8 +451,8 @@ class ct_rumus extends cTable {
 		if ($bInsert) {
 
 			// Get insert id if necessary
-			$this->rumus_id->setDbValue($conn->Insert_ID());
-			$rs['rumus_id'] = $this->rumus_id->DbValue;
+			$this->rumus2_peg_id->setDbValue($conn->Insert_ID());
+			$rs['rumus2_peg_id'] = $this->rumus2_peg_id->DbValue;
 			if ($this->AuditTrailOnAdd)
 				$this->WriteAuditTrailOnAdd($rs);
 		}
@@ -409,7 +484,7 @@ class ct_rumus extends cTable {
 		$bUpdate = $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
 		if ($bUpdate && $this->AuditTrailOnEdit) {
 			$rsaudit = $rs;
-			$fldname = 'rumus_id';
+			$fldname = 'rumus2_peg_id';
 			if (!array_key_exists($fldname, $rsaudit)) $rsaudit[$fldname] = $rsold[$fldname];
 			$this->WriteAuditTrailOnEdit($rsaudit, $rsold);
 		}
@@ -422,8 +497,8 @@ class ct_rumus extends cTable {
 		if (is_array($where))
 			$where = $this->ArrayToFilter($where);
 		if ($rs) {
-			if (array_key_exists('rumus_id', $rs))
-				ew_AddFilter($where, ew_QuotedName('rumus_id', $this->DBID) . '=' . ew_QuotedValue($rs['rumus_id'], $this->rumus_id->FldDataType, $this->DBID));
+			if (array_key_exists('rumus2_peg_id', $rs))
+				ew_AddFilter($where, ew_QuotedName('rumus2_peg_id', $this->DBID) . '=' . ew_QuotedValue($rs['rumus2_peg_id'], $this->rumus2_peg_id->FldDataType, $this->DBID));
 		}
 		$filter = ($curfilter) ? $this->CurrentFilter : "";
 		ew_AddFilter($filter, $where);
@@ -445,15 +520,15 @@ class ct_rumus extends cTable {
 
 	// Key filter WHERE clause
 	function SqlKeyFilter() {
-		return "`rumus_id` = @rumus_id@";
+		return "`rumus2_peg_id` = @rumus2_peg_id@";
 	}
 
 	// Key filter
 	function KeyFilter() {
 		$sKeyFilter = $this->SqlKeyFilter();
-		if (!is_numeric($this->rumus_id->CurrentValue))
+		if (!is_numeric($this->rumus2_peg_id->CurrentValue))
 			$sKeyFilter = "0=1"; // Invalid key
-		$sKeyFilter = str_replace("@rumus_id@", ew_AdjustSql($this->rumus_id->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
+		$sKeyFilter = str_replace("@rumus2_peg_id@", ew_AdjustSql($this->rumus2_peg_id->CurrentValue, $this->DBID), $sKeyFilter); // Replace key value
 		return $sKeyFilter;
 	}
 
@@ -467,7 +542,7 @@ class ct_rumus extends cTable {
 		if (@$_SESSION[$name] <> "") {
 			return $_SESSION[$name];
 		} else {
-			return "t_rumuslist.php";
+			return "t_rumus2_peglist.php";
 		}
 	}
 
@@ -477,30 +552,30 @@ class ct_rumus extends cTable {
 
 	// List URL
 	function GetListUrl() {
-		return "t_rumuslist.php";
+		return "t_rumus2_peglist.php";
 	}
 
 	// View URL
 	function GetViewUrl($parm = "") {
 		if ($parm <> "")
-			$url = $this->KeyUrl("t_rumusview.php", $this->UrlParm($parm));
+			$url = $this->KeyUrl("t_rumus2_pegview.php", $this->UrlParm($parm));
 		else
-			$url = $this->KeyUrl("t_rumusview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
+			$url = $this->KeyUrl("t_rumus2_pegview.php", $this->UrlParm(EW_TABLE_SHOW_DETAIL . "="));
 		return $this->AddMasterUrl($url);
 	}
 
 	// Add URL
 	function GetAddUrl($parm = "") {
 		if ($parm <> "")
-			$url = "t_rumusadd.php?" . $this->UrlParm($parm);
+			$url = "t_rumus2_pegadd.php?" . $this->UrlParm($parm);
 		else
-			$url = "t_rumusadd.php";
+			$url = "t_rumus2_pegadd.php";
 		return $this->AddMasterUrl($url);
 	}
 
 	// Edit URL
 	function GetEditUrl($parm = "") {
-		$url = $this->KeyUrl("t_rumusedit.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("t_rumus2_pegedit.php", $this->UrlParm($parm));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -512,7 +587,7 @@ class ct_rumus extends cTable {
 
 	// Copy URL
 	function GetCopyUrl($parm = "") {
-		$url = $this->KeyUrl("t_rumusadd.php", $this->UrlParm($parm));
+		$url = $this->KeyUrl("t_rumus2_pegadd.php", $this->UrlParm($parm));
 		return $this->AddMasterUrl($url);
 	}
 
@@ -524,17 +599,21 @@ class ct_rumus extends cTable {
 
 	// Delete URL
 	function GetDeleteUrl() {
-		return $this->KeyUrl("t_rumusdelete.php", $this->UrlParm());
+		return $this->KeyUrl("t_rumus2_pegdelete.php", $this->UrlParm());
 	}
 
 	// Add master url
 	function AddMasterUrl($url) {
+		if ($this->getCurrentMasterTable() == "pegawai" && strpos($url, EW_TABLE_SHOW_MASTER . "=") === FALSE) {
+			$url .= (strpos($url, "?") !== FALSE ? "&" : "?") . EW_TABLE_SHOW_MASTER . "=" . $this->getCurrentMasterTable();
+			$url .= "&fk_pegawai_id=" . urlencode($this->pegawai_id->CurrentValue);
+		}
 		return $url;
 	}
 
 	function KeyToJson() {
 		$json = "";
-		$json .= "rumus_id:" . ew_VarToJson($this->rumus_id->CurrentValue, "number", "'");
+		$json .= "rumus2_peg_id:" . ew_VarToJson($this->rumus2_peg_id->CurrentValue, "number", "'");
 		return "{" . $json . "}";
 	}
 
@@ -542,8 +621,8 @@ class ct_rumus extends cTable {
 	function KeyUrl($url, $parm = "") {
 		$sUrl = $url . "?";
 		if ($parm <> "") $sUrl .= $parm . "&";
-		if (!is_null($this->rumus_id->CurrentValue)) {
-			$sUrl .= "rumus_id=" . urlencode($this->rumus_id->CurrentValue);
+		if (!is_null($this->rumus2_peg_id->CurrentValue)) {
+			$sUrl .= "rumus2_peg_id=" . urlencode($this->rumus2_peg_id->CurrentValue);
 		} else {
 			return "javascript:ew_Alert(ewLanguage.Phrase('InvalidRecord'));";
 		}
@@ -576,10 +655,10 @@ class ct_rumus extends cTable {
 			$cnt = count($arKeys);
 		} elseif (!empty($_GET) || !empty($_POST)) {
 			$isPost = ew_IsHttpPost();
-			if ($isPost && isset($_POST["rumus_id"]))
-				$arKeys[] = ew_StripSlashes($_POST["rumus_id"]);
-			elseif (isset($_GET["rumus_id"]))
-				$arKeys[] = ew_StripSlashes($_GET["rumus_id"]);
+			if ($isPost && isset($_POST["rumus2_peg_id"]))
+				$arKeys[] = ew_StripSlashes($_POST["rumus2_peg_id"]);
+			elseif (isset($_GET["rumus2_peg_id"]))
+				$arKeys[] = ew_StripSlashes($_GET["rumus2_peg_id"]);
 			else
 				$arKeys = NULL; // Do not setup
 
@@ -604,7 +683,7 @@ class ct_rumus extends cTable {
 		$sKeyFilter = "";
 		foreach ($arKeys as $key) {
 			if ($sKeyFilter <> "") $sKeyFilter .= " OR ";
-			$this->rumus_id->CurrentValue = $key;
+			$this->rumus2_peg_id->CurrentValue = $key;
 			$sKeyFilter .= "(" . $this->KeyFilter() . ")";
 		}
 		return $sKeyFilter;
@@ -625,16 +704,10 @@ class ct_rumus extends cTable {
 
 	// Load row values from recordset
 	function LoadListRowValues(&$rs) {
-		$this->rumus_id->setDbValue($rs->fields('rumus_id'));
-		$this->rumus_nama->setDbValue($rs->fields('rumus_nama'));
-		$this->hk_gol->setDbValue($rs->fields('hk_gol'));
-		$this->umr->setDbValue($rs->fields('umr'));
-		$this->hk_jml->setDbValue($rs->fields('hk_jml'));
-		$this->upah->setDbValue($rs->fields('upah'));
-		$this->premi_hadir->setDbValue($rs->fields('premi_hadir'));
-		$this->premi_malam->setDbValue($rs->fields('premi_malam'));
-		$this->pot_absen->setDbValue($rs->fields('pot_absen'));
-		$this->lembur->setDbValue($rs->fields('lembur'));
+		$this->rumus2_peg_id->setDbValue($rs->fields('rumus2_peg_id'));
+		$this->pegawai_id->setDbValue($rs->fields('pegawai_id'));
+		$this->gp->setDbValue($rs->fields('gp'));
+		$this->rumus2_id->setDbValue($rs->fields('rumus2_id'));
 	}
 
 	// Render list row values
@@ -645,124 +718,95 @@ class ct_rumus extends cTable {
 		$this->Row_Rendering();
 
    // Common render codes
-		// rumus_id
-		// rumus_nama
-		// hk_gol
-		// umr
-		// hk_jml
-		// upah
-		// premi_hadir
-		// premi_malam
-		// pot_absen
-		// lembur
-		// rumus_id
+		// rumus2_peg_id
+		// pegawai_id
+		// gp
+		// rumus2_id
+		// rumus2_peg_id
 
-		$this->rumus_id->ViewValue = $this->rumus_id->CurrentValue;
-		$this->rumus_id->ViewCustomAttributes = "";
+		$this->rumus2_peg_id->ViewValue = $this->rumus2_peg_id->CurrentValue;
+		$this->rumus2_peg_id->ViewCustomAttributes = "";
 
-		// rumus_nama
-		$this->rumus_nama->ViewValue = $this->rumus_nama->CurrentValue;
-		$this->rumus_nama->ViewCustomAttributes = "";
-
-		// hk_gol
-		if (strval($this->hk_gol->CurrentValue) <> "") {
-			$this->hk_gol->ViewValue = $this->hk_gol->OptionCaption($this->hk_gol->CurrentValue);
+		// pegawai_id
+		if ($this->pegawai_id->VirtualValue <> "") {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
 		} else {
-			$this->hk_gol->ViewValue = NULL;
+			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+		if (strval($this->pegawai_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
+		$sWhereWrk = "";
+		$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pegawai_id->ViewValue = $this->pegawai_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+			}
+		} else {
+			$this->pegawai_id->ViewValue = NULL;
 		}
-		$this->hk_gol->CellCssStyle .= "text-align: center;";
-		$this->hk_gol->ViewCustomAttributes = "";
+		}
+		$this->pegawai_id->ViewCustomAttributes = "";
 
-		// umr
-		$this->umr->ViewValue = $this->umr->CurrentValue;
-		$this->umr->ViewValue = ew_FormatNumber($this->umr->ViewValue, 0, -2, -2, -2);
-		$this->umr->CellCssStyle .= "text-align: right;";
-		$this->umr->ViewCustomAttributes = "";
+		// gp
+		$this->gp->ViewValue = $this->gp->CurrentValue;
+		$this->gp->ViewValue = ew_FormatNumber($this->gp->ViewValue, 0, -2, -2, -2);
+		$this->gp->CellCssStyle .= "text-align: right;";
+		$this->gp->ViewCustomAttributes = "";
 
-		// hk_jml
-		$this->hk_jml->ViewValue = $this->hk_jml->CurrentValue;
-		$this->hk_jml->CellCssStyle .= "text-align: center;";
-		$this->hk_jml->ViewCustomAttributes = "";
+		// rumus2_id
+		if ($this->rumus2_id->VirtualValue <> "") {
+			$this->rumus2_id->ViewValue = $this->rumus2_id->VirtualValue;
+		} else {
+		if (strval($this->rumus2_id->CurrentValue) <> "") {
+			$sFilterWrk = "`rumus2_id`" . ew_SearchString("=", $this->rumus2_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `rumus2_id`, `rumus2_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `t_rumus2`";
+		$sWhereWrk = "";
+		$this->rumus2_id->LookupFilters = array("dx1" => '`rumus2_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->rumus2_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->rumus2_id->ViewValue = $this->rumus2_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->rumus2_id->ViewValue = $this->rumus2_id->CurrentValue;
+			}
+		} else {
+			$this->rumus2_id->ViewValue = NULL;
+		}
+		}
+		$this->rumus2_id->ViewCustomAttributes = "";
 
-		// upah
-		$this->upah->ViewValue = $this->upah->CurrentValue;
-		$this->upah->ViewValue = ew_FormatNumber($this->upah->ViewValue, 0, -2, -2, -2);
-		$this->upah->CellCssStyle .= "text-align: right;";
-		$this->upah->ViewCustomAttributes = "";
+		// rumus2_peg_id
+		$this->rumus2_peg_id->LinkCustomAttributes = "";
+		$this->rumus2_peg_id->HrefValue = "";
+		$this->rumus2_peg_id->TooltipValue = "";
 
-		// premi_hadir
-		$this->premi_hadir->ViewValue = $this->premi_hadir->CurrentValue;
-		$this->premi_hadir->ViewValue = ew_FormatNumber($this->premi_hadir->ViewValue, 0, -2, -2, -2);
-		$this->premi_hadir->CellCssStyle .= "text-align: right;";
-		$this->premi_hadir->ViewCustomAttributes = "";
+		// pegawai_id
+		$this->pegawai_id->LinkCustomAttributes = "";
+		$this->pegawai_id->HrefValue = "";
+		$this->pegawai_id->TooltipValue = "";
 
-		// premi_malam
-		$this->premi_malam->ViewValue = $this->premi_malam->CurrentValue;
-		$this->premi_malam->ViewValue = ew_FormatNumber($this->premi_malam->ViewValue, 0, -2, -2, -2);
-		$this->premi_malam->CellCssStyle .= "text-align: right;";
-		$this->premi_malam->ViewCustomAttributes = "";
+		// gp
+		$this->gp->LinkCustomAttributes = "";
+		$this->gp->HrefValue = "";
+		$this->gp->TooltipValue = "";
 
-		// pot_absen
-		$this->pot_absen->ViewValue = $this->pot_absen->CurrentValue;
-		$this->pot_absen->ViewValue = ew_FormatNumber($this->pot_absen->ViewValue, 0, -2, -2, -2);
-		$this->pot_absen->CellCssStyle .= "text-align: right;";
-		$this->pot_absen->ViewCustomAttributes = "";
-
-		// lembur
-		$this->lembur->ViewValue = $this->lembur->CurrentValue;
-		$this->lembur->ViewValue = ew_FormatNumber($this->lembur->ViewValue, 0, -2, -2, -2);
-		$this->lembur->CellCssStyle .= "text-align: right;";
-		$this->lembur->ViewCustomAttributes = "";
-
-		// rumus_id
-		$this->rumus_id->LinkCustomAttributes = "";
-		$this->rumus_id->HrefValue = "";
-		$this->rumus_id->TooltipValue = "";
-
-		// rumus_nama
-		$this->rumus_nama->LinkCustomAttributes = "";
-		$this->rumus_nama->HrefValue = "";
-		$this->rumus_nama->TooltipValue = "";
-
-		// hk_gol
-		$this->hk_gol->LinkCustomAttributes = "";
-		$this->hk_gol->HrefValue = "";
-		$this->hk_gol->TooltipValue = "";
-
-		// umr
-		$this->umr->LinkCustomAttributes = "";
-		$this->umr->HrefValue = "";
-		$this->umr->TooltipValue = "";
-
-		// hk_jml
-		$this->hk_jml->LinkCustomAttributes = "";
-		$this->hk_jml->HrefValue = "";
-		$this->hk_jml->TooltipValue = "";
-
-		// upah
-		$this->upah->LinkCustomAttributes = "";
-		$this->upah->HrefValue = "";
-		$this->upah->TooltipValue = "";
-
-		// premi_hadir
-		$this->premi_hadir->LinkCustomAttributes = "";
-		$this->premi_hadir->HrefValue = "";
-		$this->premi_hadir->TooltipValue = "";
-
-		// premi_malam
-		$this->premi_malam->LinkCustomAttributes = "";
-		$this->premi_malam->HrefValue = "";
-		$this->premi_malam->TooltipValue = "";
-
-		// pot_absen
-		$this->pot_absen->LinkCustomAttributes = "";
-		$this->pot_absen->HrefValue = "";
-		$this->pot_absen->TooltipValue = "";
-
-		// lembur
-		$this->lembur->LinkCustomAttributes = "";
-		$this->lembur->HrefValue = "";
-		$this->lembur->TooltipValue = "";
+		// rumus2_id
+		$this->rumus2_id->LinkCustomAttributes = "";
+		$this->rumus2_id->HrefValue = "";
+		$this->rumus2_id->TooltipValue = "";
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -775,69 +819,58 @@ class ct_rumus extends cTable {
 		// Call Row Rendering event
 		$this->Row_Rendering();
 
-		// rumus_id
-		$this->rumus_id->EditAttrs["class"] = "form-control";
-		$this->rumus_id->EditCustomAttributes = "";
-		$this->rumus_id->EditValue = $this->rumus_id->CurrentValue;
-		$this->rumus_id->ViewCustomAttributes = "";
+		// rumus2_peg_id
+		$this->rumus2_peg_id->EditAttrs["class"] = "form-control";
+		$this->rumus2_peg_id->EditCustomAttributes = "";
+		$this->rumus2_peg_id->EditValue = $this->rumus2_peg_id->CurrentValue;
+		$this->rumus2_peg_id->ViewCustomAttributes = "";
 
-		// rumus_nama
-		$this->rumus_nama->EditAttrs["class"] = "form-control";
-		$this->rumus_nama->EditCustomAttributes = "";
-		$this->rumus_nama->EditValue = $this->rumus_nama->CurrentValue;
-		$this->rumus_nama->PlaceHolder = ew_RemoveHtml($this->rumus_nama->FldCaption());
+		// pegawai_id
+		$this->pegawai_id->EditAttrs["class"] = "form-control";
+		$this->pegawai_id->EditCustomAttributes = "";
+		if ($this->pegawai_id->getSessionValue() <> "") {
+			$this->pegawai_id->CurrentValue = $this->pegawai_id->getSessionValue();
+		if ($this->pegawai_id->VirtualValue <> "") {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->VirtualValue;
+		} else {
+			$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+		if (strval($this->pegawai_id->CurrentValue) <> "") {
+			$sFilterWrk = "`pegawai_id`" . ew_SearchString("=", $this->pegawai_id->CurrentValue, EW_DATATYPE_NUMBER, "");
+		$sSqlWrk = "SELECT `pegawai_id`, `pegawai_nama` AS `DispFld`, '' AS `Disp2Fld`, '' AS `Disp3Fld`, '' AS `Disp4Fld` FROM `pegawai`";
+		$sWhereWrk = "";
+		$this->pegawai_id->LookupFilters = array("dx1" => '`pegawai_nama`');
+		ew_AddFilter($sWhereWrk, $sFilterWrk);
+		$this->Lookup_Selecting($this->pegawai_id, $sWhereWrk); // Call Lookup selecting
+		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
+			$rswrk = Conn()->Execute($sSqlWrk);
+			if ($rswrk && !$rswrk->EOF) { // Lookup values found
+				$arwrk = array();
+				$arwrk[1] = $rswrk->fields('DispFld');
+				$this->pegawai_id->ViewValue = $this->pegawai_id->DisplayValue($arwrk);
+				$rswrk->Close();
+			} else {
+				$this->pegawai_id->ViewValue = $this->pegawai_id->CurrentValue;
+			}
+		} else {
+			$this->pegawai_id->ViewValue = NULL;
+		}
+		}
+		$this->pegawai_id->ViewCustomAttributes = "";
+		} else {
+		$this->pegawai_id->EditValue = $this->pegawai_id->CurrentValue;
+		$this->pegawai_id->PlaceHolder = ew_RemoveHtml($this->pegawai_id->FldCaption());
+		}
 
-		// hk_gol
-		$this->hk_gol->EditCustomAttributes = "";
-		$this->hk_gol->EditValue = $this->hk_gol->Options(FALSE);
+		// gp
+		$this->gp->EditAttrs["class"] = "form-control";
+		$this->gp->EditCustomAttributes = "";
+		$this->gp->EditValue = $this->gp->CurrentValue;
+		$this->gp->PlaceHolder = ew_RemoveHtml($this->gp->FldCaption());
+		if (strval($this->gp->EditValue) <> "" && is_numeric($this->gp->EditValue)) $this->gp->EditValue = ew_FormatNumber($this->gp->EditValue, -2, -2, -2, -2);
 
-		// umr
-		$this->umr->EditAttrs["class"] = "form-control";
-		$this->umr->EditCustomAttributes = "";
-		$this->umr->EditValue = $this->umr->CurrentValue;
-		$this->umr->PlaceHolder = ew_RemoveHtml($this->umr->FldCaption());
-		if (strval($this->umr->EditValue) <> "" && is_numeric($this->umr->EditValue)) $this->umr->EditValue = ew_FormatNumber($this->umr->EditValue, -2, -2, -2, -2);
-
-		// hk_jml
-		$this->hk_jml->EditAttrs["class"] = "form-control";
-		$this->hk_jml->EditCustomAttributes = "";
-		$this->hk_jml->EditValue = $this->hk_jml->CurrentValue;
-		$this->hk_jml->PlaceHolder = ew_RemoveHtml($this->hk_jml->FldCaption());
-
-		// upah
-		$this->upah->EditAttrs["class"] = "form-control";
-		$this->upah->EditCustomAttributes = "";
-		$this->upah->EditValue = $this->upah->CurrentValue;
-		$this->upah->PlaceHolder = ew_RemoveHtml($this->upah->FldCaption());
-		if (strval($this->upah->EditValue) <> "" && is_numeric($this->upah->EditValue)) $this->upah->EditValue = ew_FormatNumber($this->upah->EditValue, -2, -2, -2, -2);
-
-		// premi_hadir
-		$this->premi_hadir->EditAttrs["class"] = "form-control";
-		$this->premi_hadir->EditCustomAttributes = "";
-		$this->premi_hadir->EditValue = $this->premi_hadir->CurrentValue;
-		$this->premi_hadir->PlaceHolder = ew_RemoveHtml($this->premi_hadir->FldCaption());
-		if (strval($this->premi_hadir->EditValue) <> "" && is_numeric($this->premi_hadir->EditValue)) $this->premi_hadir->EditValue = ew_FormatNumber($this->premi_hadir->EditValue, -2, -2, -2, -2);
-
-		// premi_malam
-		$this->premi_malam->EditAttrs["class"] = "form-control";
-		$this->premi_malam->EditCustomAttributes = "";
-		$this->premi_malam->EditValue = $this->premi_malam->CurrentValue;
-		$this->premi_malam->PlaceHolder = ew_RemoveHtml($this->premi_malam->FldCaption());
-		if (strval($this->premi_malam->EditValue) <> "" && is_numeric($this->premi_malam->EditValue)) $this->premi_malam->EditValue = ew_FormatNumber($this->premi_malam->EditValue, -2, -2, -2, -2);
-
-		// pot_absen
-		$this->pot_absen->EditAttrs["class"] = "form-control";
-		$this->pot_absen->EditCustomAttributes = "";
-		$this->pot_absen->EditValue = $this->pot_absen->CurrentValue;
-		$this->pot_absen->PlaceHolder = ew_RemoveHtml($this->pot_absen->FldCaption());
-		if (strval($this->pot_absen->EditValue) <> "" && is_numeric($this->pot_absen->EditValue)) $this->pot_absen->EditValue = ew_FormatNumber($this->pot_absen->EditValue, -2, -2, -2, -2);
-
-		// lembur
-		$this->lembur->EditAttrs["class"] = "form-control";
-		$this->lembur->EditCustomAttributes = "";
-		$this->lembur->EditValue = $this->lembur->CurrentValue;
-		$this->lembur->PlaceHolder = ew_RemoveHtml($this->lembur->FldCaption());
-		if (strval($this->lembur->EditValue) <> "" && is_numeric($this->lembur->EditValue)) $this->lembur->EditValue = ew_FormatNumber($this->lembur->EditValue, -2, -2, -2, -2);
+		// rumus2_id
+		$this->rumus2_id->EditAttrs["class"] = "form-control";
+		$this->rumus2_id->EditCustomAttributes = "";
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -866,26 +899,14 @@ class ct_rumus extends cTable {
 			if ($Doc->Horizontal) { // Horizontal format, write header
 				$Doc->BeginExportRow();
 				if ($ExportPageType == "view") {
-					if ($this->rumus_nama->Exportable) $Doc->ExportCaption($this->rumus_nama);
-					if ($this->hk_gol->Exportable) $Doc->ExportCaption($this->hk_gol);
-					if ($this->umr->Exportable) $Doc->ExportCaption($this->umr);
-					if ($this->hk_jml->Exportable) $Doc->ExportCaption($this->hk_jml);
-					if ($this->upah->Exportable) $Doc->ExportCaption($this->upah);
-					if ($this->premi_hadir->Exportable) $Doc->ExportCaption($this->premi_hadir);
-					if ($this->premi_malam->Exportable) $Doc->ExportCaption($this->premi_malam);
-					if ($this->pot_absen->Exportable) $Doc->ExportCaption($this->pot_absen);
-					if ($this->lembur->Exportable) $Doc->ExportCaption($this->lembur);
+					if ($this->pegawai_id->Exportable) $Doc->ExportCaption($this->pegawai_id);
+					if ($this->gp->Exportable) $Doc->ExportCaption($this->gp);
+					if ($this->rumus2_id->Exportable) $Doc->ExportCaption($this->rumus2_id);
 				} else {
-					if ($this->rumus_id->Exportable) $Doc->ExportCaption($this->rumus_id);
-					if ($this->rumus_nama->Exportable) $Doc->ExportCaption($this->rumus_nama);
-					if ($this->hk_gol->Exportable) $Doc->ExportCaption($this->hk_gol);
-					if ($this->umr->Exportable) $Doc->ExportCaption($this->umr);
-					if ($this->hk_jml->Exportable) $Doc->ExportCaption($this->hk_jml);
-					if ($this->upah->Exportable) $Doc->ExportCaption($this->upah);
-					if ($this->premi_hadir->Exportable) $Doc->ExportCaption($this->premi_hadir);
-					if ($this->premi_malam->Exportable) $Doc->ExportCaption($this->premi_malam);
-					if ($this->pot_absen->Exportable) $Doc->ExportCaption($this->pot_absen);
-					if ($this->lembur->Exportable) $Doc->ExportCaption($this->lembur);
+					if ($this->rumus2_peg_id->Exportable) $Doc->ExportCaption($this->rumus2_peg_id);
+					if ($this->pegawai_id->Exportable) $Doc->ExportCaption($this->pegawai_id);
+					if ($this->gp->Exportable) $Doc->ExportCaption($this->gp);
+					if ($this->rumus2_id->Exportable) $Doc->ExportCaption($this->rumus2_id);
 				}
 				$Doc->EndExportRow();
 			}
@@ -917,26 +938,14 @@ class ct_rumus extends cTable {
 				if (!$Doc->ExportCustom) {
 					$Doc->BeginExportRow($RowCnt); // Allow CSS styles if enabled
 					if ($ExportPageType == "view") {
-						if ($this->rumus_nama->Exportable) $Doc->ExportField($this->rumus_nama);
-						if ($this->hk_gol->Exportable) $Doc->ExportField($this->hk_gol);
-						if ($this->umr->Exportable) $Doc->ExportField($this->umr);
-						if ($this->hk_jml->Exportable) $Doc->ExportField($this->hk_jml);
-						if ($this->upah->Exportable) $Doc->ExportField($this->upah);
-						if ($this->premi_hadir->Exportable) $Doc->ExportField($this->premi_hadir);
-						if ($this->premi_malam->Exportable) $Doc->ExportField($this->premi_malam);
-						if ($this->pot_absen->Exportable) $Doc->ExportField($this->pot_absen);
-						if ($this->lembur->Exportable) $Doc->ExportField($this->lembur);
+						if ($this->pegawai_id->Exportable) $Doc->ExportField($this->pegawai_id);
+						if ($this->gp->Exportable) $Doc->ExportField($this->gp);
+						if ($this->rumus2_id->Exportable) $Doc->ExportField($this->rumus2_id);
 					} else {
-						if ($this->rumus_id->Exportable) $Doc->ExportField($this->rumus_id);
-						if ($this->rumus_nama->Exportable) $Doc->ExportField($this->rumus_nama);
-						if ($this->hk_gol->Exportable) $Doc->ExportField($this->hk_gol);
-						if ($this->umr->Exportable) $Doc->ExportField($this->umr);
-						if ($this->hk_jml->Exportable) $Doc->ExportField($this->hk_jml);
-						if ($this->upah->Exportable) $Doc->ExportField($this->upah);
-						if ($this->premi_hadir->Exportable) $Doc->ExportField($this->premi_hadir);
-						if ($this->premi_malam->Exportable) $Doc->ExportField($this->premi_malam);
-						if ($this->pot_absen->Exportable) $Doc->ExportField($this->pot_absen);
-						if ($this->lembur->Exportable) $Doc->ExportField($this->lembur);
+						if ($this->rumus2_peg_id->Exportable) $Doc->ExportField($this->rumus2_peg_id);
+						if ($this->pegawai_id->Exportable) $Doc->ExportField($this->pegawai_id);
+						if ($this->gp->Exportable) $Doc->ExportField($this->gp);
+						if ($this->rumus2_id->Exportable) $Doc->ExportField($this->rumus2_id);
 					}
 					$Doc->EndExportRow();
 				}
@@ -980,7 +989,7 @@ class ct_rumus extends cTable {
 
 	// Write Audit Trail start/end for grid update
 	function WriteAuditTrailDummy($typ) {
-		$table = 't_rumus';
+		$table = 't_rumus2_peg';
 		$usr = CurrentUserID();
 		ew_WriteAuditTrail("log", ew_StdCurrentDateTime(), ew_ScriptName(), $usr, $typ, $table, "", "", "", "");
 	}
@@ -989,12 +998,12 @@ class ct_rumus extends cTable {
 	function WriteAuditTrailOnAdd(&$rs) {
 		global $Language;
 		if (!$this->AuditTrailOnAdd) return;
-		$table = 't_rumus';
+		$table = 't_rumus2_peg';
 
 		// Get key value
 		$key = "";
 		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-		$key .= $rs['rumus_id'];
+		$key .= $rs['rumus2_peg_id'];
 
 		// Write Audit Trail
 		$dt = ew_StdCurrentDateTime();
@@ -1023,12 +1032,12 @@ class ct_rumus extends cTable {
 	function WriteAuditTrailOnEdit(&$rsold, &$rsnew) {
 		global $Language;
 		if (!$this->AuditTrailOnEdit) return;
-		$table = 't_rumus';
+		$table = 't_rumus2_peg';
 
 		// Get key value
 		$key = "";
 		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-		$key .= $rsold['rumus_id'];
+		$key .= $rsold['rumus2_peg_id'];
 
 		// Write Audit Trail
 		$dt = ew_StdCurrentDateTime();
@@ -1070,13 +1079,13 @@ class ct_rumus extends cTable {
 	function WriteAuditTrailOnDelete(&$rs) {
 		global $Language;
 		if (!$this->AuditTrailOnDelete) return;
-		$table = 't_rumus';
+		$table = 't_rumus2_peg';
 
 		// Get key value
 		$key = "";
 		if ($key <> "")
 			$key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-		$key .= $rs['rumus_id'];
+		$key .= $rs['rumus2_peg_id'];
 
 		// Write Audit Trail
 		$dt = ew_StdCurrentDateTime();

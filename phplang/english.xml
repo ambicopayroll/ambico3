@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<ew-language date="2017/4/21" version="13.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
+<ew-language date="2017/4/22" version="13.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
   <!-- 
 	*** Important Notes:
 	1. Language ID should follow: https://developers.google.com/recaptcha/docs/language,
@@ -586,6 +586,9 @@
     <menu id="70">
       <phrase id="menutext" value="Dashboard" />
     </menu>
+    <menu id="10074">
+      <phrase id="menutext" value="v jdw krj def" />
+    </menu>
     <menu id="71">
       <phrase id="menutext" value="Setup" />
     </menu>
@@ -601,8 +604,11 @@
     <menu id="43">
       <phrase id="menutext" value="Jam Kerja" />
     </menu>
+    <menu id="10076">
+      <phrase id="menutext" value="Gol. Gaji (Bulanan)" />
+    </menu>
     <menu id="44">
-      <phrase id="menutext" value="Golongan Gaji" />
+      <phrase id="menutext" value="Gol. Gaji (Harian)" />
     </menu>
     <menu id="30">
       <phrase id="menutext" value="Pegawai" />
@@ -613,14 +619,14 @@
     <menu id="41">
       <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
     </menu>
+    <menu id="10075">
+      <phrase id="menutext" value="Gaji (per Pegawai Bulanan)" />
+    </menu>
     <menu id="45">
-      <phrase id="menutext" value="Gaji (per Pegawai)" />
+      <phrase id="menutext" value="Gaji (per Pegawai Harian)" />
     </menu>
     <menu id="46">
       <phrase id="menutext" value="User" />
-    </menu>
-    <menu id="1">
-      <phrase id="menutext" value="att log" />
     </menu>
     <menu id="72">
       <phrase id="menutext" value="Proses" />
@@ -648,6 +654,9 @@
     </menu>
     <menu id="2">
       <phrase id="menutext" value="User Activity Log" />
+    </menu>
+    <menu id="1">
+      <phrase id="menutext" value="att log" />
     </menu>
     <menu id="3">
       <phrase id="menutext" value="cuti normatif" />
@@ -2126,7 +2135,7 @@
       </field>
     </table>
     <table id="t_rumus">
-      <phrase id="tblcaption" value="Penggolongan Gaji" />
+      <phrase id="tblcaption" value="Penggolongan Gaji (Harian)" />
       <field id="rumus_id">
         <phrase id="fldcaption" value="ID" />
       </field>
@@ -2135,6 +2144,10 @@
       </field>
       <field id="hk_gol">
         <phrase id="fldcaption" value="Gol. Hari Kerja" />
+        <phrase id="fldtagvalue1" value="5" />
+        <phrase id="fldtagcaption1" value="5 Hari Kerja" />
+        <phrase id="fldtagvalue2" value="6" />
+        <phrase id="fldtagcaption2" value="6 Hari Kerja" />
       </field>
       <field id="umr">
         <phrase id="fldcaption" value="UMR" />
@@ -2159,7 +2172,7 @@
       </field>
     </table>
     <table id="t_rumus_peg">
-      <phrase id="tblcaption" value="Gaji" />
+      <phrase id="tblcaption" value="Gaji (Harian)" />
       <field id="rumus_peg_id">
         <phrase id="fldcaption" value="ID" />
       </field>
@@ -2811,6 +2824,76 @@
     </table>
     <table id="lap_gaji__php">
       <phrase id="tblcaption" value="Gaji" />
+    </table>
+    <table id="v_jdw_krj_def">
+      <phrase id="tblcaption" value="v jdw krj def" />
+      <field id="pegawai_nama">
+        <phrase id="fldcaption" value="pegawai nama" />
+      </field>
+      <field id="tgl_indo">
+        <phrase id="fldcaption" value="tgl indo" />
+      </field>
+      <field id="jk_kd">
+        <phrase id="fldcaption" value="jk kd" />
+      </field>
+      <field id="hk_def">
+        <phrase id="fldcaption" value="hk def" />
+      </field>
+      <field id="tgl">
+        <phrase id="fldcaption" value="tgl" />
+      </field>
+    </table>
+    <table id="t_rumus2_peg">
+      <phrase id="tblcaption" value="Gaji (Bulanan)" />
+      <field id="rumus2_peg_id">
+        <phrase id="fldcaption" value="ID" />
+      </field>
+      <field id="pegawai_id">
+        <phrase id="fldcaption" value="Nama" />
+      </field>
+      <field id="gp">
+        <phrase id="fldcaption" value="Gaji Pokok" />
+      </field>
+      <field id="rumus2_id">
+        <phrase id="fldcaption" value="Golongan Gaji" />
+      </field>
+    </table>
+    <table id="t_rumus2">
+      <phrase id="tblcaption" value="Penggolongan Gaji (Bulanan)" />
+      <field id="rumus2_id">
+        <phrase id="fldcaption" value="ID" />
+      </field>
+      <field id="rumus2_nama">
+        <phrase id="fldcaption" value="Golongan Gaji" />
+      </field>
+      <field id="gol_hk">
+        <phrase id="fldcaption" value="Gol. Hari Kerja" />
+        <phrase id="fldtagvalue1" value="5" />
+        <phrase id="fldtagcaption1" value="5 Hari Kerja" />
+        <phrase id="fldtagvalue2" value="6" />
+        <phrase id="fldtagcaption2" value="6 Hari Kerja" />
+      </field>
+      <field id="premi_hadir">
+        <phrase id="fldcaption" value="Premi Hadir" />
+      </field>
+      <field id="premi_malam">
+        <phrase id="fldcaption" value="Premi Malam" />
+      </field>
+      <field id="lp">
+        <phrase id="fldcaption" value="LP" />
+      </field>
+      <field id="forklift">
+        <phrase id="fldcaption" value="Forklift" />
+      </field>
+      <field id="pot_absen">
+        <phrase id="fldcaption" value="Pot. Absen" />
+      </field>
+      <field id="pot_aspen">
+        <phrase id="fldcaption" value="Pot. Astek &amp; Pensiun" />
+      </field>
+      <field id="pot_bpjs">
+        <phrase id="fldcaption" value="Pot. BPJS" />
+      </field>
     </table>
   </project>
 </ew-language>
