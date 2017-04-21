@@ -350,6 +350,9 @@
   <project>
     <phrase id="bodytitle" value="AMBICO" />
     <phrase id="footertext" value="&amp;copy;2017 AMBICO. All rights reserved." />
+    <menu id="71">
+      <phrase id="menutext" value="Scan Finger" />
+    </menu>
     <menu id="1">
       <phrase id="menutext" value="att log" />
     </menu>
@@ -558,7 +561,7 @@
       <phrase id="menutext" value="zx kredit m" />
     </menu>
     <menu id="70">
-      <phrase id="menutext" value="Laporan Rekonsiliasi" />
+      <phrase id="menutext" value="Rekonsiliasi" />
     </menu>
     <table id="att_log">
       <phrase id="tblcaption" value="att log" />
@@ -2313,7 +2316,7 @@
       </field>
     </table>
     <table id="r_rekon">
-      <phrase id="tblcaption" value="Laporan Rekonsiliasi" />
+      <phrase id="tblcaption" value="Rekonsiliasi" />
       <field id="jdw_id">
         <phrase id="fldcaption" value="jdw id" />
       </field>
@@ -2349,6 +2352,33 @@
       </field>
       <field id="gol_hk">
         <phrase id="fldcaption" value="Gol. Hari Kerja" />
+      </field>
+    </table>
+    <table id="r_att_log">
+      <phrase id="tblcaption" value="Scan Finger" />
+      <field id="sn">
+        <phrase id="fldcaption" value="sn" />
+      </field>
+      <field id="scan_date">
+        <phrase id="fldcaption" value="scan date" />
+      </field>
+      <field id="pin">
+        <phrase id="fldcaption" value="pin" />
+      </field>
+      <field id="att_id">
+        <phrase id="fldcaption" value="att id" />
+      </field>
+      <field id="pegawai_nip">
+        <phrase id="fldcaption" value="NIK" />
+      </field>
+      <field id="pegawai_nama">
+        <phrase id="fldcaption" value="Nama Pegawai" />
+      </field>
+      <field id="scan_date_tgl_jam">
+        <phrase id="fldcaption" value="Tgl. &amp; Jam" />
+      </field>
+      <field id="scan_date_tgl">
+        <phrase id="fldcaption" value="Tanggal (Thn-Bln-Tgl)" />
       </field>
     </table>
   </project>

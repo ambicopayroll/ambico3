@@ -634,11 +634,14 @@
     <menu id="73">
       <phrase id="menutext" value="Laporan" />
     </menu>
+    <menu id="10071">
+      <phrase id="menutext" value="Scan Finger" />
+    </menu>
     <menu id="10070">
-      <phrase id="menutext" value="Laporan Rekonsiliasi" />
+      <phrase id="menutext" value="Rekonsiliasi" />
     </menu>
     <menu id="76">
-      <phrase id="menutext" value="Laporan Gaji" />
+      <phrase id="menutext" value="Gaji" />
     </menu>
     <menu id="2">
       <phrase id="menutext" value="User Activity Log" />
@@ -2801,7 +2804,7 @@
       <phrase id="tblcaption" value="Generate Rekonsiliasi Absensi" />
     </table>
     <table id="lap_gaji__php">
-      <phrase id="tblcaption" value="Laporan Gaji" />
+      <phrase id="tblcaption" value="Gaji" />
     </table>
   </project>
 </ew-language>
