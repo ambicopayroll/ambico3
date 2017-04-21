@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<ew-language date="2017/4/20" version="13.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
+<ew-language date="2017/4/21" version="13.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
   <!-- 
 	*** Important Notes:
 	1. Language ID should follow: https://developers.google.com/recaptcha/docs/language,
@@ -602,7 +602,7 @@
       <phrase id="menutext" value="Jam Kerja" />
     </menu>
     <menu id="44">
-      <phrase id="menutext" value="Komponen Gaji" />
+      <phrase id="menutext" value="Penggolongan Gaji" />
     </menu>
     <menu id="30">
       <phrase id="menutext" value="Pegawai" />
@@ -1907,36 +1907,36 @@
       </field>
     </table>
     <table id="t_rumus">
-      <phrase id="tblcaption" value="Komponen Gaji" />
+      <phrase id="tblcaption" value="Penggolongan Gaji" />
       <field id="rumus_id">
-        <phrase id="fldcaption" value="rumus id" />
+        <phrase id="fldcaption" value="ID" />
       </field>
       <field id="rumus_nama">
-        <phrase id="fldcaption" value="rumus nama" />
+        <phrase id="fldcaption" value="Gol. Gaji" />
       </field>
       <field id="hk_gol">
-        <phrase id="fldcaption" value="hk gol" />
+        <phrase id="fldcaption" value="Gol. Hari Kerja" />
       </field>
       <field id="umr">
-        <phrase id="fldcaption" value="umr" />
+        <phrase id="fldcaption" value="UMR" />
       </field>
       <field id="hk_jml">
-        <phrase id="fldcaption" value="hk jml" />
+        <phrase id="fldcaption" value="Jml. Hari Kerja" />
       </field>
       <field id="upah">
-        <phrase id="fldcaption" value="upah" />
+        <phrase id="fldcaption" value="Upah" />
       </field>
       <field id="premi_hadir">
-        <phrase id="fldcaption" value="premi hadir" />
+        <phrase id="fldcaption" value="Premi Hadir" />
       </field>
       <field id="premi_malam">
-        <phrase id="fldcaption" value="premi malam" />
+        <phrase id="fldcaption" value="Premi Malam" />
       </field>
       <field id="pot_absen">
-        <phrase id="fldcaption" value="pot absen" />
+        <phrase id="fldcaption" value="Potongan Absen" />
       </field>
       <field id="lembur">
-        <phrase id="fldcaption" value="lembur" />
+        <phrase id="fldcaption" value="Lembur" />
       </field>
     </table>
     <table id="t_rumus_peg">

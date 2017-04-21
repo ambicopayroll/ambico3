@@ -362,6 +362,9 @@ class ct_rumus_list extends ct_rumus {
 			$Security->UserID_Loaded();
 		}
 
+		// Create form object
+		$objForm = new cFormObj();
+
 		// Get export parameters
 		$custom = "";
 		if (@$_GET["export"] <> "") {
@@ -410,8 +413,6 @@ class ct_rumus_list extends ct_rumus {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->rumus_id->SetVisibility();
-		$this->rumus_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->rumus_nama->SetVisibility();
 		$this->hk_gol->SetVisibility();
 		$this->umr->SetVisibility();
@@ -583,6 +584,71 @@ class ct_rumus_list extends ct_rumus {
 			if ($this->Export == "")
 				$this->SetupBreadcrumb();
 
+			// Check QueryString parameters
+			if (@$_GET["a"] <> "") {
+				$this->CurrentAction = $_GET["a"];
+
+				// Clear inline mode
+				if ($this->CurrentAction == "cancel")
+					$this->ClearInlineMode();
+
+				// Switch to grid edit mode
+				if ($this->CurrentAction == "gridedit")
+					$this->GridEditMode();
+
+				// Switch to inline edit mode
+				if ($this->CurrentAction == "edit")
+					$this->InlineEditMode();
+
+				// Switch to inline add mode
+				if ($this->CurrentAction == "add" || $this->CurrentAction == "copy")
+					$this->InlineAddMode();
+
+				// Switch to grid add mode
+				if ($this->CurrentAction == "gridadd")
+					$this->GridAddMode();
+			} else {
+				if (@$_POST["a_list"] <> "") {
+					$this->CurrentAction = $_POST["a_list"]; // Get action
+
+					// Grid Update
+					if (($this->CurrentAction == "gridupdate" || $this->CurrentAction == "gridoverwrite") && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridedit") {
+						if ($this->ValidateGridForm()) {
+							$bGridUpdate = $this->GridUpdate();
+						} else {
+							$bGridUpdate = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridUpdate) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridedit"; // Stay in Grid Edit mode
+						}
+					}
+
+					// Inline Update
+					if (($this->CurrentAction == "update" || $this->CurrentAction == "overwrite") && @$_SESSION[EW_SESSION_INLINE_MODE] == "edit")
+						$this->InlineUpdate();
+
+					// Insert Inline
+					if ($this->CurrentAction == "insert" && @$_SESSION[EW_SESSION_INLINE_MODE] == "add")
+						$this->InlineInsert();
+
+					// Grid Insert
+					if ($this->CurrentAction == "gridinsert" && @$_SESSION[EW_SESSION_INLINE_MODE] == "gridadd") {
+						if ($this->ValidateGridForm()) {
+							$bGridInsert = $this->GridInsert();
+						} else {
+							$bGridInsert = FALSE;
+							$this->setFailureMessage($gsFormError);
+						}
+						if (!$bGridInsert) {
+							$this->EventCancelled = TRUE;
+							$this->CurrentAction = "gridadd"; // Stay in Grid Add mode
+						}
+					}
+				}
+			}
+
 			// Hide list options
 			if ($this->Export <> "") {
 				$this->ListOptions->HideAllOptions(array("sequence"));
@@ -604,6 +670,14 @@ class ct_rumus_list extends ct_rumus {
 			if ($this->Export <> "") {
 				foreach ($this->OtherOptions as &$option)
 					$option->HideAllOptions();
+			}
+
+			// Show grid delete link for grid add / grid edit
+			if ($this->AllowAddDeleteRow) {
+				if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+					$item = $this->ListOptions->GetItem("griddelete");
+					if ($item) $item->Visible = TRUE;
+				}
 			}
 
 			// Get default search criteria
@@ -719,6 +793,240 @@ class ct_rumus_list extends ct_rumus {
 		}
 	}
 
+	//  Exit inline mode
+	function ClearInlineMode() {
+		$this->setKey("rumus_id", ""); // Clear inline edit key
+		$this->umr->FormValue = ""; // Clear form value
+		$this->upah->FormValue = ""; // Clear form value
+		$this->premi_hadir->FormValue = ""; // Clear form value
+		$this->premi_malam->FormValue = ""; // Clear form value
+		$this->pot_absen->FormValue = ""; // Clear form value
+		$this->lembur->FormValue = ""; // Clear form value
+		$this->LastAction = $this->CurrentAction; // Save last action
+		$this->CurrentAction = ""; // Clear action
+		$_SESSION[EW_SESSION_INLINE_MODE] = ""; // Clear inline mode
+	}
+
+	// Switch to Grid Add mode
+	function GridAddMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridadd"; // Enabled grid add
+	}
+
+	// Switch to Grid Edit mode
+	function GridEditMode() {
+		$_SESSION[EW_SESSION_INLINE_MODE] = "gridedit"; // Enable grid edit
+	}
+
+	// Switch to Inline Edit mode
+	function InlineEditMode() {
+		global $Security, $Language;
+		if (!$Security->CanEdit())
+			$this->Page_Terminate("login.php"); // Go to login page
+		$bInlineEdit = TRUE;
+		if (@$_GET["rumus_id"] <> "") {
+			$this->rumus_id->setQueryStringValue($_GET["rumus_id"]);
+		} else {
+			$bInlineEdit = FALSE;
+		}
+		if ($bInlineEdit) {
+			if ($this->LoadRow()) {
+				$this->setKey("rumus_id", $this->rumus_id->CurrentValue); // Set up inline edit key
+				$_SESSION[EW_SESSION_INLINE_MODE] = "edit"; // Enable inline edit
+			}
+		}
+	}
+
+	// Perform update to Inline Edit record
+	function InlineUpdate() {
+		global $Language, $objForm, $gsFormError;
+		$objForm->Index = 1; 
+		$this->LoadFormValues(); // Get form values
+
+		// Validate form
+		$bInlineUpdate = TRUE;
+		if (!$this->ValidateForm()) {	
+			$bInlineUpdate = FALSE; // Form error, reset action
+			$this->setFailureMessage($gsFormError);
+		} else {
+			$bInlineUpdate = FALSE;
+			$rowkey = strval($objForm->GetValue($this->FormKeyName));
+			if ($this->SetupKeyValues($rowkey)) { // Set up key values
+				if ($this->CheckInlineEditKey()) { // Check key
+					$this->SendEmail = TRUE; // Send email on update success
+					$bInlineUpdate = $this->EditRow(); // Update record
+				} else {
+					$bInlineUpdate = FALSE;
+				}
+			}
+		}
+		if ($bInlineUpdate) { // Update success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Set up success message
+			$this->ClearInlineMode(); // Clear inline edit mode
+		} else {
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("UpdateFailed")); // Set update failed message
+			$this->EventCancelled = TRUE; // Cancel event
+			$this->CurrentAction = "edit"; // Stay in edit mode
+		}
+	}
+
+	// Check Inline Edit key
+	function CheckInlineEditKey() {
+
+		//CheckInlineEditKey = True
+		if (strval($this->getKey("rumus_id")) <> strval($this->rumus_id->CurrentValue))
+			return FALSE;
+		return TRUE;
+	}
+
+	// Switch to Inline Add mode
+	function InlineAddMode() {
+		global $Security, $Language;
+		if (!$Security->CanAdd())
+			$this->Page_Terminate("login.php"); // Return to login page
+		if ($this->CurrentAction == "copy") {
+			if (@$_GET["rumus_id"] <> "") {
+				$this->rumus_id->setQueryStringValue($_GET["rumus_id"]);
+				$this->setKey("rumus_id", $this->rumus_id->CurrentValue); // Set up key
+			} else {
+				$this->setKey("rumus_id", ""); // Clear key
+				$this->CurrentAction = "add";
+			}
+		}
+		$_SESSION[EW_SESSION_INLINE_MODE] = "add"; // Enable inline add
+	}
+
+	// Perform update to Inline Add/Copy record
+	function InlineInsert() {
+		global $Language, $objForm, $gsFormError;
+		$this->LoadOldRecord(); // Load old recordset
+		$objForm->Index = 0;
+		$this->LoadFormValues(); // Get form values
+
+		// Validate form
+		if (!$this->ValidateForm()) {
+			$this->setFailureMessage($gsFormError); // Set validation error message
+			$this->EventCancelled = TRUE; // Set event cancelled
+			$this->CurrentAction = "add"; // Stay in add mode
+			return;
+		}
+		$this->SendEmail = TRUE; // Send email on add success
+		if ($this->AddRow($this->OldRecordset)) { // Add record
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("AddSuccess")); // Set up add success message
+			$this->ClearInlineMode(); // Clear inline add mode
+		} else { // Add failed
+			$this->EventCancelled = TRUE; // Set event cancelled
+			$this->CurrentAction = "add"; // Stay in add mode
+		}
+	}
+
+	// Perform update to grid
+	function GridUpdate() {
+		global $Language, $objForm, $gsFormError;
+		$bGridUpdate = TRUE;
+
+		// Get old recordset
+		$this->CurrentFilter = $this->BuildKeyFilter();
+		if ($this->CurrentFilter == "")
+			$this->CurrentFilter = "0=1";
+		$sSql = $this->SQL();
+		$conn = &$this->Connection();
+		if ($rs = $conn->Execute($sSql)) {
+			$rsold = $rs->GetRows();
+			$rs->Close();
+		}
+
+		// Call Grid Updating event
+		if (!$this->Grid_Updating($rsold)) {
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("GridEditCancelled")); // Set grid edit cancelled message
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+		if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateBegin")); // Batch update begin
+		$sKey = "";
+
+		// Update row index and get row key
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Update all rows based on key
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+			$objForm->Index = $rowindex;
+			$rowkey = strval($objForm->GetValue($this->FormKeyName));
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+
+			// Load all values and keys
+			if ($rowaction <> "insertdelete") { // Skip insert then deleted rows
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "" || $rowaction == "edit" || $rowaction == "delete") {
+					$bGridUpdate = $this->SetupKeyValues($rowkey); // Set up key values
+				} else {
+					$bGridUpdate = TRUE;
+				}
+
+				// Skip empty row
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// No action required
+				// Validate form and insert/update/delete record
+
+				} elseif ($bGridUpdate) {
+					if ($rowaction == "delete") {
+						$this->CurrentFilter = $this->KeyFilter();
+						$bGridUpdate = $this->DeleteRows(); // Delete this row
+					} else if (!$this->ValidateForm()) {
+						$bGridUpdate = FALSE; // Form error, reset action
+						$this->setFailureMessage($gsFormError);
+					} else {
+						if ($rowaction == "insert") {
+							$bGridUpdate = $this->AddRow(); // Insert this row
+						} else {
+							if ($rowkey <> "") {
+								$this->SendEmail = FALSE; // Do not send email on update success
+								$bGridUpdate = $this->EditRow(); // Update this row
+							}
+						} // End update
+					}
+				}
+				if ($bGridUpdate) {
+					if ($sKey <> "") $sKey .= ", ";
+					$sKey .= $rowkey;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($bGridUpdate) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Updated event
+			$this->Grid_Updated($rsold, $rsnew);
+			if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateSuccess")); // Batch update success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("UpdateSuccess")); // Set up update success message
+			$this->ClearInlineMode(); // Clear inline edit mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->AuditTrailOnEdit) $this->WriteAuditTrailDummy($Language->Phrase("BatchUpdateRollback")); // Batch update rollback
+			if ($this->getFailureMessage() == "")
+				$this->setFailureMessage($Language->Phrase("UpdateFailed")); // Set update failed message
+		}
+		return $bGridUpdate;
+	}
+
 	// Build filter for all keys
 	function BuildKeyFilter() {
 		global $objForm;
@@ -755,6 +1063,192 @@ class ct_rumus_list extends ct_rumus {
 				return FALSE;
 		}
 		return TRUE;
+	}
+
+	// Perform Grid Add
+	function GridInsert() {
+		global $Language, $objForm, $gsFormError;
+		$rowindex = 1;
+		$bGridInsert = FALSE;
+		$conn = &$this->Connection();
+
+		// Call Grid Inserting event
+		if (!$this->Grid_Inserting()) {
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("GridAddCancelled")); // Set grid add cancelled message
+			}
+			return FALSE;
+		}
+
+		// Begin transaction
+		$conn->BeginTrans();
+
+		// Init key filter
+		$sWrkFilter = "";
+		$addcnt = 0;
+		if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertBegin")); // Batch insert begin
+		$sKey = "";
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Insert all rows
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "" && $rowaction <> "insert")
+				continue; // Skip
+			$this->LoadFormValues(); // Get form values
+			if (!$this->EmptyRow()) {
+				$addcnt++;
+				$this->SendEmail = FALSE; // Do not send email on insert success
+
+				// Validate form
+				if (!$this->ValidateForm()) {
+					$bGridInsert = FALSE; // Form error, reset action
+					$this->setFailureMessage($gsFormError);
+				} else {
+					$bGridInsert = $this->AddRow($this->OldRecordset); // Insert this row
+				}
+				if ($bGridInsert) {
+					if ($sKey <> "") $sKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+					$sKey .= $this->rumus_id->CurrentValue;
+
+					// Add filter for this record
+					$sFilter = $this->KeyFilter();
+					if ($sWrkFilter <> "") $sWrkFilter .= " OR ";
+					$sWrkFilter .= $sFilter;
+				} else {
+					break;
+				}
+			}
+		}
+		if ($addcnt == 0) { // No record inserted
+			$this->setFailureMessage($Language->Phrase("NoAddRecord"));
+			$bGridInsert = FALSE;
+		}
+		if ($bGridInsert) {
+			$conn->CommitTrans(); // Commit transaction
+
+			// Get new recordset
+			$this->CurrentFilter = $sWrkFilter;
+			$sSql = $this->SQL();
+			if ($rs = $conn->Execute($sSql)) {
+				$rsnew = $rs->GetRows();
+				$rs->Close();
+			}
+
+			// Call Grid_Inserted event
+			$this->Grid_Inserted($rsnew);
+			if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertSuccess")); // Batch insert success
+			if ($this->getSuccessMessage() == "")
+				$this->setSuccessMessage($Language->Phrase("InsertSuccess")); // Set up insert success message
+			$this->ClearInlineMode(); // Clear grid add mode
+		} else {
+			$conn->RollbackTrans(); // Rollback transaction
+			if ($this->AuditTrailOnAdd) $this->WriteAuditTrailDummy($Language->Phrase("BatchInsertRollback")); // Batch insert rollback
+			if ($this->getFailureMessage() == "") {
+				$this->setFailureMessage($Language->Phrase("InsertFailed")); // Set insert failed message
+			}
+		}
+		return $bGridInsert;
+	}
+
+	// Check if empty row
+	function EmptyRow() {
+		global $objForm;
+		if ($objForm->HasValue("x_rumus_nama") && $objForm->HasValue("o_rumus_nama") && $this->rumus_nama->CurrentValue <> $this->rumus_nama->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_hk_gol") && $objForm->HasValue("o_hk_gol") && $this->hk_gol->CurrentValue <> $this->hk_gol->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_umr") && $objForm->HasValue("o_umr") && $this->umr->CurrentValue <> $this->umr->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_hk_jml") && $objForm->HasValue("o_hk_jml") && $this->hk_jml->CurrentValue <> $this->hk_jml->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_upah") && $objForm->HasValue("o_upah") && $this->upah->CurrentValue <> $this->upah->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_premi_hadir") && $objForm->HasValue("o_premi_hadir") && $this->premi_hadir->CurrentValue <> $this->premi_hadir->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_premi_malam") && $objForm->HasValue("o_premi_malam") && $this->premi_malam->CurrentValue <> $this->premi_malam->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_pot_absen") && $objForm->HasValue("o_pot_absen") && $this->pot_absen->CurrentValue <> $this->pot_absen->OldValue)
+			return FALSE;
+		if ($objForm->HasValue("x_lembur") && $objForm->HasValue("o_lembur") && $this->lembur->CurrentValue <> $this->lembur->OldValue)
+			return FALSE;
+		return TRUE;
+	}
+
+	// Validate grid form
+	function ValidateGridForm() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+
+		// Validate all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else if (!$this->ValidateForm()) {
+					return FALSE;
+				}
+			}
+		}
+		return TRUE;
+	}
+
+	// Get all form values of the grid
+	function GetGridFormValues() {
+		global $objForm;
+
+		// Get row count
+		$objForm->Index = -1;
+		$rowcnt = strval($objForm->GetValue($this->FormKeyCountName));
+		if ($rowcnt == "" || !is_numeric($rowcnt))
+			$rowcnt = 0;
+		$rows = array();
+
+		// Loop through all records
+		for ($rowindex = 1; $rowindex <= $rowcnt; $rowindex++) {
+
+			// Load current row values
+			$objForm->Index = $rowindex;
+			$rowaction = strval($objForm->GetValue($this->FormActionName));
+			if ($rowaction <> "delete" && $rowaction <> "insertdelete") {
+				$this->LoadFormValues(); // Get form values
+				if ($rowaction == "insert" && $this->EmptyRow()) {
+
+					// Ignore
+				} else {
+					$rows[] = $this->GetFieldValues("FormValue"); // Return row as array
+				}
+			}
+		}
+		return $rows; // Return as array of array
+	}
+
+	// Restore form values for current row
+	function RestoreCurrentRowFormValues($idx) {
+		global $objForm;
+
+		// Get row based on current index
+		$objForm->Index = $idx;
+		$this->LoadFormValues(); // Load form values
 	}
 
 	// Get list of filters
@@ -1079,7 +1573,6 @@ class ct_rumus_list extends ct_rumus {
 		if (@$_GET["order"] <> "") {
 			$this->CurrentOrder = ew_StripSlashes(@$_GET["order"]);
 			$this->CurrentOrderType = @$_GET["ordertype"];
-			$this->UpdateSort($this->rumus_id, $bCtrl); // rumus_id
 			$this->UpdateSort($this->rumus_nama, $bCtrl); // rumus_nama
 			$this->UpdateSort($this->hk_gol, $bCtrl); // hk_gol
 			$this->UpdateSort($this->umr, $bCtrl); // umr
@@ -1121,7 +1614,6 @@ class ct_rumus_list extends ct_rumus {
 			if ($this->Command == "resetsort") {
 				$sOrderBy = "";
 				$this->setSessionOrderBy($sOrderBy);
-				$this->rumus_id->setSort("");
 				$this->rumus_nama->setSort("");
 				$this->hk_gol->setSort("");
 				$this->umr->setSort("");
@@ -1142,6 +1634,14 @@ class ct_rumus_list extends ct_rumus {
 	// Set up list options
 	function SetupListOptions() {
 		global $Security, $Language;
+
+		// "griddelete"
+		if ($this->AllowAddDeleteRow) {
+			$item = &$this->ListOptions->Add("griddelete");
+			$item->CssStyle = "white-space: nowrap;";
+			$item->OnLeft = TRUE;
+			$item->Visible = FALSE; // Default hidden
+		}
 
 		// Add group option item
 		$item = &$this->ListOptions->Add($this->ListOptions->GroupOptionName);
@@ -1184,6 +1684,14 @@ class ct_rumus_list extends ct_rumus {
 		$item->ShowInDropDown = FALSE;
 		$item->ShowInButtonGroup = FALSE;
 
+		// "sequence"
+		$item = &$this->ListOptions->Add("sequence");
+		$item->CssStyle = "white-space: nowrap;";
+		$item->Visible = TRUE;
+		$item->OnLeft = TRUE; // Always on left
+		$item->ShowInDropDown = FALSE;
+		$item->ShowInButtonGroup = FALSE;
+
 		// Drop down button for ListOptions
 		$this->ListOptions->UseImageAndText = TRUE;
 		$this->ListOptions->UseDropDownButton = TRUE;
@@ -1205,6 +1713,67 @@ class ct_rumus_list extends ct_rumus {
 		global $Security, $Language, $objForm;
 		$this->ListOptions->LoadDefault();
 
+		// Set up row action and key
+		if (is_numeric($this->RowIndex) && $this->CurrentMode <> "view") {
+			$objForm->Index = $this->RowIndex;
+			$ActionName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormActionName);
+			$OldKeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormOldKeyName);
+			$KeyName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormKeyName);
+			$BlankRowName = str_replace("k_", "k" . $this->RowIndex . "_", $this->FormBlankRowName);
+			if ($this->RowAction <> "")
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $ActionName . "\" id=\"" . $ActionName . "\" value=\"" . $this->RowAction . "\">";
+			if ($this->RowAction == "delete") {
+				$rowkey = $objForm->GetValue($this->FormKeyName);
+				$this->SetupKeyValues($rowkey);
+			}
+			if ($this->RowAction == "insert" && $this->CurrentAction == "F" && $this->EmptyRow())
+				$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $BlankRowName . "\" id=\"" . $BlankRowName . "\" value=\"1\">";
+		}
+
+		// "delete"
+		if ($this->AllowAddDeleteRow) {
+			if ($this->CurrentAction == "gridadd" || $this->CurrentAction == "gridedit") {
+				$option = &$this->ListOptions;
+				$option->UseButtonGroup = TRUE; // Use button group for grid delete button
+				$option->UseImageAndText = TRUE; // Use image and text for grid delete button
+				$oListOpt = &$option->Items["griddelete"];
+				if (!$Security->CanDelete() && is_numeric($this->RowIndex) && ($this->RowAction == "" || $this->RowAction == "edit")) { // Do not allow delete existing record
+					$oListOpt->Body = "&nbsp;";
+				} else {
+					$oListOpt->Body = "<a class=\"ewGridLink ewGridDelete\" title=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("DeleteLink")) . "\" onclick=\"return ew_DeleteGridRow(this, " . $this->RowIndex . ");\">" . $Language->Phrase("DeleteLink") . "</a>";
+				}
+			}
+		}
+
+		// "sequence"
+		$oListOpt = &$this->ListOptions->Items["sequence"];
+		$oListOpt->Body = ew_FormatSeqNo($this->RecCnt);
+
+		// "copy"
+		$oListOpt = &$this->ListOptions->Items["copy"];
+		if (($this->CurrentAction == "add" || $this->CurrentAction == "copy") && $this->RowType == EW_ROWTYPE_ADD) { // Inline Add/Copy
+			$this->ListOptions->CustomItem = "copy"; // Show copy column only
+			$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+			$oListOpt->Body = "<div" . (($oListOpt->OnLeft) ? " style=\"text-align: right\"" : "") . ">" .
+				"<a class=\"ewGridLink ewInlineInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("InsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("InsertLink") . "</a>&nbsp;" .
+				"<a class=\"ewGridLink ewInlineCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("CancelLink") . "</a>" .
+				"<input type=\"hidden\" name=\"a_list\" id=\"a_list\" value=\"insert\"></div>";
+			return;
+		}
+
+		// "edit"
+		$oListOpt = &$this->ListOptions->Items["edit"];
+		if ($this->CurrentAction == "edit" && $this->RowType == EW_ROWTYPE_EDIT) { // Inline-Edit
+			$this->ListOptions->CustomItem = "edit"; // Show edit column only
+			$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+				$oListOpt->Body = "<div" . (($oListOpt->OnLeft) ? " style=\"text-align: right\"" : "") . ">" .
+					"<a class=\"ewGridLink ewInlineUpdate\" title=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("UpdateLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . ew_GetHashUrl($this->PageName(), $this->PageObjName . "_row_" . $this->RowCnt) . "');\">" . $Language->Phrase("UpdateLink") . "</a>&nbsp;" .
+					"<a class=\"ewGridLink ewInlineCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("CancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("CancelLink") . "</a>" .
+					"<input type=\"hidden\" name=\"a_list\" id=\"a_list\" value=\"update\"></div>";
+			$oListOpt->Body .= "<input type=\"hidden\" name=\"k" . $this->RowIndex . "_key\" id=\"k" . $this->RowIndex . "_key\" value=\"" . ew_HtmlEncode($this->rumus_id->CurrentValue) . "\">";
+			return;
+		}
+
 		// "view"
 		$oListOpt = &$this->ListOptions->Items["view"];
 		$viewcaption = ew_HtmlTitle($Language->Phrase("ViewLink"));
@@ -1219,6 +1788,7 @@ class ct_rumus_list extends ct_rumus {
 		$editcaption = ew_HtmlTitle($Language->Phrase("EditLink"));
 		if ($Security->CanEdit()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("EditLink")) . "\" href=\"" . ew_HtmlEncode($this->EditUrl) . "\">" . $Language->Phrase("EditLink") . "</a>";
+			$oListOpt->Body .= "<a class=\"ewRowLink ewInlineEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineEditLink")) . "\" href=\"" . ew_HtmlEncode(ew_GetHashUrl($this->InlineEditUrl, $this->PageObjName . "_row_" . $this->RowCnt)) . "\">" . $Language->Phrase("InlineEditLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
@@ -1228,6 +1798,7 @@ class ct_rumus_list extends ct_rumus {
 		$copycaption = ew_HtmlTitle($Language->Phrase("CopyLink"));
 		if ($Security->CanAdd()) {
 			$oListOpt->Body = "<a class=\"ewRowLink ewCopy\" title=\"" . $copycaption . "\" data-caption=\"" . $copycaption . "\" href=\"" . ew_HtmlEncode($this->CopyUrl) . "\">" . $Language->Phrase("CopyLink") . "</a>";
+			$oListOpt->Body .= "<a class=\"ewRowLink ewInlineCopy\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineCopyLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineCopyLink")) . "\" href=\"" . ew_HtmlEncode($this->InlineCopyUrl) . "\">" . $Language->Phrase("InlineCopyLink") . "</a>";
 		} else {
 			$oListOpt->Body = "";
 		}
@@ -1264,6 +1835,9 @@ class ct_rumus_list extends ct_rumus {
 		// "checkbox"
 		$oListOpt = &$this->ListOptions->Items["checkbox"];
 		$oListOpt->Body = "<input type=\"checkbox\" name=\"key_m[]\" value=\"" . ew_HtmlEncode($this->rumus_id->CurrentValue) . "\" onclick='ew_ClickMultiCheckbox(event);'>";
+		if ($this->CurrentAction == "gridedit" && is_numeric($this->RowIndex)) {
+			$this->MultiSelectKey .= "<input type=\"hidden\" name=\"" . $KeyName . "\" id=\"" . $KeyName . "\" value=\"" . $this->rumus_id->CurrentValue . "\">";
+		}
 		$this->RenderListOptionsExt();
 
 		// Call ListOptions_Rendered event
@@ -1281,6 +1855,20 @@ class ct_rumus_list extends ct_rumus {
 		$addcaption = ew_HtmlTitle($Language->Phrase("AddLink"));
 		$item->Body = "<a class=\"ewAddEdit ewAdd\" title=\"" . $addcaption . "\" data-caption=\"" . $addcaption . "\" href=\"" . ew_HtmlEncode($this->AddUrl) . "\">" . $Language->Phrase("AddLink") . "</a>";
 		$item->Visible = ($this->AddUrl <> "" && $Security->CanAdd());
+
+		// Inline Add
+		$item = &$option->Add("inlineadd");
+		$item->Body = "<a class=\"ewAddEdit ewInlineAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("InlineAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("InlineAddLink")) . "\" href=\"" . ew_HtmlEncode($this->InlineAddUrl) . "\">" .$Language->Phrase("InlineAddLink") . "</a>";
+		$item->Visible = ($this->InlineAddUrl <> "" && $Security->CanAdd());
+		$item = &$option->Add("gridadd");
+		$item->Body = "<a class=\"ewAddEdit ewGridAdd\" title=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridAddLink")) . "\" href=\"" . ew_HtmlEncode($this->GridAddUrl) . "\">" . $Language->Phrase("GridAddLink") . "</a>";
+		$item->Visible = ($this->GridAddUrl <> "" && $Security->CanAdd());
+
+		// Add grid edit
+		$option = $options["addedit"];
+		$item = &$option->Add("gridedit");
+		$item->Body = "<a class=\"ewAddEdit ewGridEdit\" title=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridEditLink")) . "\" href=\"" . ew_HtmlEncode($this->GridEditUrl) . "\">" . $Language->Phrase("GridEditLink") . "</a>";
+		$item->Visible = ($this->GridEditUrl <> "" && $Security->CanEdit());
 		$option = $options["action"];
 
 		// Add multi delete
@@ -1323,6 +1911,7 @@ class ct_rumus_list extends ct_rumus {
 	function RenderOtherOptions() {
 		global $Language, $Security;
 		$options = &$this->OtherOptions;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "gridedit") { // Not grid add/edit mode
 			$option = &$options["action"];
 
 			// Set up list action buttons
@@ -1344,6 +1933,56 @@ class ct_rumus_list extends ct_rumus {
 				$option = &$options["action"];
 				$option->HideAllOptions();
 			}
+		} else { // Grid add/edit mode
+
+			// Hide all options first
+			foreach ($options as &$option)
+				$option->HideAllOptions();
+			if ($this->CurrentAction == "gridadd") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = $Security->CanAdd();
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+
+				// Add grid insert
+				$item = &$option->Add("gridinsert");
+				$item->Body = "<a class=\"ewAction ewGridInsert\" title=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridInsertLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridInsertLink") . "</a>";
+
+				// Add grid cancel
+				$item = &$option->Add("gridcancel");
+				$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+				$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+			if ($this->CurrentAction == "gridedit") {
+				if ($this->AllowAddDeleteRow) {
+
+					// Add add blank row
+					$option = &$options["addedit"];
+					$option->UseDropDownButton = FALSE;
+					$option->UseImageAndText = TRUE;
+					$item = &$option->Add("addblankrow");
+					$item->Body = "<a class=\"ewAddEdit ewAddBlankRow\" title=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("AddBlankRow")) . "\" href=\"javascript:void(0);\" onclick=\"ew_AddGridRow(this);\">" . $Language->Phrase("AddBlankRow") . "</a>";
+					$item->Visible = $Security->CanAdd();
+				}
+				$option = &$options["action"];
+				$option->UseDropDownButton = FALSE;
+				$option->UseImageAndText = TRUE;
+					$item = &$option->Add("gridsave");
+					$item->Body = "<a class=\"ewAction ewGridSave\" title=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridSaveLink")) . "\" href=\"\" onclick=\"return ewForms(this).Submit('" . $this->PageName() . "');\">" . $Language->Phrase("GridSaveLink") . "</a>";
+					$item = &$option->Add("gridcancel");
+					$cancelurl = $this->AddMasterUrl($this->PageUrl() . "a=cancel");
+					$item->Body = "<a class=\"ewAction ewGridCancel\" title=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" data-caption=\"" . ew_HtmlTitle($Language->Phrase("GridCancelLink")) . "\" href=\"" . $cancelurl . "\">" . $Language->Phrase("GridCancelLink") . "</a>";
+			}
+		}
 	}
 
 	// Process list action
@@ -1508,11 +2147,94 @@ class ct_rumus_list extends ct_rumus {
 		}
 	}
 
+	// Load default values
+	function LoadDefaultValues() {
+		$this->rumus_nama->CurrentValue = NULL;
+		$this->rumus_nama->OldValue = $this->rumus_nama->CurrentValue;
+		$this->hk_gol->CurrentValue = 0;
+		$this->hk_gol->OldValue = $this->hk_gol->CurrentValue;
+		$this->umr->CurrentValue = 0.00;
+		$this->umr->OldValue = $this->umr->CurrentValue;
+		$this->hk_jml->CurrentValue = 0;
+		$this->hk_jml->OldValue = $this->hk_jml->CurrentValue;
+		$this->upah->CurrentValue = 0.00;
+		$this->upah->OldValue = $this->upah->CurrentValue;
+		$this->premi_hadir->CurrentValue = 0.00;
+		$this->premi_hadir->OldValue = $this->premi_hadir->CurrentValue;
+		$this->premi_malam->CurrentValue = 0.00;
+		$this->premi_malam->OldValue = $this->premi_malam->CurrentValue;
+		$this->pot_absen->CurrentValue = 0.00;
+		$this->pot_absen->OldValue = $this->pot_absen->CurrentValue;
+		$this->lembur->CurrentValue = 0.00;
+		$this->lembur->OldValue = $this->lembur->CurrentValue;
+	}
+
 	// Load basic search values
 	function LoadBasicSearchValues() {
 		$this->BasicSearch->Keyword = @$_GET[EW_TABLE_BASIC_SEARCH];
 		if ($this->BasicSearch->Keyword <> "") $this->Command = "search";
 		$this->BasicSearch->Type = @$_GET[EW_TABLE_BASIC_SEARCH_TYPE];
+	}
+
+	// Load form values
+	function LoadFormValues() {
+
+		// Load from form
+		global $objForm;
+		if (!$this->rumus_nama->FldIsDetailKey) {
+			$this->rumus_nama->setFormValue($objForm->GetValue("x_rumus_nama"));
+		}
+		$this->rumus_nama->setOldValue($objForm->GetValue("o_rumus_nama"));
+		if (!$this->hk_gol->FldIsDetailKey) {
+			$this->hk_gol->setFormValue($objForm->GetValue("x_hk_gol"));
+		}
+		$this->hk_gol->setOldValue($objForm->GetValue("o_hk_gol"));
+		if (!$this->umr->FldIsDetailKey) {
+			$this->umr->setFormValue($objForm->GetValue("x_umr"));
+		}
+		$this->umr->setOldValue($objForm->GetValue("o_umr"));
+		if (!$this->hk_jml->FldIsDetailKey) {
+			$this->hk_jml->setFormValue($objForm->GetValue("x_hk_jml"));
+		}
+		$this->hk_jml->setOldValue($objForm->GetValue("o_hk_jml"));
+		if (!$this->upah->FldIsDetailKey) {
+			$this->upah->setFormValue($objForm->GetValue("x_upah"));
+		}
+		$this->upah->setOldValue($objForm->GetValue("o_upah"));
+		if (!$this->premi_hadir->FldIsDetailKey) {
+			$this->premi_hadir->setFormValue($objForm->GetValue("x_premi_hadir"));
+		}
+		$this->premi_hadir->setOldValue($objForm->GetValue("o_premi_hadir"));
+		if (!$this->premi_malam->FldIsDetailKey) {
+			$this->premi_malam->setFormValue($objForm->GetValue("x_premi_malam"));
+		}
+		$this->premi_malam->setOldValue($objForm->GetValue("o_premi_malam"));
+		if (!$this->pot_absen->FldIsDetailKey) {
+			$this->pot_absen->setFormValue($objForm->GetValue("x_pot_absen"));
+		}
+		$this->pot_absen->setOldValue($objForm->GetValue("o_pot_absen"));
+		if (!$this->lembur->FldIsDetailKey) {
+			$this->lembur->setFormValue($objForm->GetValue("x_lembur"));
+		}
+		$this->lembur->setOldValue($objForm->GetValue("o_lembur"));
+		if (!$this->rumus_id->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->rumus_id->setFormValue($objForm->GetValue("x_rumus_id"));
+	}
+
+	// Restore form values
+	function RestoreFormValues() {
+		global $objForm;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->rumus_id->CurrentValue = $this->rumus_id->FormValue;
+		$this->rumus_nama->CurrentValue = $this->rumus_nama->FormValue;
+		$this->hk_gol->CurrentValue = $this->hk_gol->FormValue;
+		$this->umr->CurrentValue = $this->umr->FormValue;
+		$this->hk_jml->CurrentValue = $this->hk_jml->FormValue;
+		$this->upah->CurrentValue = $this->upah->FormValue;
+		$this->premi_hadir->CurrentValue = $this->premi_hadir->FormValue;
+		$this->premi_malam->CurrentValue = $this->premi_malam->FormValue;
+		$this->pot_absen->CurrentValue = $this->pot_absen->FormValue;
+		$this->lembur->CurrentValue = $this->lembur->FormValue;
 	}
 
 	// Load recordset
@@ -1684,40 +2406,49 @@ class ct_rumus_list extends ct_rumus {
 
 		// hk_gol
 		$this->hk_gol->ViewValue = $this->hk_gol->CurrentValue;
+		$this->hk_gol->CellCssStyle .= "text-align: center;";
 		$this->hk_gol->ViewCustomAttributes = "";
 
 		// umr
 		$this->umr->ViewValue = $this->umr->CurrentValue;
+		$this->umr->ViewValue = ew_FormatNumber($this->umr->ViewValue, 0, -2, -2, -2);
+		$this->umr->CellCssStyle .= "text-align: right;";
 		$this->umr->ViewCustomAttributes = "";
 
 		// hk_jml
 		$this->hk_jml->ViewValue = $this->hk_jml->CurrentValue;
+		$this->hk_jml->CellCssStyle .= "text-align: center;";
 		$this->hk_jml->ViewCustomAttributes = "";
 
 		// upah
 		$this->upah->ViewValue = $this->upah->CurrentValue;
+		$this->upah->ViewValue = ew_FormatNumber($this->upah->ViewValue, 0, -2, -2, -2);
+		$this->upah->CellCssStyle .= "text-align: right;";
 		$this->upah->ViewCustomAttributes = "";
 
 		// premi_hadir
 		$this->premi_hadir->ViewValue = $this->premi_hadir->CurrentValue;
+		$this->premi_hadir->ViewValue = ew_FormatNumber($this->premi_hadir->ViewValue, 0, -2, -2, -2);
+		$this->premi_hadir->CellCssStyle .= "text-align: right;";
 		$this->premi_hadir->ViewCustomAttributes = "";
 
 		// premi_malam
 		$this->premi_malam->ViewValue = $this->premi_malam->CurrentValue;
+		$this->premi_malam->ViewValue = ew_FormatNumber($this->premi_malam->ViewValue, 0, -2, -2, -2);
+		$this->premi_malam->CellCssStyle .= "text-align: right;";
 		$this->premi_malam->ViewCustomAttributes = "";
 
 		// pot_absen
 		$this->pot_absen->ViewValue = $this->pot_absen->CurrentValue;
+		$this->pot_absen->ViewValue = ew_FormatNumber($this->pot_absen->ViewValue, 0, -2, -2, -2);
+		$this->pot_absen->CellCssStyle .= "text-align: right;";
 		$this->pot_absen->ViewCustomAttributes = "";
 
 		// lembur
 		$this->lembur->ViewValue = $this->lembur->CurrentValue;
+		$this->lembur->ViewValue = ew_FormatNumber($this->lembur->ViewValue, 0, -2, -2, -2);
+		$this->lembur->CellCssStyle .= "text-align: right;";
 		$this->lembur->ViewCustomAttributes = "";
-
-			// rumus_id
-			$this->rumus_id->LinkCustomAttributes = "";
-			$this->rumus_id->HrefValue = "";
-			$this->rumus_id->TooltipValue = "";
 
 			// rumus_nama
 			$this->rumus_nama->LinkCustomAttributes = "";
@@ -1763,11 +2494,556 @@ class ct_rumus_list extends ct_rumus {
 			$this->lembur->LinkCustomAttributes = "";
 			$this->lembur->HrefValue = "";
 			$this->lembur->TooltipValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
+
+			// rumus_nama
+			$this->rumus_nama->EditAttrs["class"] = "form-control";
+			$this->rumus_nama->EditCustomAttributes = "";
+			$this->rumus_nama->EditValue = ew_HtmlEncode($this->rumus_nama->CurrentValue);
+			$this->rumus_nama->PlaceHolder = ew_RemoveHtml($this->rumus_nama->FldCaption());
+
+			// hk_gol
+			$this->hk_gol->EditAttrs["class"] = "form-control";
+			$this->hk_gol->EditCustomAttributes = "";
+			$this->hk_gol->EditValue = ew_HtmlEncode($this->hk_gol->CurrentValue);
+			$this->hk_gol->PlaceHolder = ew_RemoveHtml($this->hk_gol->FldCaption());
+
+			// umr
+			$this->umr->EditAttrs["class"] = "form-control";
+			$this->umr->EditCustomAttributes = "";
+			$this->umr->EditValue = ew_HtmlEncode($this->umr->CurrentValue);
+			$this->umr->PlaceHolder = ew_RemoveHtml($this->umr->FldCaption());
+			if (strval($this->umr->EditValue) <> "" && is_numeric($this->umr->EditValue)) {
+			$this->umr->EditValue = ew_FormatNumber($this->umr->EditValue, -2, -2, -2, -2);
+			$this->umr->OldValue = $this->umr->EditValue;
+			}
+
+			// hk_jml
+			$this->hk_jml->EditAttrs["class"] = "form-control";
+			$this->hk_jml->EditCustomAttributes = "";
+			$this->hk_jml->EditValue = ew_HtmlEncode($this->hk_jml->CurrentValue);
+			$this->hk_jml->PlaceHolder = ew_RemoveHtml($this->hk_jml->FldCaption());
+
+			// upah
+			$this->upah->EditAttrs["class"] = "form-control";
+			$this->upah->EditCustomAttributes = "";
+			$this->upah->EditValue = ew_HtmlEncode($this->upah->CurrentValue);
+			$this->upah->PlaceHolder = ew_RemoveHtml($this->upah->FldCaption());
+			if (strval($this->upah->EditValue) <> "" && is_numeric($this->upah->EditValue)) {
+			$this->upah->EditValue = ew_FormatNumber($this->upah->EditValue, -2, -2, -2, -2);
+			$this->upah->OldValue = $this->upah->EditValue;
+			}
+
+			// premi_hadir
+			$this->premi_hadir->EditAttrs["class"] = "form-control";
+			$this->premi_hadir->EditCustomAttributes = "";
+			$this->premi_hadir->EditValue = ew_HtmlEncode($this->premi_hadir->CurrentValue);
+			$this->premi_hadir->PlaceHolder = ew_RemoveHtml($this->premi_hadir->FldCaption());
+			if (strval($this->premi_hadir->EditValue) <> "" && is_numeric($this->premi_hadir->EditValue)) {
+			$this->premi_hadir->EditValue = ew_FormatNumber($this->premi_hadir->EditValue, -2, -2, -2, -2);
+			$this->premi_hadir->OldValue = $this->premi_hadir->EditValue;
+			}
+
+			// premi_malam
+			$this->premi_malam->EditAttrs["class"] = "form-control";
+			$this->premi_malam->EditCustomAttributes = "";
+			$this->premi_malam->EditValue = ew_HtmlEncode($this->premi_malam->CurrentValue);
+			$this->premi_malam->PlaceHolder = ew_RemoveHtml($this->premi_malam->FldCaption());
+			if (strval($this->premi_malam->EditValue) <> "" && is_numeric($this->premi_malam->EditValue)) {
+			$this->premi_malam->EditValue = ew_FormatNumber($this->premi_malam->EditValue, -2, -2, -2, -2);
+			$this->premi_malam->OldValue = $this->premi_malam->EditValue;
+			}
+
+			// pot_absen
+			$this->pot_absen->EditAttrs["class"] = "form-control";
+			$this->pot_absen->EditCustomAttributes = "";
+			$this->pot_absen->EditValue = ew_HtmlEncode($this->pot_absen->CurrentValue);
+			$this->pot_absen->PlaceHolder = ew_RemoveHtml($this->pot_absen->FldCaption());
+			if (strval($this->pot_absen->EditValue) <> "" && is_numeric($this->pot_absen->EditValue)) {
+			$this->pot_absen->EditValue = ew_FormatNumber($this->pot_absen->EditValue, -2, -2, -2, -2);
+			$this->pot_absen->OldValue = $this->pot_absen->EditValue;
+			}
+
+			// lembur
+			$this->lembur->EditAttrs["class"] = "form-control";
+			$this->lembur->EditCustomAttributes = "";
+			$this->lembur->EditValue = ew_HtmlEncode($this->lembur->CurrentValue);
+			$this->lembur->PlaceHolder = ew_RemoveHtml($this->lembur->FldCaption());
+			if (strval($this->lembur->EditValue) <> "" && is_numeric($this->lembur->EditValue)) {
+			$this->lembur->EditValue = ew_FormatNumber($this->lembur->EditValue, -2, -2, -2, -2);
+			$this->lembur->OldValue = $this->lembur->EditValue;
+			}
+
+			// Add refer script
+			// rumus_nama
+
+			$this->rumus_nama->LinkCustomAttributes = "";
+			$this->rumus_nama->HrefValue = "";
+
+			// hk_gol
+			$this->hk_gol->LinkCustomAttributes = "";
+			$this->hk_gol->HrefValue = "";
+
+			// umr
+			$this->umr->LinkCustomAttributes = "";
+			$this->umr->HrefValue = "";
+
+			// hk_jml
+			$this->hk_jml->LinkCustomAttributes = "";
+			$this->hk_jml->HrefValue = "";
+
+			// upah
+			$this->upah->LinkCustomAttributes = "";
+			$this->upah->HrefValue = "";
+
+			// premi_hadir
+			$this->premi_hadir->LinkCustomAttributes = "";
+			$this->premi_hadir->HrefValue = "";
+
+			// premi_malam
+			$this->premi_malam->LinkCustomAttributes = "";
+			$this->premi_malam->HrefValue = "";
+
+			// pot_absen
+			$this->pot_absen->LinkCustomAttributes = "";
+			$this->pot_absen->HrefValue = "";
+
+			// lembur
+			$this->lembur->LinkCustomAttributes = "";
+			$this->lembur->HrefValue = "";
+		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
+
+			// rumus_nama
+			$this->rumus_nama->EditAttrs["class"] = "form-control";
+			$this->rumus_nama->EditCustomAttributes = "";
+			$this->rumus_nama->EditValue = ew_HtmlEncode($this->rumus_nama->CurrentValue);
+			$this->rumus_nama->PlaceHolder = ew_RemoveHtml($this->rumus_nama->FldCaption());
+
+			// hk_gol
+			$this->hk_gol->EditAttrs["class"] = "form-control";
+			$this->hk_gol->EditCustomAttributes = "";
+			$this->hk_gol->EditValue = ew_HtmlEncode($this->hk_gol->CurrentValue);
+			$this->hk_gol->PlaceHolder = ew_RemoveHtml($this->hk_gol->FldCaption());
+
+			// umr
+			$this->umr->EditAttrs["class"] = "form-control";
+			$this->umr->EditCustomAttributes = "";
+			$this->umr->EditValue = ew_HtmlEncode($this->umr->CurrentValue);
+			$this->umr->PlaceHolder = ew_RemoveHtml($this->umr->FldCaption());
+			if (strval($this->umr->EditValue) <> "" && is_numeric($this->umr->EditValue)) {
+			$this->umr->EditValue = ew_FormatNumber($this->umr->EditValue, -2, -2, -2, -2);
+			$this->umr->OldValue = $this->umr->EditValue;
+			}
+
+			// hk_jml
+			$this->hk_jml->EditAttrs["class"] = "form-control";
+			$this->hk_jml->EditCustomAttributes = "";
+			$this->hk_jml->EditValue = ew_HtmlEncode($this->hk_jml->CurrentValue);
+			$this->hk_jml->PlaceHolder = ew_RemoveHtml($this->hk_jml->FldCaption());
+
+			// upah
+			$this->upah->EditAttrs["class"] = "form-control";
+			$this->upah->EditCustomAttributes = "";
+			$this->upah->EditValue = ew_HtmlEncode($this->upah->CurrentValue);
+			$this->upah->PlaceHolder = ew_RemoveHtml($this->upah->FldCaption());
+			if (strval($this->upah->EditValue) <> "" && is_numeric($this->upah->EditValue)) {
+			$this->upah->EditValue = ew_FormatNumber($this->upah->EditValue, -2, -2, -2, -2);
+			$this->upah->OldValue = $this->upah->EditValue;
+			}
+
+			// premi_hadir
+			$this->premi_hadir->EditAttrs["class"] = "form-control";
+			$this->premi_hadir->EditCustomAttributes = "";
+			$this->premi_hadir->EditValue = ew_HtmlEncode($this->premi_hadir->CurrentValue);
+			$this->premi_hadir->PlaceHolder = ew_RemoveHtml($this->premi_hadir->FldCaption());
+			if (strval($this->premi_hadir->EditValue) <> "" && is_numeric($this->premi_hadir->EditValue)) {
+			$this->premi_hadir->EditValue = ew_FormatNumber($this->premi_hadir->EditValue, -2, -2, -2, -2);
+			$this->premi_hadir->OldValue = $this->premi_hadir->EditValue;
+			}
+
+			// premi_malam
+			$this->premi_malam->EditAttrs["class"] = "form-control";
+			$this->premi_malam->EditCustomAttributes = "";
+			$this->premi_malam->EditValue = ew_HtmlEncode($this->premi_malam->CurrentValue);
+			$this->premi_malam->PlaceHolder = ew_RemoveHtml($this->premi_malam->FldCaption());
+			if (strval($this->premi_malam->EditValue) <> "" && is_numeric($this->premi_malam->EditValue)) {
+			$this->premi_malam->EditValue = ew_FormatNumber($this->premi_malam->EditValue, -2, -2, -2, -2);
+			$this->premi_malam->OldValue = $this->premi_malam->EditValue;
+			}
+
+			// pot_absen
+			$this->pot_absen->EditAttrs["class"] = "form-control";
+			$this->pot_absen->EditCustomAttributes = "";
+			$this->pot_absen->EditValue = ew_HtmlEncode($this->pot_absen->CurrentValue);
+			$this->pot_absen->PlaceHolder = ew_RemoveHtml($this->pot_absen->FldCaption());
+			if (strval($this->pot_absen->EditValue) <> "" && is_numeric($this->pot_absen->EditValue)) {
+			$this->pot_absen->EditValue = ew_FormatNumber($this->pot_absen->EditValue, -2, -2, -2, -2);
+			$this->pot_absen->OldValue = $this->pot_absen->EditValue;
+			}
+
+			// lembur
+			$this->lembur->EditAttrs["class"] = "form-control";
+			$this->lembur->EditCustomAttributes = "";
+			$this->lembur->EditValue = ew_HtmlEncode($this->lembur->CurrentValue);
+			$this->lembur->PlaceHolder = ew_RemoveHtml($this->lembur->FldCaption());
+			if (strval($this->lembur->EditValue) <> "" && is_numeric($this->lembur->EditValue)) {
+			$this->lembur->EditValue = ew_FormatNumber($this->lembur->EditValue, -2, -2, -2, -2);
+			$this->lembur->OldValue = $this->lembur->EditValue;
+			}
+
+			// Edit refer script
+			// rumus_nama
+
+			$this->rumus_nama->LinkCustomAttributes = "";
+			$this->rumus_nama->HrefValue = "";
+
+			// hk_gol
+			$this->hk_gol->LinkCustomAttributes = "";
+			$this->hk_gol->HrefValue = "";
+
+			// umr
+			$this->umr->LinkCustomAttributes = "";
+			$this->umr->HrefValue = "";
+
+			// hk_jml
+			$this->hk_jml->LinkCustomAttributes = "";
+			$this->hk_jml->HrefValue = "";
+
+			// upah
+			$this->upah->LinkCustomAttributes = "";
+			$this->upah->HrefValue = "";
+
+			// premi_hadir
+			$this->premi_hadir->LinkCustomAttributes = "";
+			$this->premi_hadir->HrefValue = "";
+
+			// premi_malam
+			$this->premi_malam->LinkCustomAttributes = "";
+			$this->premi_malam->HrefValue = "";
+
+			// pot_absen
+			$this->pot_absen->LinkCustomAttributes = "";
+			$this->pot_absen->HrefValue = "";
+
+			// lembur
+			$this->lembur->LinkCustomAttributes = "";
+			$this->lembur->HrefValue = "";
+		}
+		if ($this->RowType == EW_ROWTYPE_ADD ||
+			$this->RowType == EW_ROWTYPE_EDIT ||
+			$this->RowType == EW_ROWTYPE_SEARCH) { // Add / Edit / Search row
+			$this->SetupFieldTitles();
 		}
 
 		// Call Row Rendered event
 		if ($this->RowType <> EW_ROWTYPE_AGGREGATEINIT)
 			$this->Row_Rendered();
+	}
+
+	// Validate form
+	function ValidateForm() {
+		global $Language, $gsFormError;
+
+		// Initialize form error message
+		$gsFormError = "";
+
+		// Check if validation required
+		if (!EW_SERVER_VALIDATE)
+			return ($gsFormError == "");
+		if (!$this->rumus_nama->FldIsDetailKey && !is_null($this->rumus_nama->FormValue) && $this->rumus_nama->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->rumus_nama->FldCaption(), $this->rumus_nama->ReqErrMsg));
+		}
+		if (!$this->hk_gol->FldIsDetailKey && !is_null($this->hk_gol->FormValue) && $this->hk_gol->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->hk_gol->FldCaption(), $this->hk_gol->ReqErrMsg));
+		}
+		if (!ew_CheckInteger($this->hk_gol->FormValue)) {
+			ew_AddMessage($gsFormError, $this->hk_gol->FldErrMsg());
+		}
+		if (!$this->umr->FldIsDetailKey && !is_null($this->umr->FormValue) && $this->umr->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->umr->FldCaption(), $this->umr->ReqErrMsg));
+		}
+		if (!ew_CheckNumber($this->umr->FormValue)) {
+			ew_AddMessage($gsFormError, $this->umr->FldErrMsg());
+		}
+		if (!$this->hk_jml->FldIsDetailKey && !is_null($this->hk_jml->FormValue) && $this->hk_jml->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->hk_jml->FldCaption(), $this->hk_jml->ReqErrMsg));
+		}
+		if (!ew_CheckInteger($this->hk_jml->FormValue)) {
+			ew_AddMessage($gsFormError, $this->hk_jml->FldErrMsg());
+		}
+		if (!$this->upah->FldIsDetailKey && !is_null($this->upah->FormValue) && $this->upah->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->upah->FldCaption(), $this->upah->ReqErrMsg));
+		}
+		if (!ew_CheckNumber($this->upah->FormValue)) {
+			ew_AddMessage($gsFormError, $this->upah->FldErrMsg());
+		}
+		if (!$this->premi_hadir->FldIsDetailKey && !is_null($this->premi_hadir->FormValue) && $this->premi_hadir->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->premi_hadir->FldCaption(), $this->premi_hadir->ReqErrMsg));
+		}
+		if (!ew_CheckNumber($this->premi_hadir->FormValue)) {
+			ew_AddMessage($gsFormError, $this->premi_hadir->FldErrMsg());
+		}
+		if (!$this->premi_malam->FldIsDetailKey && !is_null($this->premi_malam->FormValue) && $this->premi_malam->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->premi_malam->FldCaption(), $this->premi_malam->ReqErrMsg));
+		}
+		if (!ew_CheckNumber($this->premi_malam->FormValue)) {
+			ew_AddMessage($gsFormError, $this->premi_malam->FldErrMsg());
+		}
+		if (!$this->pot_absen->FldIsDetailKey && !is_null($this->pot_absen->FormValue) && $this->pot_absen->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->pot_absen->FldCaption(), $this->pot_absen->ReqErrMsg));
+		}
+		if (!ew_CheckNumber($this->pot_absen->FormValue)) {
+			ew_AddMessage($gsFormError, $this->pot_absen->FldErrMsg());
+		}
+		if (!$this->lembur->FldIsDetailKey && !is_null($this->lembur->FormValue) && $this->lembur->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->lembur->FldCaption(), $this->lembur->ReqErrMsg));
+		}
+		if (!ew_CheckNumber($this->lembur->FormValue)) {
+			ew_AddMessage($gsFormError, $this->lembur->FldErrMsg());
+		}
+
+		// Return validate result
+		$ValidateForm = ($gsFormError == "");
+
+		// Call Form_CustomValidate event
+		$sFormCustomError = "";
+		$ValidateForm = $ValidateForm && $this->Form_CustomValidate($sFormCustomError);
+		if ($sFormCustomError <> "") {
+			ew_AddMessage($gsFormError, $sFormCustomError);
+		}
+		return $ValidateForm;
+	}
+
+	//
+	// Delete records based on current filter
+	//
+	function DeleteRows() {
+		global $Language, $Security;
+		if (!$Security->CanDelete()) {
+			$this->setFailureMessage($Language->Phrase("NoDeletePermission")); // No delete permission
+			return FALSE;
+		}
+		$DeleteRows = TRUE;
+		$sSql = $this->SQL();
+		$conn = &$this->Connection();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE) {
+			return FALSE;
+		} elseif ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // No record found
+			$rs->Close();
+			return FALSE;
+
+		//} else {
+		//	$this->LoadRowValues($rs); // Load row values
+
+		}
+		$rows = ($rs) ? $rs->GetRows() : array();
+		if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteBegin")); // Batch delete begin
+
+		// Clone old rows
+		$rsold = $rows;
+		if ($rs)
+			$rs->Close();
+
+		// Call row deleting event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$DeleteRows = $this->Row_Deleting($row);
+				if (!$DeleteRows) break;
+			}
+		}
+		if ($DeleteRows) {
+			$sKey = "";
+			foreach ($rsold as $row) {
+				$sThisKey = "";
+				if ($sThisKey <> "") $sThisKey .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+				$sThisKey .= $row['rumus_id'];
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+				$DeleteRows = $this->Delete($row); // Delete
+				$conn->raiseErrorFn = '';
+				if ($DeleteRows === FALSE)
+					break;
+				if ($sKey <> "") $sKey .= ", ";
+				$sKey .= $sThisKey;
+			}
+		} else {
+
+			// Set up error message
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("DeleteCancelled"));
+			}
+		}
+		if ($DeleteRows) {
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
+		} else {
+		}
+
+		// Call Row Deleted event
+		if ($DeleteRows) {
+			foreach ($rsold as $row) {
+				$this->Row_Deleted($row);
+			}
+		}
+		return $DeleteRows;
+	}
+
+	// Update record based on key values
+	function EditRow() {
+		global $Security, $Language;
+		$sFilter = $this->KeyFilter();
+		$sFilter = $this->ApplyUserIDFilters($sFilter);
+		$conn = &$this->Connection();
+		$this->CurrentFilter = $sFilter;
+		$sSql = $this->SQL();
+		$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+		$rs = $conn->Execute($sSql);
+		$conn->raiseErrorFn = '';
+		if ($rs === FALSE)
+			return FALSE;
+		if ($rs->EOF) {
+			$this->setFailureMessage($Language->Phrase("NoRecord")); // Set no record message
+			$EditRow = FALSE; // Update Failed
+		} else {
+
+			// Save old values
+			$rsold = &$rs->fields;
+			$this->LoadDbValues($rsold);
+			$rsnew = array();
+
+			// rumus_nama
+			$this->rumus_nama->SetDbValueDef($rsnew, $this->rumus_nama->CurrentValue, "", $this->rumus_nama->ReadOnly);
+
+			// hk_gol
+			$this->hk_gol->SetDbValueDef($rsnew, $this->hk_gol->CurrentValue, 0, $this->hk_gol->ReadOnly);
+
+			// umr
+			$this->umr->SetDbValueDef($rsnew, $this->umr->CurrentValue, 0, $this->umr->ReadOnly);
+
+			// hk_jml
+			$this->hk_jml->SetDbValueDef($rsnew, $this->hk_jml->CurrentValue, 0, $this->hk_jml->ReadOnly);
+
+			// upah
+			$this->upah->SetDbValueDef($rsnew, $this->upah->CurrentValue, 0, $this->upah->ReadOnly);
+
+			// premi_hadir
+			$this->premi_hadir->SetDbValueDef($rsnew, $this->premi_hadir->CurrentValue, 0, $this->premi_hadir->ReadOnly);
+
+			// premi_malam
+			$this->premi_malam->SetDbValueDef($rsnew, $this->premi_malam->CurrentValue, 0, $this->premi_malam->ReadOnly);
+
+			// pot_absen
+			$this->pot_absen->SetDbValueDef($rsnew, $this->pot_absen->CurrentValue, 0, $this->pot_absen->ReadOnly);
+
+			// lembur
+			$this->lembur->SetDbValueDef($rsnew, $this->lembur->CurrentValue, 0, $this->lembur->ReadOnly);
+
+			// Call Row Updating event
+			$bUpdateRow = $this->Row_Updating($rsold, $rsnew);
+			if ($bUpdateRow) {
+				$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+				if (count($rsnew) > 0)
+					$EditRow = $this->Update($rsnew, "", $rsold);
+				else
+					$EditRow = TRUE; // No field to update
+				$conn->raiseErrorFn = '';
+				if ($EditRow) {
+				}
+			} else {
+				if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+					// Use the message, do nothing
+				} elseif ($this->CancelMessage <> "") {
+					$this->setFailureMessage($this->CancelMessage);
+					$this->CancelMessage = "";
+				} else {
+					$this->setFailureMessage($Language->Phrase("UpdateCancelled"));
+				}
+				$EditRow = FALSE;
+			}
+		}
+
+		// Call Row_Updated event
+		if ($EditRow)
+			$this->Row_Updated($rsold, $rsnew);
+		$rs->Close();
+		return $EditRow;
+	}
+
+	// Add record
+	function AddRow($rsold = NULL) {
+		global $Language, $Security;
+		$conn = &$this->Connection();
+
+		// Load db values from rsold
+		if ($rsold) {
+			$this->LoadDbValues($rsold);
+		}
+		$rsnew = array();
+
+		// rumus_nama
+		$this->rumus_nama->SetDbValueDef($rsnew, $this->rumus_nama->CurrentValue, "", FALSE);
+
+		// hk_gol
+		$this->hk_gol->SetDbValueDef($rsnew, $this->hk_gol->CurrentValue, 0, strval($this->hk_gol->CurrentValue) == "");
+
+		// umr
+		$this->umr->SetDbValueDef($rsnew, $this->umr->CurrentValue, 0, strval($this->umr->CurrentValue) == "");
+
+		// hk_jml
+		$this->hk_jml->SetDbValueDef($rsnew, $this->hk_jml->CurrentValue, 0, strval($this->hk_jml->CurrentValue) == "");
+
+		// upah
+		$this->upah->SetDbValueDef($rsnew, $this->upah->CurrentValue, 0, strval($this->upah->CurrentValue) == "");
+
+		// premi_hadir
+		$this->premi_hadir->SetDbValueDef($rsnew, $this->premi_hadir->CurrentValue, 0, strval($this->premi_hadir->CurrentValue) == "");
+
+		// premi_malam
+		$this->premi_malam->SetDbValueDef($rsnew, $this->premi_malam->CurrentValue, 0, strval($this->premi_malam->CurrentValue) == "");
+
+		// pot_absen
+		$this->pot_absen->SetDbValueDef($rsnew, $this->pot_absen->CurrentValue, 0, strval($this->pot_absen->CurrentValue) == "");
+
+		// lembur
+		$this->lembur->SetDbValueDef($rsnew, $this->lembur->CurrentValue, 0, strval($this->lembur->CurrentValue) == "");
+
+		// Call Row Inserting event
+		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
+		if ($bInsertRow) {
+			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
+			$AddRow = $this->Insert($rsnew);
+			$conn->raiseErrorFn = '';
+			if ($AddRow) {
+			}
+		} else {
+			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
+
+				// Use the message, do nothing
+			} elseif ($this->CancelMessage <> "") {
+				$this->setFailureMessage($this->CancelMessage);
+				$this->CancelMessage = "";
+			} else {
+				$this->setFailureMessage($Language->Phrase("InsertCancelled"));
+			}
+			$AddRow = FALSE;
+		}
+		if ($AddRow) {
+
+			// Call Row Inserted event
+			$rs = ($rsold == NULL) ? NULL : $rsold->fields;
+			$this->Row_Inserted($rs, $rsnew);
+		}
+		return $AddRow;
 	}
 
 	// Set up export options
@@ -2216,6 +3492,103 @@ var CurrentPageID = EW_PAGE_ID = "list";
 var CurrentForm = ft_rumuslist = new ew_Form("ft_rumuslist", "list");
 ft_rumuslist.FormKeyCountName = '<?php echo $t_rumus_list->FormKeyCountName ?>';
 
+// Validate form
+ft_rumuslist.Validate = function() {
+	if (!this.ValidateRequired)
+		return true; // Ignore validation
+	var $ = jQuery, fobj = this.GetForm(), $fobj = $(fobj);
+	if ($fobj.find("#a_confirm").val() == "F")
+		return true;
+	var elm, felm, uelm, addcnt = 0;
+	var $k = $fobj.find("#" + this.FormKeyCountName); // Get key_count
+	var rowcnt = ($k[0]) ? parseInt($k.val(), 10) : 1;
+	var startcnt = (rowcnt == 0) ? 0 : 1; // Check rowcnt == 0 => Inline-Add
+	var gridinsert = $fobj.find("#a_list").val() == "gridinsert";
+	for (var i = startcnt; i <= rowcnt; i++) {
+		var infix = ($k[0]) ? String(i) : "";
+		$fobj.data("rowindex", infix);
+		var checkrow = (gridinsert) ? !this.EmptyRow(infix) : true;
+		if (checkrow) {
+			addcnt++;
+			elm = this.GetElements("x" + infix + "_rumus_nama");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus->rumus_nama->FldCaption(), $t_rumus->rumus_nama->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_hk_gol");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus->hk_gol->FldCaption(), $t_rumus->hk_gol->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_hk_gol");
+			if (elm && !ew_CheckInteger(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus->hk_gol->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_umr");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus->umr->FldCaption(), $t_rumus->umr->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_umr");
+			if (elm && !ew_CheckNumber(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus->umr->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_hk_jml");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus->hk_jml->FldCaption(), $t_rumus->hk_jml->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_hk_jml");
+			if (elm && !ew_CheckInteger(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus->hk_jml->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_upah");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus->upah->FldCaption(), $t_rumus->upah->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_upah");
+			if (elm && !ew_CheckNumber(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus->upah->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_premi_hadir");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus->premi_hadir->FldCaption(), $t_rumus->premi_hadir->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_premi_hadir");
+			if (elm && !ew_CheckNumber(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus->premi_hadir->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_premi_malam");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus->premi_malam->FldCaption(), $t_rumus->premi_malam->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_premi_malam");
+			if (elm && !ew_CheckNumber(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus->premi_malam->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_pot_absen");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus->pot_absen->FldCaption(), $t_rumus->pot_absen->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_pot_absen");
+			if (elm && !ew_CheckNumber(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus->pot_absen->FldErrMsg()) ?>");
+			elm = this.GetElements("x" + infix + "_lembur");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus->lembur->FldCaption(), $t_rumus->lembur->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_lembur");
+			if (elm && !ew_CheckNumber(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus->lembur->FldErrMsg()) ?>");
+
+			// Fire Form_CustomValidate event
+			if (!this.Form_CustomValidate(fobj))
+				return false;
+		} // End Grid Add checking
+	}
+	if (gridinsert && addcnt == 0) { // No row added
+		ew_Alert(ewLanguage.Phrase("NoAddRecord"));
+		return false;
+	}
+	return true;
+}
+
+// Check empty row
+ft_rumuslist.EmptyRow = function(infix) {
+	var fobj = this.Form;
+	if (ew_ValueChanged(fobj, infix, "rumus_nama", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "hk_gol", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "umr", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "hk_jml", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "upah", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "premi_hadir", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "premi_malam", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "pot_absen", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "lembur", false)) return false;
+	return true;
+}
+
 // Form_CustomValidate event
 ft_rumuslist.Form_CustomValidate = 
  function(fobj) { // DO NOT CHANGE THIS LINE!
@@ -2262,6 +3635,13 @@ var CurrentSearchForm = ft_rumuslistsrch = new ew_Form("ft_rumuslistsrch");
 </div>
 <?php } ?>
 <?php
+if ($t_rumus->CurrentAction == "gridadd") {
+	$t_rumus->CurrentFilter = "0=1";
+	$t_rumus_list->StartRec = 1;
+	$t_rumus_list->DisplayRecs = $t_rumus->GridAddRowCount;
+	$t_rumus_list->TotalRecs = $t_rumus_list->DisplayRecs;
+	$t_rumus_list->StopRec = $t_rumus_list->DisplayRecs;
+} else {
 	$bSelectLimit = $t_rumus_list->UseSelectLimit;
 	if ($bSelectLimit) {
 		if ($t_rumus_list->TotalRecs <= 0)
@@ -2287,6 +3667,14 @@ var CurrentSearchForm = ft_rumuslistsrch = new ew_Form("ft_rumuslistsrch");
 		else
 			$t_rumus_list->setWarningMessage($Language->Phrase("NoRecord"));
 	}
+
+	// Audit trail on search
+	if ($t_rumus_list->AuditTrailOnSearch && $t_rumus_list->Command == "search" && !$t_rumus_list->RestoreSearch) {
+		$searchparm = ew_ServerVar("QUERY_STRING");
+		$searchsql = $t_rumus_list->getSessionWhere();
+		$t_rumus_list->WriteAuditTrailOnSearch($searchparm, $searchsql);
+	}
+}
 $t_rumus_list->RenderOtherOptions();
 ?>
 <?php if ($Security->CanSearch()) { ?>
@@ -2401,7 +3789,7 @@ $t_rumus_list->ShowMessage();
 <?php } ?>
 <input type="hidden" name="t" value="t_rumus">
 <div id="gmp_t_rumus" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
-<?php if ($t_rumus_list->TotalRecs > 0 || $t_rumus->CurrentAction == "gridedit") { ?>
+<?php if ($t_rumus_list->TotalRecs > 0 || $t_rumus->CurrentAction == "add" || $t_rumus->CurrentAction == "copy" || $t_rumus->CurrentAction == "gridedit") { ?>
 <table id="tbl_t_rumuslist" class="table ewTable">
 <?php echo $t_rumus->TableCustomInnerHtml ?>
 <thead><!-- Table header -->
@@ -2417,15 +3805,6 @@ $t_rumus_list->RenderListOptions();
 // Render list options (header, left)
 $t_rumus_list->ListOptions->Render("header", "left");
 ?>
-<?php if ($t_rumus->rumus_id->Visible) { // rumus_id ?>
-	<?php if ($t_rumus->SortUrl($t_rumus->rumus_id) == "") { ?>
-		<th data-name="rumus_id"><div id="elh_t_rumus_rumus_id" class="t_rumus_rumus_id"><div class="ewTableHeaderCaption"><?php echo $t_rumus->rumus_id->FldCaption() ?></div></div></th>
-	<?php } else { ?>
-		<th data-name="rumus_id"><div class="ewPointer" onclick="ew_Sort(event,'<?php echo $t_rumus->SortUrl($t_rumus->rumus_id) ?>',2);"><div id="elh_t_rumus_rumus_id" class="t_rumus_rumus_id">
-			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_rumus->rumus_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($t_rumus->rumus_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_rumus->rumus_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
-        </div></div></th>
-	<?php } ?>
-<?php } ?>		
 <?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
 	<?php if ($t_rumus->SortUrl($t_rumus->rumus_nama) == "") { ?>
 		<th data-name="rumus_nama"><div id="elh_t_rumus_rumus_nama" class="t_rumus_rumus_nama"><div class="ewTableHeaderCaption"><?php echo $t_rumus->rumus_nama->FldCaption() ?></div></div></th>
@@ -2516,6 +3895,119 @@ $t_rumus_list->ListOptions->Render("header", "right");
 </thead>
 <tbody>
 <?php
+	if ($t_rumus->CurrentAction == "add" || $t_rumus->CurrentAction == "copy") {
+		$t_rumus_list->RowIndex = 0;
+		$t_rumus_list->KeyCount = $t_rumus_list->RowIndex;
+		if ($t_rumus->CurrentAction == "copy" && !$t_rumus_list->LoadRow())
+				$t_rumus->CurrentAction = "add";
+		if ($t_rumus->CurrentAction == "add")
+			$t_rumus_list->LoadDefaultValues();
+		if ($t_rumus->EventCancelled) // Insert failed
+			$t_rumus_list->RestoreFormValues(); // Restore form values
+
+		// Set row properties
+		$t_rumus->ResetAttrs();
+		$t_rumus->RowAttrs = array_merge($t_rumus->RowAttrs, array('data-rowindex'=>0, 'id'=>'r0_t_rumus', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		$t_rumus->RowType = EW_ROWTYPE_ADD;
+
+		// Render row
+		$t_rumus_list->RenderRow();
+
+		// Render list options
+		$t_rumus_list->RenderListOptions();
+		$t_rumus_list->StartRowCnt = 0;
+?>
+	<tr<?php echo $t_rumus->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$t_rumus_list->ListOptions->Render("body", "left", $t_rumus_list->RowCnt);
+?>
+	<?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
+		<td data-name="rumus_nama">
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_rumus_nama" class="form-group t_rumus_rumus_nama">
+<input type="text" data-table="t_rumus" data-field="x_rumus_nama" name="x<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" id="x<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" size="30" maxlength="50" placeholder="<?php echo ew_HtmlEncode($t_rumus->rumus_nama->getPlaceHolder()) ?>" value="<?php echo $t_rumus->rumus_nama->EditValue ?>"<?php echo $t_rumus->rumus_nama->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_rumus_nama" name="o<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" id="o<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" value="<?php echo ew_HtmlEncode($t_rumus->rumus_nama->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->hk_gol->Visible) { // hk_gol ?>
+		<td data-name="hk_gol">
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_hk_gol" class="form-group t_rumus_hk_gol">
+<input type="text" data-table="t_rumus" data-field="x_hk_gol" name="x<?php echo $t_rumus_list->RowIndex ?>_hk_gol" id="x<?php echo $t_rumus_list->RowIndex ?>_hk_gol" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->hk_gol->getPlaceHolder()) ?>" value="<?php echo $t_rumus->hk_gol->EditValue ?>"<?php echo $t_rumus->hk_gol->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_hk_gol" name="o<?php echo $t_rumus_list->RowIndex ?>_hk_gol" id="o<?php echo $t_rumus_list->RowIndex ?>_hk_gol" value="<?php echo ew_HtmlEncode($t_rumus->hk_gol->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->umr->Visible) { // umr ?>
+		<td data-name="umr">
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_umr" class="form-group t_rumus_umr">
+<input type="text" data-table="t_rumus" data-field="x_umr" name="x<?php echo $t_rumus_list->RowIndex ?>_umr" id="x<?php echo $t_rumus_list->RowIndex ?>_umr" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->umr->getPlaceHolder()) ?>" value="<?php echo $t_rumus->umr->EditValue ?>"<?php echo $t_rumus->umr->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_umr" name="o<?php echo $t_rumus_list->RowIndex ?>_umr" id="o<?php echo $t_rumus_list->RowIndex ?>_umr" value="<?php echo ew_HtmlEncode($t_rumus->umr->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->hk_jml->Visible) { // hk_jml ?>
+		<td data-name="hk_jml">
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_hk_jml" class="form-group t_rumus_hk_jml">
+<input type="text" data-table="t_rumus" data-field="x_hk_jml" name="x<?php echo $t_rumus_list->RowIndex ?>_hk_jml" id="x<?php echo $t_rumus_list->RowIndex ?>_hk_jml" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->hk_jml->getPlaceHolder()) ?>" value="<?php echo $t_rumus->hk_jml->EditValue ?>"<?php echo $t_rumus->hk_jml->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_hk_jml" name="o<?php echo $t_rumus_list->RowIndex ?>_hk_jml" id="o<?php echo $t_rumus_list->RowIndex ?>_hk_jml" value="<?php echo ew_HtmlEncode($t_rumus->hk_jml->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->upah->Visible) { // upah ?>
+		<td data-name="upah">
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_upah" class="form-group t_rumus_upah">
+<input type="text" data-table="t_rumus" data-field="x_upah" name="x<?php echo $t_rumus_list->RowIndex ?>_upah" id="x<?php echo $t_rumus_list->RowIndex ?>_upah" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->upah->getPlaceHolder()) ?>" value="<?php echo $t_rumus->upah->EditValue ?>"<?php echo $t_rumus->upah->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_upah" name="o<?php echo $t_rumus_list->RowIndex ?>_upah" id="o<?php echo $t_rumus_list->RowIndex ?>_upah" value="<?php echo ew_HtmlEncode($t_rumus->upah->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->premi_hadir->Visible) { // premi_hadir ?>
+		<td data-name="premi_hadir">
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_premi_hadir" class="form-group t_rumus_premi_hadir">
+<input type="text" data-table="t_rumus" data-field="x_premi_hadir" name="x<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" id="x<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->premi_hadir->getPlaceHolder()) ?>" value="<?php echo $t_rumus->premi_hadir->EditValue ?>"<?php echo $t_rumus->premi_hadir->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_premi_hadir" name="o<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" id="o<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" value="<?php echo ew_HtmlEncode($t_rumus->premi_hadir->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->premi_malam->Visible) { // premi_malam ?>
+		<td data-name="premi_malam">
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_premi_malam" class="form-group t_rumus_premi_malam">
+<input type="text" data-table="t_rumus" data-field="x_premi_malam" name="x<?php echo $t_rumus_list->RowIndex ?>_premi_malam" id="x<?php echo $t_rumus_list->RowIndex ?>_premi_malam" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->premi_malam->getPlaceHolder()) ?>" value="<?php echo $t_rumus->premi_malam->EditValue ?>"<?php echo $t_rumus->premi_malam->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_premi_malam" name="o<?php echo $t_rumus_list->RowIndex ?>_premi_malam" id="o<?php echo $t_rumus_list->RowIndex ?>_premi_malam" value="<?php echo ew_HtmlEncode($t_rumus->premi_malam->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->pot_absen->Visible) { // pot_absen ?>
+		<td data-name="pot_absen">
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_pot_absen" class="form-group t_rumus_pot_absen">
+<input type="text" data-table="t_rumus" data-field="x_pot_absen" name="x<?php echo $t_rumus_list->RowIndex ?>_pot_absen" id="x<?php echo $t_rumus_list->RowIndex ?>_pot_absen" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->pot_absen->getPlaceHolder()) ?>" value="<?php echo $t_rumus->pot_absen->EditValue ?>"<?php echo $t_rumus->pot_absen->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_pot_absen" name="o<?php echo $t_rumus_list->RowIndex ?>_pot_absen" id="o<?php echo $t_rumus_list->RowIndex ?>_pot_absen" value="<?php echo ew_HtmlEncode($t_rumus->pot_absen->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->lembur->Visible) { // lembur ?>
+		<td data-name="lembur">
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_lembur" class="form-group t_rumus_lembur">
+<input type="text" data-table="t_rumus" data-field="x_lembur" name="x<?php echo $t_rumus_list->RowIndex ?>_lembur" id="x<?php echo $t_rumus_list->RowIndex ?>_lembur" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->lembur->getPlaceHolder()) ?>" value="<?php echo $t_rumus->lembur->EditValue ?>"<?php echo $t_rumus->lembur->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_lembur" name="o<?php echo $t_rumus_list->RowIndex ?>_lembur" id="o<?php echo $t_rumus_list->RowIndex ?>_lembur" value="<?php echo ew_HtmlEncode($t_rumus->lembur->OldValue) ?>">
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$t_rumus_list->ListOptions->Render("body", "right", $t_rumus_list->RowCnt);
+?>
+<script type="text/javascript">
+ft_rumuslist.UpdateOpts(<?php echo $t_rumus_list->RowIndex ?>);
+</script>
+	</tr>
+<?php
+}
+?>
+<?php
 if ($t_rumus->ExportAll && $t_rumus->Export <> "") {
 	$t_rumus_list->StopRec = $t_rumus_list->TotalRecs;
 } else {
@@ -2525,6 +4017,15 @@ if ($t_rumus->ExportAll && $t_rumus->Export <> "") {
 		$t_rumus_list->StopRec = $t_rumus_list->StartRec + $t_rumus_list->DisplayRecs - 1;
 	else
 		$t_rumus_list->StopRec = $t_rumus_list->TotalRecs;
+}
+
+// Restore number of post back records
+if ($objForm) {
+	$objForm->Index = -1;
+	if ($objForm->HasValue($t_rumus_list->FormKeyCountName) && ($t_rumus->CurrentAction == "gridadd" || $t_rumus->CurrentAction == "gridedit" || $t_rumus->CurrentAction == "F")) {
+		$t_rumus_list->KeyCount = $objForm->GetValue($t_rumus_list->FormKeyCountName);
+		$t_rumus_list->StopRec = $t_rumus_list->StartRec + $t_rumus_list->KeyCount - 1;
+	}
 }
 $t_rumus_list->RecCnt = $t_rumus_list->StartRec - 1;
 if ($t_rumus_list->Recordset && !$t_rumus_list->Recordset->EOF) {
@@ -2540,10 +4041,27 @@ if ($t_rumus_list->Recordset && !$t_rumus_list->Recordset->EOF) {
 $t_rumus->RowType = EW_ROWTYPE_AGGREGATEINIT;
 $t_rumus->ResetAttrs();
 $t_rumus_list->RenderRow();
+$t_rumus_list->EditRowCnt = 0;
+if ($t_rumus->CurrentAction == "edit")
+	$t_rumus_list->RowIndex = 1;
+if ($t_rumus->CurrentAction == "gridadd")
+	$t_rumus_list->RowIndex = 0;
+if ($t_rumus->CurrentAction == "gridedit")
+	$t_rumus_list->RowIndex = 0;
 while ($t_rumus_list->RecCnt < $t_rumus_list->StopRec) {
 	$t_rumus_list->RecCnt++;
 	if (intval($t_rumus_list->RecCnt) >= intval($t_rumus_list->StartRec)) {
 		$t_rumus_list->RowCnt++;
+		if ($t_rumus->CurrentAction == "gridadd" || $t_rumus->CurrentAction == "gridedit" || $t_rumus->CurrentAction == "F") {
+			$t_rumus_list->RowIndex++;
+			$objForm->Index = $t_rumus_list->RowIndex;
+			if ($objForm->HasValue($t_rumus_list->FormActionName))
+				$t_rumus_list->RowAction = strval($objForm->GetValue($t_rumus_list->FormActionName));
+			elseif ($t_rumus->CurrentAction == "gridadd")
+				$t_rumus_list->RowAction = "insert";
+			else
+				$t_rumus_list->RowAction = "";
+		}
 
 		// Set up key count
 		$t_rumus_list->KeyCount = $t_rumus_list->RowIndex;
@@ -2552,10 +4070,37 @@ while ($t_rumus_list->RecCnt < $t_rumus_list->StopRec) {
 		$t_rumus->ResetAttrs();
 		$t_rumus->CssClass = "";
 		if ($t_rumus->CurrentAction == "gridadd") {
+			$t_rumus_list->LoadDefaultValues(); // Load default values
 		} else {
 			$t_rumus_list->LoadRowValues($t_rumus_list->Recordset); // Load row values
 		}
 		$t_rumus->RowType = EW_ROWTYPE_VIEW; // Render view
+		if ($t_rumus->CurrentAction == "gridadd") // Grid add
+			$t_rumus->RowType = EW_ROWTYPE_ADD; // Render add
+		if ($t_rumus->CurrentAction == "gridadd" && $t_rumus->EventCancelled && !$objForm->HasValue("k_blankrow")) // Insert failed
+			$t_rumus_list->RestoreCurrentRowFormValues($t_rumus_list->RowIndex); // Restore form values
+		if ($t_rumus->CurrentAction == "edit") {
+			if ($t_rumus_list->CheckInlineEditKey() && $t_rumus_list->EditRowCnt == 0) { // Inline edit
+				$t_rumus->RowType = EW_ROWTYPE_EDIT; // Render edit
+			}
+		}
+		if ($t_rumus->CurrentAction == "gridedit") { // Grid edit
+			if ($t_rumus->EventCancelled) {
+				$t_rumus_list->RestoreCurrentRowFormValues($t_rumus_list->RowIndex); // Restore form values
+			}
+			if ($t_rumus_list->RowAction == "insert")
+				$t_rumus->RowType = EW_ROWTYPE_ADD; // Render add
+			else
+				$t_rumus->RowType = EW_ROWTYPE_EDIT; // Render edit
+		}
+		if ($t_rumus->CurrentAction == "edit" && $t_rumus->RowType == EW_ROWTYPE_EDIT && $t_rumus->EventCancelled) { // Update failed
+			$objForm->Index = 1;
+			$t_rumus_list->RestoreFormValues(); // Restore form values
+		}
+		if ($t_rumus->CurrentAction == "gridedit" && ($t_rumus->RowType == EW_ROWTYPE_EDIT || $t_rumus->RowType == EW_ROWTYPE_ADD) && $t_rumus->EventCancelled) // Update failed
+			$t_rumus_list->RestoreCurrentRowFormValues($t_rumus_list->RowIndex); // Restore form values
+		if ($t_rumus->RowType == EW_ROWTYPE_EDIT) // Edit row
+			$t_rumus_list->EditRowCnt++;
 
 		// Set up row id / data-rowindex
 		$t_rumus->RowAttrs = array_merge($t_rumus->RowAttrs, array('data-rowindex'=>$t_rumus_list->RowCnt, 'id'=>'r' . $t_rumus_list->RowCnt . '_t_rumus', 'data-rowtype'=>$t_rumus->RowType));
@@ -2565,6 +4110,9 @@ while ($t_rumus_list->RecCnt < $t_rumus_list->StopRec) {
 
 		// Render list options
 		$t_rumus_list->RenderListOptions();
+
+		// Skip delete row / empty row for confirm page
+		if ($t_rumus_list->RowAction <> "delete" && $t_rumus_list->RowAction <> "insertdelete" && !($t_rumus_list->RowAction == "insert" && $t_rumus->CurrentAction == "F" && $t_rumus_list->EmptyRow())) {
 ?>
 	<tr<?php echo $t_rumus->RowAttributes() ?>>
 <?php
@@ -2572,84 +4120,200 @@ while ($t_rumus_list->RecCnt < $t_rumus_list->StopRec) {
 // Render list options (body, left)
 $t_rumus_list->ListOptions->Render("body", "left", $t_rumus_list->RowCnt);
 ?>
-	<?php if ($t_rumus->rumus_id->Visible) { // rumus_id ?>
-		<td data-name="rumus_id"<?php echo $t_rumus->rumus_id->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_rumus_id" class="t_rumus_rumus_id">
-<span<?php echo $t_rumus->rumus_id->ViewAttributes() ?>>
-<?php echo $t_rumus->rumus_id->ListViewValue() ?></span>
-</span>
-<a id="<?php echo $t_rumus_list->PageObjName . "_row_" . $t_rumus_list->RowCnt ?>"></a></td>
-	<?php } ?>
 	<?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
 		<td data-name="rumus_nama"<?php echo $t_rumus->rumus_nama->CellAttributes() ?>>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_rumus_nama" class="form-group t_rumus_rumus_nama">
+<input type="text" data-table="t_rumus" data-field="x_rumus_nama" name="x<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" id="x<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" size="30" maxlength="50" placeholder="<?php echo ew_HtmlEncode($t_rumus->rumus_nama->getPlaceHolder()) ?>" value="<?php echo $t_rumus->rumus_nama->EditValue ?>"<?php echo $t_rumus->rumus_nama->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_rumus_nama" name="o<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" id="o<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" value="<?php echo ew_HtmlEncode($t_rumus->rumus_nama->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_rumus_nama" class="form-group t_rumus_rumus_nama">
+<input type="text" data-table="t_rumus" data-field="x_rumus_nama" name="x<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" id="x<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" size="30" maxlength="50" placeholder="<?php echo ew_HtmlEncode($t_rumus->rumus_nama->getPlaceHolder()) ?>" value="<?php echo $t_rumus->rumus_nama->EditValue ?>"<?php echo $t_rumus->rumus_nama->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_rumus_nama" class="t_rumus_rumus_nama">
 <span<?php echo $t_rumus->rumus_nama->ViewAttributes() ?>>
 <?php echo $t_rumus->rumus_nama->ListViewValue() ?></span>
 </span>
-</td>
+<?php } ?>
+<a id="<?php echo $t_rumus_list->PageObjName . "_row_" . $t_rumus_list->RowCnt ?>"></a></td>
 	<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<input type="hidden" data-table="t_rumus" data-field="x_rumus_id" name="x<?php echo $t_rumus_list->RowIndex ?>_rumus_id" id="x<?php echo $t_rumus_list->RowIndex ?>_rumus_id" value="<?php echo ew_HtmlEncode($t_rumus->rumus_id->CurrentValue) ?>">
+<input type="hidden" data-table="t_rumus" data-field="x_rumus_id" name="o<?php echo $t_rumus_list->RowIndex ?>_rumus_id" id="o<?php echo $t_rumus_list->RowIndex ?>_rumus_id" value="<?php echo ew_HtmlEncode($t_rumus->rumus_id->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT || $t_rumus->CurrentMode == "edit") { ?>
+<input type="hidden" data-table="t_rumus" data-field="x_rumus_id" name="x<?php echo $t_rumus_list->RowIndex ?>_rumus_id" id="x<?php echo $t_rumus_list->RowIndex ?>_rumus_id" value="<?php echo ew_HtmlEncode($t_rumus->rumus_id->CurrentValue) ?>">
+<?php } ?>
 	<?php if ($t_rumus->hk_gol->Visible) { // hk_gol ?>
 		<td data-name="hk_gol"<?php echo $t_rumus->hk_gol->CellAttributes() ?>>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_hk_gol" class="form-group t_rumus_hk_gol">
+<input type="text" data-table="t_rumus" data-field="x_hk_gol" name="x<?php echo $t_rumus_list->RowIndex ?>_hk_gol" id="x<?php echo $t_rumus_list->RowIndex ?>_hk_gol" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->hk_gol->getPlaceHolder()) ?>" value="<?php echo $t_rumus->hk_gol->EditValue ?>"<?php echo $t_rumus->hk_gol->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_hk_gol" name="o<?php echo $t_rumus_list->RowIndex ?>_hk_gol" id="o<?php echo $t_rumus_list->RowIndex ?>_hk_gol" value="<?php echo ew_HtmlEncode($t_rumus->hk_gol->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_hk_gol" class="form-group t_rumus_hk_gol">
+<input type="text" data-table="t_rumus" data-field="x_hk_gol" name="x<?php echo $t_rumus_list->RowIndex ?>_hk_gol" id="x<?php echo $t_rumus_list->RowIndex ?>_hk_gol" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->hk_gol->getPlaceHolder()) ?>" value="<?php echo $t_rumus->hk_gol->EditValue ?>"<?php echo $t_rumus->hk_gol->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_hk_gol" class="t_rumus_hk_gol">
 <span<?php echo $t_rumus->hk_gol->ViewAttributes() ?>>
 <?php echo $t_rumus->hk_gol->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($t_rumus->umr->Visible) { // umr ?>
 		<td data-name="umr"<?php echo $t_rumus->umr->CellAttributes() ?>>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_umr" class="form-group t_rumus_umr">
+<input type="text" data-table="t_rumus" data-field="x_umr" name="x<?php echo $t_rumus_list->RowIndex ?>_umr" id="x<?php echo $t_rumus_list->RowIndex ?>_umr" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->umr->getPlaceHolder()) ?>" value="<?php echo $t_rumus->umr->EditValue ?>"<?php echo $t_rumus->umr->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_umr" name="o<?php echo $t_rumus_list->RowIndex ?>_umr" id="o<?php echo $t_rumus_list->RowIndex ?>_umr" value="<?php echo ew_HtmlEncode($t_rumus->umr->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_umr" class="form-group t_rumus_umr">
+<input type="text" data-table="t_rumus" data-field="x_umr" name="x<?php echo $t_rumus_list->RowIndex ?>_umr" id="x<?php echo $t_rumus_list->RowIndex ?>_umr" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->umr->getPlaceHolder()) ?>" value="<?php echo $t_rumus->umr->EditValue ?>"<?php echo $t_rumus->umr->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_umr" class="t_rumus_umr">
 <span<?php echo $t_rumus->umr->ViewAttributes() ?>>
 <?php echo $t_rumus->umr->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($t_rumus->hk_jml->Visible) { // hk_jml ?>
 		<td data-name="hk_jml"<?php echo $t_rumus->hk_jml->CellAttributes() ?>>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_hk_jml" class="form-group t_rumus_hk_jml">
+<input type="text" data-table="t_rumus" data-field="x_hk_jml" name="x<?php echo $t_rumus_list->RowIndex ?>_hk_jml" id="x<?php echo $t_rumus_list->RowIndex ?>_hk_jml" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->hk_jml->getPlaceHolder()) ?>" value="<?php echo $t_rumus->hk_jml->EditValue ?>"<?php echo $t_rumus->hk_jml->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_hk_jml" name="o<?php echo $t_rumus_list->RowIndex ?>_hk_jml" id="o<?php echo $t_rumus_list->RowIndex ?>_hk_jml" value="<?php echo ew_HtmlEncode($t_rumus->hk_jml->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_hk_jml" class="form-group t_rumus_hk_jml">
+<input type="text" data-table="t_rumus" data-field="x_hk_jml" name="x<?php echo $t_rumus_list->RowIndex ?>_hk_jml" id="x<?php echo $t_rumus_list->RowIndex ?>_hk_jml" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->hk_jml->getPlaceHolder()) ?>" value="<?php echo $t_rumus->hk_jml->EditValue ?>"<?php echo $t_rumus->hk_jml->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_hk_jml" class="t_rumus_hk_jml">
 <span<?php echo $t_rumus->hk_jml->ViewAttributes() ?>>
 <?php echo $t_rumus->hk_jml->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($t_rumus->upah->Visible) { // upah ?>
 		<td data-name="upah"<?php echo $t_rumus->upah->CellAttributes() ?>>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_upah" class="form-group t_rumus_upah">
+<input type="text" data-table="t_rumus" data-field="x_upah" name="x<?php echo $t_rumus_list->RowIndex ?>_upah" id="x<?php echo $t_rumus_list->RowIndex ?>_upah" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->upah->getPlaceHolder()) ?>" value="<?php echo $t_rumus->upah->EditValue ?>"<?php echo $t_rumus->upah->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_upah" name="o<?php echo $t_rumus_list->RowIndex ?>_upah" id="o<?php echo $t_rumus_list->RowIndex ?>_upah" value="<?php echo ew_HtmlEncode($t_rumus->upah->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_upah" class="form-group t_rumus_upah">
+<input type="text" data-table="t_rumus" data-field="x_upah" name="x<?php echo $t_rumus_list->RowIndex ?>_upah" id="x<?php echo $t_rumus_list->RowIndex ?>_upah" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->upah->getPlaceHolder()) ?>" value="<?php echo $t_rumus->upah->EditValue ?>"<?php echo $t_rumus->upah->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_upah" class="t_rumus_upah">
 <span<?php echo $t_rumus->upah->ViewAttributes() ?>>
 <?php echo $t_rumus->upah->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($t_rumus->premi_hadir->Visible) { // premi_hadir ?>
 		<td data-name="premi_hadir"<?php echo $t_rumus->premi_hadir->CellAttributes() ?>>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_premi_hadir" class="form-group t_rumus_premi_hadir">
+<input type="text" data-table="t_rumus" data-field="x_premi_hadir" name="x<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" id="x<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->premi_hadir->getPlaceHolder()) ?>" value="<?php echo $t_rumus->premi_hadir->EditValue ?>"<?php echo $t_rumus->premi_hadir->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_premi_hadir" name="o<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" id="o<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" value="<?php echo ew_HtmlEncode($t_rumus->premi_hadir->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_premi_hadir" class="form-group t_rumus_premi_hadir">
+<input type="text" data-table="t_rumus" data-field="x_premi_hadir" name="x<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" id="x<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->premi_hadir->getPlaceHolder()) ?>" value="<?php echo $t_rumus->premi_hadir->EditValue ?>"<?php echo $t_rumus->premi_hadir->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_premi_hadir" class="t_rumus_premi_hadir">
 <span<?php echo $t_rumus->premi_hadir->ViewAttributes() ?>>
 <?php echo $t_rumus->premi_hadir->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($t_rumus->premi_malam->Visible) { // premi_malam ?>
 		<td data-name="premi_malam"<?php echo $t_rumus->premi_malam->CellAttributes() ?>>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_premi_malam" class="form-group t_rumus_premi_malam">
+<input type="text" data-table="t_rumus" data-field="x_premi_malam" name="x<?php echo $t_rumus_list->RowIndex ?>_premi_malam" id="x<?php echo $t_rumus_list->RowIndex ?>_premi_malam" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->premi_malam->getPlaceHolder()) ?>" value="<?php echo $t_rumus->premi_malam->EditValue ?>"<?php echo $t_rumus->premi_malam->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_premi_malam" name="o<?php echo $t_rumus_list->RowIndex ?>_premi_malam" id="o<?php echo $t_rumus_list->RowIndex ?>_premi_malam" value="<?php echo ew_HtmlEncode($t_rumus->premi_malam->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_premi_malam" class="form-group t_rumus_premi_malam">
+<input type="text" data-table="t_rumus" data-field="x_premi_malam" name="x<?php echo $t_rumus_list->RowIndex ?>_premi_malam" id="x<?php echo $t_rumus_list->RowIndex ?>_premi_malam" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->premi_malam->getPlaceHolder()) ?>" value="<?php echo $t_rumus->premi_malam->EditValue ?>"<?php echo $t_rumus->premi_malam->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_premi_malam" class="t_rumus_premi_malam">
 <span<?php echo $t_rumus->premi_malam->ViewAttributes() ?>>
 <?php echo $t_rumus->premi_malam->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($t_rumus->pot_absen->Visible) { // pot_absen ?>
 		<td data-name="pot_absen"<?php echo $t_rumus->pot_absen->CellAttributes() ?>>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_pot_absen" class="form-group t_rumus_pot_absen">
+<input type="text" data-table="t_rumus" data-field="x_pot_absen" name="x<?php echo $t_rumus_list->RowIndex ?>_pot_absen" id="x<?php echo $t_rumus_list->RowIndex ?>_pot_absen" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->pot_absen->getPlaceHolder()) ?>" value="<?php echo $t_rumus->pot_absen->EditValue ?>"<?php echo $t_rumus->pot_absen->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_pot_absen" name="o<?php echo $t_rumus_list->RowIndex ?>_pot_absen" id="o<?php echo $t_rumus_list->RowIndex ?>_pot_absen" value="<?php echo ew_HtmlEncode($t_rumus->pot_absen->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_pot_absen" class="form-group t_rumus_pot_absen">
+<input type="text" data-table="t_rumus" data-field="x_pot_absen" name="x<?php echo $t_rumus_list->RowIndex ?>_pot_absen" id="x<?php echo $t_rumus_list->RowIndex ?>_pot_absen" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->pot_absen->getPlaceHolder()) ?>" value="<?php echo $t_rumus->pot_absen->EditValue ?>"<?php echo $t_rumus->pot_absen->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_pot_absen" class="t_rumus_pot_absen">
 <span<?php echo $t_rumus->pot_absen->ViewAttributes() ?>>
 <?php echo $t_rumus->pot_absen->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 	<?php if ($t_rumus->lembur->Visible) { // lembur ?>
 		<td data-name="lembur"<?php echo $t_rumus->lembur->CellAttributes() ?>>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_lembur" class="form-group t_rumus_lembur">
+<input type="text" data-table="t_rumus" data-field="x_lembur" name="x<?php echo $t_rumus_list->RowIndex ?>_lembur" id="x<?php echo $t_rumus_list->RowIndex ?>_lembur" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->lembur->getPlaceHolder()) ?>" value="<?php echo $t_rumus->lembur->EditValue ?>"<?php echo $t_rumus->lembur->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_lembur" name="o<?php echo $t_rumus_list->RowIndex ?>_lembur" id="o<?php echo $t_rumus_list->RowIndex ?>_lembur" value="<?php echo ew_HtmlEncode($t_rumus->lembur->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_lembur" class="form-group t_rumus_lembur">
+<input type="text" data-table="t_rumus" data-field="x_lembur" name="x<?php echo $t_rumus_list->RowIndex ?>_lembur" id="x<?php echo $t_rumus_list->RowIndex ?>_lembur" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->lembur->getPlaceHolder()) ?>" value="<?php echo $t_rumus->lembur->EditValue ?>"<?php echo $t_rumus->lembur->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_VIEW) { // View record ?>
 <span id="el<?php echo $t_rumus_list->RowCnt ?>_t_rumus_lembur" class="t_rumus_lembur">
 <span<?php echo $t_rumus->lembur->ViewAttributes() ?>>
 <?php echo $t_rumus->lembur->ListViewValue() ?></span>
 </span>
+<?php } ?>
 </td>
 	<?php } ?>
 <?php
@@ -2658,14 +4322,144 @@ $t_rumus_list->ListOptions->Render("body", "left", $t_rumus_list->RowCnt);
 $t_rumus_list->ListOptions->Render("body", "right", $t_rumus_list->RowCnt);
 ?>
 	</tr>
+<?php if ($t_rumus->RowType == EW_ROWTYPE_ADD || $t_rumus->RowType == EW_ROWTYPE_EDIT) { ?>
+<script type="text/javascript">
+ft_rumuslist.UpdateOpts(<?php echo $t_rumus_list->RowIndex ?>);
+</script>
+<?php } ?>
 <?php
 	}
+	} // End delete row checking
 	if ($t_rumus->CurrentAction <> "gridadd")
-		$t_rumus_list->Recordset->MoveNext();
+		if (!$t_rumus_list->Recordset->EOF) $t_rumus_list->Recordset->MoveNext();
+}
+?>
+<?php
+	if ($t_rumus->CurrentAction == "gridadd" || $t_rumus->CurrentAction == "gridedit") {
+		$t_rumus_list->RowIndex = '$rowindex$';
+		$t_rumus_list->LoadDefaultValues();
+
+		// Set row properties
+		$t_rumus->ResetAttrs();
+		$t_rumus->RowAttrs = array_merge($t_rumus->RowAttrs, array('data-rowindex'=>$t_rumus_list->RowIndex, 'id'=>'r0_t_rumus', 'data-rowtype'=>EW_ROWTYPE_ADD));
+		ew_AppendClass($t_rumus->RowAttrs["class"], "ewTemplate");
+		$t_rumus->RowType = EW_ROWTYPE_ADD;
+
+		// Render row
+		$t_rumus_list->RenderRow();
+
+		// Render list options
+		$t_rumus_list->RenderListOptions();
+		$t_rumus_list->StartRowCnt = 0;
+?>
+	<tr<?php echo $t_rumus->RowAttributes() ?>>
+<?php
+
+// Render list options (body, left)
+$t_rumus_list->ListOptions->Render("body", "left", $t_rumus_list->RowIndex);
+?>
+	<?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
+		<td data-name="rumus_nama">
+<span id="el$rowindex$_t_rumus_rumus_nama" class="form-group t_rumus_rumus_nama">
+<input type="text" data-table="t_rumus" data-field="x_rumus_nama" name="x<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" id="x<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" size="30" maxlength="50" placeholder="<?php echo ew_HtmlEncode($t_rumus->rumus_nama->getPlaceHolder()) ?>" value="<?php echo $t_rumus->rumus_nama->EditValue ?>"<?php echo $t_rumus->rumus_nama->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_rumus_nama" name="o<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" id="o<?php echo $t_rumus_list->RowIndex ?>_rumus_nama" value="<?php echo ew_HtmlEncode($t_rumus->rumus_nama->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->hk_gol->Visible) { // hk_gol ?>
+		<td data-name="hk_gol">
+<span id="el$rowindex$_t_rumus_hk_gol" class="form-group t_rumus_hk_gol">
+<input type="text" data-table="t_rumus" data-field="x_hk_gol" name="x<?php echo $t_rumus_list->RowIndex ?>_hk_gol" id="x<?php echo $t_rumus_list->RowIndex ?>_hk_gol" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->hk_gol->getPlaceHolder()) ?>" value="<?php echo $t_rumus->hk_gol->EditValue ?>"<?php echo $t_rumus->hk_gol->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_hk_gol" name="o<?php echo $t_rumus_list->RowIndex ?>_hk_gol" id="o<?php echo $t_rumus_list->RowIndex ?>_hk_gol" value="<?php echo ew_HtmlEncode($t_rumus->hk_gol->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->umr->Visible) { // umr ?>
+		<td data-name="umr">
+<span id="el$rowindex$_t_rumus_umr" class="form-group t_rumus_umr">
+<input type="text" data-table="t_rumus" data-field="x_umr" name="x<?php echo $t_rumus_list->RowIndex ?>_umr" id="x<?php echo $t_rumus_list->RowIndex ?>_umr" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->umr->getPlaceHolder()) ?>" value="<?php echo $t_rumus->umr->EditValue ?>"<?php echo $t_rumus->umr->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_umr" name="o<?php echo $t_rumus_list->RowIndex ?>_umr" id="o<?php echo $t_rumus_list->RowIndex ?>_umr" value="<?php echo ew_HtmlEncode($t_rumus->umr->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->hk_jml->Visible) { // hk_jml ?>
+		<td data-name="hk_jml">
+<span id="el$rowindex$_t_rumus_hk_jml" class="form-group t_rumus_hk_jml">
+<input type="text" data-table="t_rumus" data-field="x_hk_jml" name="x<?php echo $t_rumus_list->RowIndex ?>_hk_jml" id="x<?php echo $t_rumus_list->RowIndex ?>_hk_jml" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->hk_jml->getPlaceHolder()) ?>" value="<?php echo $t_rumus->hk_jml->EditValue ?>"<?php echo $t_rumus->hk_jml->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_hk_jml" name="o<?php echo $t_rumus_list->RowIndex ?>_hk_jml" id="o<?php echo $t_rumus_list->RowIndex ?>_hk_jml" value="<?php echo ew_HtmlEncode($t_rumus->hk_jml->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->upah->Visible) { // upah ?>
+		<td data-name="upah">
+<span id="el$rowindex$_t_rumus_upah" class="form-group t_rumus_upah">
+<input type="text" data-table="t_rumus" data-field="x_upah" name="x<?php echo $t_rumus_list->RowIndex ?>_upah" id="x<?php echo $t_rumus_list->RowIndex ?>_upah" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->upah->getPlaceHolder()) ?>" value="<?php echo $t_rumus->upah->EditValue ?>"<?php echo $t_rumus->upah->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_upah" name="o<?php echo $t_rumus_list->RowIndex ?>_upah" id="o<?php echo $t_rumus_list->RowIndex ?>_upah" value="<?php echo ew_HtmlEncode($t_rumus->upah->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->premi_hadir->Visible) { // premi_hadir ?>
+		<td data-name="premi_hadir">
+<span id="el$rowindex$_t_rumus_premi_hadir" class="form-group t_rumus_premi_hadir">
+<input type="text" data-table="t_rumus" data-field="x_premi_hadir" name="x<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" id="x<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->premi_hadir->getPlaceHolder()) ?>" value="<?php echo $t_rumus->premi_hadir->EditValue ?>"<?php echo $t_rumus->premi_hadir->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_premi_hadir" name="o<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" id="o<?php echo $t_rumus_list->RowIndex ?>_premi_hadir" value="<?php echo ew_HtmlEncode($t_rumus->premi_hadir->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->premi_malam->Visible) { // premi_malam ?>
+		<td data-name="premi_malam">
+<span id="el$rowindex$_t_rumus_premi_malam" class="form-group t_rumus_premi_malam">
+<input type="text" data-table="t_rumus" data-field="x_premi_malam" name="x<?php echo $t_rumus_list->RowIndex ?>_premi_malam" id="x<?php echo $t_rumus_list->RowIndex ?>_premi_malam" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->premi_malam->getPlaceHolder()) ?>" value="<?php echo $t_rumus->premi_malam->EditValue ?>"<?php echo $t_rumus->premi_malam->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_premi_malam" name="o<?php echo $t_rumus_list->RowIndex ?>_premi_malam" id="o<?php echo $t_rumus_list->RowIndex ?>_premi_malam" value="<?php echo ew_HtmlEncode($t_rumus->premi_malam->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->pot_absen->Visible) { // pot_absen ?>
+		<td data-name="pot_absen">
+<span id="el$rowindex$_t_rumus_pot_absen" class="form-group t_rumus_pot_absen">
+<input type="text" data-table="t_rumus" data-field="x_pot_absen" name="x<?php echo $t_rumus_list->RowIndex ?>_pot_absen" id="x<?php echo $t_rumus_list->RowIndex ?>_pot_absen" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->pot_absen->getPlaceHolder()) ?>" value="<?php echo $t_rumus->pot_absen->EditValue ?>"<?php echo $t_rumus->pot_absen->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_pot_absen" name="o<?php echo $t_rumus_list->RowIndex ?>_pot_absen" id="o<?php echo $t_rumus_list->RowIndex ?>_pot_absen" value="<?php echo ew_HtmlEncode($t_rumus->pot_absen->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus->lembur->Visible) { // lembur ?>
+		<td data-name="lembur">
+<span id="el$rowindex$_t_rumus_lembur" class="form-group t_rumus_lembur">
+<input type="text" data-table="t_rumus" data-field="x_lembur" name="x<?php echo $t_rumus_list->RowIndex ?>_lembur" id="x<?php echo $t_rumus_list->RowIndex ?>_lembur" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus->lembur->getPlaceHolder()) ?>" value="<?php echo $t_rumus->lembur->EditValue ?>"<?php echo $t_rumus->lembur->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus" data-field="x_lembur" name="o<?php echo $t_rumus_list->RowIndex ?>_lembur" id="o<?php echo $t_rumus_list->RowIndex ?>_lembur" value="<?php echo ew_HtmlEncode($t_rumus->lembur->OldValue) ?>">
+</td>
+	<?php } ?>
+<?php
+
+// Render list options (body, right)
+$t_rumus_list->ListOptions->Render("body", "right", $t_rumus_list->RowCnt);
+?>
+<script type="text/javascript">
+ft_rumuslist.UpdateOpts(<?php echo $t_rumus_list->RowIndex ?>);
+</script>
+	</tr>
+<?php
 }
 ?>
 </tbody>
 </table>
+<?php } ?>
+<?php if ($t_rumus->CurrentAction == "add" || $t_rumus->CurrentAction == "copy") { ?>
+<input type="hidden" name="<?php echo $t_rumus_list->FormKeyCountName ?>" id="<?php echo $t_rumus_list->FormKeyCountName ?>" value="<?php echo $t_rumus_list->KeyCount ?>">
+<?php } ?>
+<?php if ($t_rumus->CurrentAction == "gridadd") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridinsert">
+<input type="hidden" name="<?php echo $t_rumus_list->FormKeyCountName ?>" id="<?php echo $t_rumus_list->FormKeyCountName ?>" value="<?php echo $t_rumus_list->KeyCount ?>">
+<?php echo $t_rumus_list->MultiSelectKey ?>
+<?php } ?>
+<?php if ($t_rumus->CurrentAction == "edit") { ?>
+<input type="hidden" name="<?php echo $t_rumus_list->FormKeyCountName ?>" id="<?php echo $t_rumus_list->FormKeyCountName ?>" value="<?php echo $t_rumus_list->KeyCount ?>">
+<?php } ?>
+<?php if ($t_rumus->CurrentAction == "gridedit") { ?>
+<input type="hidden" name="a_list" id="a_list" value="gridupdate">
+<input type="hidden" name="<?php echo $t_rumus_list->FormKeyCountName ?>" id="<?php echo $t_rumus_list->FormKeyCountName ?>" value="<?php echo $t_rumus_list->KeyCount ?>">
+<?php echo $t_rumus_list->MultiSelectKey ?>
 <?php } ?>
 <?php if ($t_rumus->CurrentAction == "") { ?>
 <input type="hidden" name="a_list" id="a_list" value="">

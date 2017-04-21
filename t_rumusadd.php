@@ -678,34 +678,48 @@ class ct_rumus_add extends ct_rumus {
 
 		// hk_gol
 		$this->hk_gol->ViewValue = $this->hk_gol->CurrentValue;
+		$this->hk_gol->CellCssStyle .= "text-align: center;";
 		$this->hk_gol->ViewCustomAttributes = "";
 
 		// umr
 		$this->umr->ViewValue = $this->umr->CurrentValue;
+		$this->umr->ViewValue = ew_FormatNumber($this->umr->ViewValue, 0, -2, -2, -2);
+		$this->umr->CellCssStyle .= "text-align: right;";
 		$this->umr->ViewCustomAttributes = "";
 
 		// hk_jml
 		$this->hk_jml->ViewValue = $this->hk_jml->CurrentValue;
+		$this->hk_jml->CellCssStyle .= "text-align: center;";
 		$this->hk_jml->ViewCustomAttributes = "";
 
 		// upah
 		$this->upah->ViewValue = $this->upah->CurrentValue;
+		$this->upah->ViewValue = ew_FormatNumber($this->upah->ViewValue, 0, -2, -2, -2);
+		$this->upah->CellCssStyle .= "text-align: right;";
 		$this->upah->ViewCustomAttributes = "";
 
 		// premi_hadir
 		$this->premi_hadir->ViewValue = $this->premi_hadir->CurrentValue;
+		$this->premi_hadir->ViewValue = ew_FormatNumber($this->premi_hadir->ViewValue, 0, -2, -2, -2);
+		$this->premi_hadir->CellCssStyle .= "text-align: right;";
 		$this->premi_hadir->ViewCustomAttributes = "";
 
 		// premi_malam
 		$this->premi_malam->ViewValue = $this->premi_malam->CurrentValue;
+		$this->premi_malam->ViewValue = ew_FormatNumber($this->premi_malam->ViewValue, 0, -2, -2, -2);
+		$this->premi_malam->CellCssStyle .= "text-align: right;";
 		$this->premi_malam->ViewCustomAttributes = "";
 
 		// pot_absen
 		$this->pot_absen->ViewValue = $this->pot_absen->CurrentValue;
+		$this->pot_absen->ViewValue = ew_FormatNumber($this->pot_absen->ViewValue, 0, -2, -2, -2);
+		$this->pot_absen->CellCssStyle .= "text-align: right;";
 		$this->pot_absen->ViewCustomAttributes = "";
 
 		// lembur
 		$this->lembur->ViewValue = $this->lembur->CurrentValue;
+		$this->lembur->ViewValue = ew_FormatNumber($this->lembur->ViewValue, 0, -2, -2, -2);
+		$this->lembur->CellCssStyle .= "text-align: right;";
 		$this->lembur->ViewCustomAttributes = "";
 
 			// rumus_nama
@@ -771,7 +785,7 @@ class ct_rumus_add extends ct_rumus {
 			$this->umr->EditCustomAttributes = "";
 			$this->umr->EditValue = ew_HtmlEncode($this->umr->CurrentValue);
 			$this->umr->PlaceHolder = ew_RemoveHtml($this->umr->FldCaption());
-			if (strval($this->umr->EditValue) <> "" && is_numeric($this->umr->EditValue)) $this->umr->EditValue = ew_FormatNumber($this->umr->EditValue, -2, -1, -2, 0);
+			if (strval($this->umr->EditValue) <> "" && is_numeric($this->umr->EditValue)) $this->umr->EditValue = ew_FormatNumber($this->umr->EditValue, -2, -2, -2, -2);
 
 			// hk_jml
 			$this->hk_jml->EditAttrs["class"] = "form-control";
@@ -784,35 +798,35 @@ class ct_rumus_add extends ct_rumus {
 			$this->upah->EditCustomAttributes = "";
 			$this->upah->EditValue = ew_HtmlEncode($this->upah->CurrentValue);
 			$this->upah->PlaceHolder = ew_RemoveHtml($this->upah->FldCaption());
-			if (strval($this->upah->EditValue) <> "" && is_numeric($this->upah->EditValue)) $this->upah->EditValue = ew_FormatNumber($this->upah->EditValue, -2, -1, -2, 0);
+			if (strval($this->upah->EditValue) <> "" && is_numeric($this->upah->EditValue)) $this->upah->EditValue = ew_FormatNumber($this->upah->EditValue, -2, -2, -2, -2);
 
 			// premi_hadir
 			$this->premi_hadir->EditAttrs["class"] = "form-control";
 			$this->premi_hadir->EditCustomAttributes = "";
 			$this->premi_hadir->EditValue = ew_HtmlEncode($this->premi_hadir->CurrentValue);
 			$this->premi_hadir->PlaceHolder = ew_RemoveHtml($this->premi_hadir->FldCaption());
-			if (strval($this->premi_hadir->EditValue) <> "" && is_numeric($this->premi_hadir->EditValue)) $this->premi_hadir->EditValue = ew_FormatNumber($this->premi_hadir->EditValue, -2, -1, -2, 0);
+			if (strval($this->premi_hadir->EditValue) <> "" && is_numeric($this->premi_hadir->EditValue)) $this->premi_hadir->EditValue = ew_FormatNumber($this->premi_hadir->EditValue, -2, -2, -2, -2);
 
 			// premi_malam
 			$this->premi_malam->EditAttrs["class"] = "form-control";
 			$this->premi_malam->EditCustomAttributes = "";
 			$this->premi_malam->EditValue = ew_HtmlEncode($this->premi_malam->CurrentValue);
 			$this->premi_malam->PlaceHolder = ew_RemoveHtml($this->premi_malam->FldCaption());
-			if (strval($this->premi_malam->EditValue) <> "" && is_numeric($this->premi_malam->EditValue)) $this->premi_malam->EditValue = ew_FormatNumber($this->premi_malam->EditValue, -2, -1, -2, 0);
+			if (strval($this->premi_malam->EditValue) <> "" && is_numeric($this->premi_malam->EditValue)) $this->premi_malam->EditValue = ew_FormatNumber($this->premi_malam->EditValue, -2, -2, -2, -2);
 
 			// pot_absen
 			$this->pot_absen->EditAttrs["class"] = "form-control";
 			$this->pot_absen->EditCustomAttributes = "";
 			$this->pot_absen->EditValue = ew_HtmlEncode($this->pot_absen->CurrentValue);
 			$this->pot_absen->PlaceHolder = ew_RemoveHtml($this->pot_absen->FldCaption());
-			if (strval($this->pot_absen->EditValue) <> "" && is_numeric($this->pot_absen->EditValue)) $this->pot_absen->EditValue = ew_FormatNumber($this->pot_absen->EditValue, -2, -1, -2, 0);
+			if (strval($this->pot_absen->EditValue) <> "" && is_numeric($this->pot_absen->EditValue)) $this->pot_absen->EditValue = ew_FormatNumber($this->pot_absen->EditValue, -2, -2, -2, -2);
 
 			// lembur
 			$this->lembur->EditAttrs["class"] = "form-control";
 			$this->lembur->EditCustomAttributes = "";
 			$this->lembur->EditValue = ew_HtmlEncode($this->lembur->CurrentValue);
 			$this->lembur->PlaceHolder = ew_RemoveHtml($this->lembur->FldCaption());
-			if (strval($this->lembur->EditValue) <> "" && is_numeric($this->lembur->EditValue)) $this->lembur->EditValue = ew_FormatNumber($this->lembur->EditValue, -2, -1, -2, 0);
+			if (strval($this->lembur->EditValue) <> "" && is_numeric($this->lembur->EditValue)) $this->lembur->EditValue = ew_FormatNumber($this->lembur->EditValue, -2, -2, -2, -2);
 
 			// Add refer script
 			// rumus_nama

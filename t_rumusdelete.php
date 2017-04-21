@@ -282,8 +282,6 @@ class ct_rumus_delete extends ct_rumus {
 			$Security->UserID_Loaded();
 		}
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->rumus_id->SetVisibility();
-		$this->rumus_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->rumus_nama->SetVisibility();
 		$this->hk_gol->SetVisibility();
 		$this->umr->SetVisibility();
@@ -552,40 +550,49 @@ class ct_rumus_delete extends ct_rumus {
 
 		// hk_gol
 		$this->hk_gol->ViewValue = $this->hk_gol->CurrentValue;
+		$this->hk_gol->CellCssStyle .= "text-align: center;";
 		$this->hk_gol->ViewCustomAttributes = "";
 
 		// umr
 		$this->umr->ViewValue = $this->umr->CurrentValue;
+		$this->umr->ViewValue = ew_FormatNumber($this->umr->ViewValue, 0, -2, -2, -2);
+		$this->umr->CellCssStyle .= "text-align: right;";
 		$this->umr->ViewCustomAttributes = "";
 
 		// hk_jml
 		$this->hk_jml->ViewValue = $this->hk_jml->CurrentValue;
+		$this->hk_jml->CellCssStyle .= "text-align: center;";
 		$this->hk_jml->ViewCustomAttributes = "";
 
 		// upah
 		$this->upah->ViewValue = $this->upah->CurrentValue;
+		$this->upah->ViewValue = ew_FormatNumber($this->upah->ViewValue, 0, -2, -2, -2);
+		$this->upah->CellCssStyle .= "text-align: right;";
 		$this->upah->ViewCustomAttributes = "";
 
 		// premi_hadir
 		$this->premi_hadir->ViewValue = $this->premi_hadir->CurrentValue;
+		$this->premi_hadir->ViewValue = ew_FormatNumber($this->premi_hadir->ViewValue, 0, -2, -2, -2);
+		$this->premi_hadir->CellCssStyle .= "text-align: right;";
 		$this->premi_hadir->ViewCustomAttributes = "";
 
 		// premi_malam
 		$this->premi_malam->ViewValue = $this->premi_malam->CurrentValue;
+		$this->premi_malam->ViewValue = ew_FormatNumber($this->premi_malam->ViewValue, 0, -2, -2, -2);
+		$this->premi_malam->CellCssStyle .= "text-align: right;";
 		$this->premi_malam->ViewCustomAttributes = "";
 
 		// pot_absen
 		$this->pot_absen->ViewValue = $this->pot_absen->CurrentValue;
+		$this->pot_absen->ViewValue = ew_FormatNumber($this->pot_absen->ViewValue, 0, -2, -2, -2);
+		$this->pot_absen->CellCssStyle .= "text-align: right;";
 		$this->pot_absen->ViewCustomAttributes = "";
 
 		// lembur
 		$this->lembur->ViewValue = $this->lembur->CurrentValue;
+		$this->lembur->ViewValue = ew_FormatNumber($this->lembur->ViewValue, 0, -2, -2, -2);
+		$this->lembur->CellCssStyle .= "text-align: right;";
 		$this->lembur->ViewCustomAttributes = "";
-
-			// rumus_id
-			$this->rumus_id->LinkCustomAttributes = "";
-			$this->rumus_id->HrefValue = "";
-			$this->rumus_id->TooltipValue = "";
 
 			// rumus_nama
 			$this->rumus_nama->LinkCustomAttributes = "";
@@ -666,6 +673,7 @@ class ct_rumus_delete extends ct_rumus {
 		}
 		$rows = ($rs) ? $rs->GetRows() : array();
 		$conn->BeginTrans();
+		if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteBegin")); // Batch delete begin
 
 		// Clone old rows
 		$rsold = $rows;
@@ -708,8 +716,10 @@ class ct_rumus_delete extends ct_rumus {
 		}
 		if ($DeleteRows) {
 			$conn->CommitTrans(); // Commit the changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
 		} else {
 			$conn->RollbackTrans(); // Rollback changes
+			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteRollback")); // Batch delete rollback
 		}
 
 		// Call Row Deleted event
@@ -881,9 +891,6 @@ $t_rumus_delete->ShowMessage();
 <?php echo $t_rumus->TableCustomInnerHtml ?>
 	<thead>
 	<tr class="ewTableHeader">
-<?php if ($t_rumus->rumus_id->Visible) { // rumus_id ?>
-		<th><span id="elh_t_rumus_rumus_id" class="t_rumus_rumus_id"><?php echo $t_rumus->rumus_id->FldCaption() ?></span></th>
-<?php } ?>
 <?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
 		<th><span id="elh_t_rumus_rumus_nama" class="t_rumus_rumus_nama"><?php echo $t_rumus->rumus_nama->FldCaption() ?></span></th>
 <?php } ?>
@@ -932,14 +939,6 @@ while (!$t_rumus_delete->Recordset->EOF) {
 	$t_rumus_delete->RenderRow();
 ?>
 	<tr<?php echo $t_rumus->RowAttributes() ?>>
-<?php if ($t_rumus->rumus_id->Visible) { // rumus_id ?>
-		<td<?php echo $t_rumus->rumus_id->CellAttributes() ?>>
-<span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_rumus_id" class="t_rumus_rumus_id">
-<span<?php echo $t_rumus->rumus_id->ViewAttributes() ?>>
-<?php echo $t_rumus->rumus_id->ListViewValue() ?></span>
-</span>
-</td>
-<?php } ?>
 <?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
 		<td<?php echo $t_rumus->rumus_nama->CellAttributes() ?>>
 <span id="el<?php echo $t_rumus_delete->RowCnt ?>_t_rumus_rumus_nama" class="t_rumus_rumus_nama">

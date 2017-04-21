@@ -285,8 +285,6 @@ class ct_rumus_edit extends ct_rumus {
 		// Create form object
 		$objForm = new cFormObj();
 		$this->CurrentAction = (@$_GET["a"] <> "") ? $_GET["a"] : @$_POST["a_list"]; // Set up current action
-		$this->rumus_id->SetVisibility();
-		$this->rumus_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->rumus_nama->SetVisibility();
 		$this->hk_gol->SetVisibility();
 		$this->umr->SetVisibility();
@@ -547,8 +545,6 @@ class ct_rumus_edit extends ct_rumus {
 
 		// Load from form
 		global $objForm;
-		if (!$this->rumus_id->FldIsDetailKey)
-			$this->rumus_id->setFormValue($objForm->GetValue("x_rumus_id"));
 		if (!$this->rumus_nama->FldIsDetailKey) {
 			$this->rumus_nama->setFormValue($objForm->GetValue("x_rumus_nama"));
 		}
@@ -576,6 +572,8 @@ class ct_rumus_edit extends ct_rumus {
 		if (!$this->lembur->FldIsDetailKey) {
 			$this->lembur->setFormValue($objForm->GetValue("x_lembur"));
 		}
+		if (!$this->rumus_id->FldIsDetailKey)
+			$this->rumus_id->setFormValue($objForm->GetValue("x_rumus_id"));
 	}
 
 	// Restore form values
@@ -734,40 +732,49 @@ class ct_rumus_edit extends ct_rumus {
 
 		// hk_gol
 		$this->hk_gol->ViewValue = $this->hk_gol->CurrentValue;
+		$this->hk_gol->CellCssStyle .= "text-align: center;";
 		$this->hk_gol->ViewCustomAttributes = "";
 
 		// umr
 		$this->umr->ViewValue = $this->umr->CurrentValue;
+		$this->umr->ViewValue = ew_FormatNumber($this->umr->ViewValue, 0, -2, -2, -2);
+		$this->umr->CellCssStyle .= "text-align: right;";
 		$this->umr->ViewCustomAttributes = "";
 
 		// hk_jml
 		$this->hk_jml->ViewValue = $this->hk_jml->CurrentValue;
+		$this->hk_jml->CellCssStyle .= "text-align: center;";
 		$this->hk_jml->ViewCustomAttributes = "";
 
 		// upah
 		$this->upah->ViewValue = $this->upah->CurrentValue;
+		$this->upah->ViewValue = ew_FormatNumber($this->upah->ViewValue, 0, -2, -2, -2);
+		$this->upah->CellCssStyle .= "text-align: right;";
 		$this->upah->ViewCustomAttributes = "";
 
 		// premi_hadir
 		$this->premi_hadir->ViewValue = $this->premi_hadir->CurrentValue;
+		$this->premi_hadir->ViewValue = ew_FormatNumber($this->premi_hadir->ViewValue, 0, -2, -2, -2);
+		$this->premi_hadir->CellCssStyle .= "text-align: right;";
 		$this->premi_hadir->ViewCustomAttributes = "";
 
 		// premi_malam
 		$this->premi_malam->ViewValue = $this->premi_malam->CurrentValue;
+		$this->premi_malam->ViewValue = ew_FormatNumber($this->premi_malam->ViewValue, 0, -2, -2, -2);
+		$this->premi_malam->CellCssStyle .= "text-align: right;";
 		$this->premi_malam->ViewCustomAttributes = "";
 
 		// pot_absen
 		$this->pot_absen->ViewValue = $this->pot_absen->CurrentValue;
+		$this->pot_absen->ViewValue = ew_FormatNumber($this->pot_absen->ViewValue, 0, -2, -2, -2);
+		$this->pot_absen->CellCssStyle .= "text-align: right;";
 		$this->pot_absen->ViewCustomAttributes = "";
 
 		// lembur
 		$this->lembur->ViewValue = $this->lembur->CurrentValue;
+		$this->lembur->ViewValue = ew_FormatNumber($this->lembur->ViewValue, 0, -2, -2, -2);
+		$this->lembur->CellCssStyle .= "text-align: right;";
 		$this->lembur->ViewCustomAttributes = "";
-
-			// rumus_id
-			$this->rumus_id->LinkCustomAttributes = "";
-			$this->rumus_id->HrefValue = "";
-			$this->rumus_id->TooltipValue = "";
 
 			// rumus_nama
 			$this->rumus_nama->LinkCustomAttributes = "";
@@ -815,12 +822,6 @@ class ct_rumus_edit extends ct_rumus {
 			$this->lembur->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_EDIT) { // Edit row
 
-			// rumus_id
-			$this->rumus_id->EditAttrs["class"] = "form-control";
-			$this->rumus_id->EditCustomAttributes = "";
-			$this->rumus_id->EditValue = $this->rumus_id->CurrentValue;
-			$this->rumus_id->ViewCustomAttributes = "";
-
 			// rumus_nama
 			$this->rumus_nama->EditAttrs["class"] = "form-control";
 			$this->rumus_nama->EditCustomAttributes = "";
@@ -838,7 +839,7 @@ class ct_rumus_edit extends ct_rumus {
 			$this->umr->EditCustomAttributes = "";
 			$this->umr->EditValue = ew_HtmlEncode($this->umr->CurrentValue);
 			$this->umr->PlaceHolder = ew_RemoveHtml($this->umr->FldCaption());
-			if (strval($this->umr->EditValue) <> "" && is_numeric($this->umr->EditValue)) $this->umr->EditValue = ew_FormatNumber($this->umr->EditValue, -2, -1, -2, 0);
+			if (strval($this->umr->EditValue) <> "" && is_numeric($this->umr->EditValue)) $this->umr->EditValue = ew_FormatNumber($this->umr->EditValue, -2, -2, -2, -2);
 
 			// hk_jml
 			$this->hk_jml->EditAttrs["class"] = "form-control";
@@ -851,43 +852,39 @@ class ct_rumus_edit extends ct_rumus {
 			$this->upah->EditCustomAttributes = "";
 			$this->upah->EditValue = ew_HtmlEncode($this->upah->CurrentValue);
 			$this->upah->PlaceHolder = ew_RemoveHtml($this->upah->FldCaption());
-			if (strval($this->upah->EditValue) <> "" && is_numeric($this->upah->EditValue)) $this->upah->EditValue = ew_FormatNumber($this->upah->EditValue, -2, -1, -2, 0);
+			if (strval($this->upah->EditValue) <> "" && is_numeric($this->upah->EditValue)) $this->upah->EditValue = ew_FormatNumber($this->upah->EditValue, -2, -2, -2, -2);
 
 			// premi_hadir
 			$this->premi_hadir->EditAttrs["class"] = "form-control";
 			$this->premi_hadir->EditCustomAttributes = "";
 			$this->premi_hadir->EditValue = ew_HtmlEncode($this->premi_hadir->CurrentValue);
 			$this->premi_hadir->PlaceHolder = ew_RemoveHtml($this->premi_hadir->FldCaption());
-			if (strval($this->premi_hadir->EditValue) <> "" && is_numeric($this->premi_hadir->EditValue)) $this->premi_hadir->EditValue = ew_FormatNumber($this->premi_hadir->EditValue, -2, -1, -2, 0);
+			if (strval($this->premi_hadir->EditValue) <> "" && is_numeric($this->premi_hadir->EditValue)) $this->premi_hadir->EditValue = ew_FormatNumber($this->premi_hadir->EditValue, -2, -2, -2, -2);
 
 			// premi_malam
 			$this->premi_malam->EditAttrs["class"] = "form-control";
 			$this->premi_malam->EditCustomAttributes = "";
 			$this->premi_malam->EditValue = ew_HtmlEncode($this->premi_malam->CurrentValue);
 			$this->premi_malam->PlaceHolder = ew_RemoveHtml($this->premi_malam->FldCaption());
-			if (strval($this->premi_malam->EditValue) <> "" && is_numeric($this->premi_malam->EditValue)) $this->premi_malam->EditValue = ew_FormatNumber($this->premi_malam->EditValue, -2, -1, -2, 0);
+			if (strval($this->premi_malam->EditValue) <> "" && is_numeric($this->premi_malam->EditValue)) $this->premi_malam->EditValue = ew_FormatNumber($this->premi_malam->EditValue, -2, -2, -2, -2);
 
 			// pot_absen
 			$this->pot_absen->EditAttrs["class"] = "form-control";
 			$this->pot_absen->EditCustomAttributes = "";
 			$this->pot_absen->EditValue = ew_HtmlEncode($this->pot_absen->CurrentValue);
 			$this->pot_absen->PlaceHolder = ew_RemoveHtml($this->pot_absen->FldCaption());
-			if (strval($this->pot_absen->EditValue) <> "" && is_numeric($this->pot_absen->EditValue)) $this->pot_absen->EditValue = ew_FormatNumber($this->pot_absen->EditValue, -2, -1, -2, 0);
+			if (strval($this->pot_absen->EditValue) <> "" && is_numeric($this->pot_absen->EditValue)) $this->pot_absen->EditValue = ew_FormatNumber($this->pot_absen->EditValue, -2, -2, -2, -2);
 
 			// lembur
 			$this->lembur->EditAttrs["class"] = "form-control";
 			$this->lembur->EditCustomAttributes = "";
 			$this->lembur->EditValue = ew_HtmlEncode($this->lembur->CurrentValue);
 			$this->lembur->PlaceHolder = ew_RemoveHtml($this->lembur->FldCaption());
-			if (strval($this->lembur->EditValue) <> "" && is_numeric($this->lembur->EditValue)) $this->lembur->EditValue = ew_FormatNumber($this->lembur->EditValue, -2, -1, -2, 0);
+			if (strval($this->lembur->EditValue) <> "" && is_numeric($this->lembur->EditValue)) $this->lembur->EditValue = ew_FormatNumber($this->lembur->EditValue, -2, -2, -2, -2);
 
 			// Edit refer script
-			// rumus_id
-
-			$this->rumus_id->LinkCustomAttributes = "";
-			$this->rumus_id->HrefValue = "";
-
 			// rumus_nama
+
 			$this->rumus_nama->LinkCustomAttributes = "";
 			$this->rumus_nama->HrefValue = "";
 
@@ -1381,18 +1378,6 @@ $t_rumus_edit->ShowMessage();
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <div>
-<?php if ($t_rumus->rumus_id->Visible) { // rumus_id ?>
-	<div id="r_rumus_id" class="form-group">
-		<label id="elh_t_rumus_rumus_id" class="col-sm-2 control-label ewLabel"><?php echo $t_rumus->rumus_id->FldCaption() ?></label>
-		<div class="col-sm-10"><div<?php echo $t_rumus->rumus_id->CellAttributes() ?>>
-<span id="el_t_rumus_rumus_id">
-<span<?php echo $t_rumus->rumus_id->ViewAttributes() ?>>
-<p class="form-control-static"><?php echo $t_rumus->rumus_id->EditValue ?></p></span>
-</span>
-<input type="hidden" data-table="t_rumus" data-field="x_rumus_id" name="x_rumus_id" id="x_rumus_id" value="<?php echo ew_HtmlEncode($t_rumus->rumus_id->CurrentValue) ?>">
-<?php echo $t_rumus->rumus_id->CustomMsg ?></div></div>
-	</div>
-<?php } ?>
 <?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
 	<div id="r_rumus_nama" class="form-group">
 		<label id="elh_t_rumus_rumus_nama" for="x_rumus_nama" class="col-sm-2 control-label ewLabel"><?php echo $t_rumus->rumus_nama->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
@@ -1484,6 +1469,7 @@ $t_rumus_edit->ShowMessage();
 	</div>
 <?php } ?>
 </div>
+<input type="hidden" data-table="t_rumus" data-field="x_rumus_id" name="x_rumus_id" id="x_rumus_id" value="<?php echo ew_HtmlEncode($t_rumus->rumus_id->CurrentValue) ?>">
 <?php if (!$t_rumus_edit->IsModal) { ?>
 <div class="form-group">
 	<div class="col-sm-offset-2 col-sm-10">

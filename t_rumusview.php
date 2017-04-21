@@ -383,8 +383,6 @@ class ct_rumus_view extends ct_rumus {
 
 		// Setup export options
 		$this->SetupExportOptions();
-		$this->rumus_id->SetVisibility();
-		$this->rumus_id->Visible = !$this->IsAdd() && !$this->IsCopy() && !$this->IsGridAdd();
 		$this->rumus_nama->SetVisibility();
 		$this->hk_gol->SetVisibility();
 		$this->umr->SetVisibility();
@@ -709,6 +707,7 @@ class ct_rumus_view extends ct_rumus {
 		// Call Row Selected event
 		$row = &$rs->fields;
 		$this->Row_Selected($row);
+		if ($this->AuditTrailOnView) $this->WriteAuditTrailOnView($row);
 		$this->rumus_id->setDbValue($rs->fields('rumus_id'));
 		$this->rumus_nama->setDbValue($rs->fields('rumus_nama'));
 		$this->hk_gol->setDbValue($rs->fields('hk_gol'));
@@ -800,40 +799,49 @@ class ct_rumus_view extends ct_rumus {
 
 		// hk_gol
 		$this->hk_gol->ViewValue = $this->hk_gol->CurrentValue;
+		$this->hk_gol->CellCssStyle .= "text-align: center;";
 		$this->hk_gol->ViewCustomAttributes = "";
 
 		// umr
 		$this->umr->ViewValue = $this->umr->CurrentValue;
+		$this->umr->ViewValue = ew_FormatNumber($this->umr->ViewValue, 0, -2, -2, -2);
+		$this->umr->CellCssStyle .= "text-align: right;";
 		$this->umr->ViewCustomAttributes = "";
 
 		// hk_jml
 		$this->hk_jml->ViewValue = $this->hk_jml->CurrentValue;
+		$this->hk_jml->CellCssStyle .= "text-align: center;";
 		$this->hk_jml->ViewCustomAttributes = "";
 
 		// upah
 		$this->upah->ViewValue = $this->upah->CurrentValue;
+		$this->upah->ViewValue = ew_FormatNumber($this->upah->ViewValue, 0, -2, -2, -2);
+		$this->upah->CellCssStyle .= "text-align: right;";
 		$this->upah->ViewCustomAttributes = "";
 
 		// premi_hadir
 		$this->premi_hadir->ViewValue = $this->premi_hadir->CurrentValue;
+		$this->premi_hadir->ViewValue = ew_FormatNumber($this->premi_hadir->ViewValue, 0, -2, -2, -2);
+		$this->premi_hadir->CellCssStyle .= "text-align: right;";
 		$this->premi_hadir->ViewCustomAttributes = "";
 
 		// premi_malam
 		$this->premi_malam->ViewValue = $this->premi_malam->CurrentValue;
+		$this->premi_malam->ViewValue = ew_FormatNumber($this->premi_malam->ViewValue, 0, -2, -2, -2);
+		$this->premi_malam->CellCssStyle .= "text-align: right;";
 		$this->premi_malam->ViewCustomAttributes = "";
 
 		// pot_absen
 		$this->pot_absen->ViewValue = $this->pot_absen->CurrentValue;
+		$this->pot_absen->ViewValue = ew_FormatNumber($this->pot_absen->ViewValue, 0, -2, -2, -2);
+		$this->pot_absen->CellCssStyle .= "text-align: right;";
 		$this->pot_absen->ViewCustomAttributes = "";
 
 		// lembur
 		$this->lembur->ViewValue = $this->lembur->CurrentValue;
+		$this->lembur->ViewValue = ew_FormatNumber($this->lembur->ViewValue, 0, -2, -2, -2);
+		$this->lembur->CellCssStyle .= "text-align: right;";
 		$this->lembur->ViewCustomAttributes = "";
-
-			// rumus_id
-			$this->rumus_id->LinkCustomAttributes = "";
-			$this->rumus_id->HrefValue = "";
-			$this->rumus_id->TooltipValue = "";
 
 			// rumus_nama
 			$this->rumus_nama->LinkCustomAttributes = "";
@@ -1376,17 +1384,6 @@ $t_rumus_view->ShowMessage();
 <input type="hidden" name="modal" value="1">
 <?php } ?>
 <table class="table table-bordered table-striped ewViewTable">
-<?php if ($t_rumus->rumus_id->Visible) { // rumus_id ?>
-	<tr id="r_rumus_id">
-		<td><span id="elh_t_rumus_rumus_id"><?php echo $t_rumus->rumus_id->FldCaption() ?></span></td>
-		<td data-name="rumus_id"<?php echo $t_rumus->rumus_id->CellAttributes() ?>>
-<span id="el_t_rumus_rumus_id">
-<span<?php echo $t_rumus->rumus_id->ViewAttributes() ?>>
-<?php echo $t_rumus->rumus_id->ViewValue ?></span>
-</span>
-</td>
-	</tr>
-<?php } ?>
 <?php if ($t_rumus->rumus_nama->Visible) { // rumus_nama ?>
 	<tr id="r_rumus_nama">
 		<td><span id="elh_t_rumus_rumus_nama"><?php echo $t_rumus->rumus_nama->FldCaption() ?></span></td>
