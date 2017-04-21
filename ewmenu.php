@@ -25,6 +25,7 @@ $RootMenu->AddMenuItem(73, "mci_Laporan", $Language->MenuPhrase("73", "MenuText"
 $RootMenu->AddMenuItem(10071, "mri_r5fatt5flog", $Language->MenuPhrase("10071", "MenuText"), "r_att_logsmry.php", 73, "{049CCBC0-CFE5-40D9-8A80-2D734899363E}", AllowListMenu('{049CCBC0-CFE5-40D9-8A80-2D734899363E}r_att_log'), FALSE, FALSE);
 $RootMenu->AddMenuItem(10073, "mri_r5fjdwkrj", $Language->MenuPhrase("10073", "MenuText"), "r_jdwkrjsmry.php", 73, "{049CCBC0-CFE5-40D9-8A80-2D734899363E}", AllowListMenu('{049CCBC0-CFE5-40D9-8A80-2D734899363E}r_jdwkrj'), FALSE, FALSE);
 $RootMenu->AddMenuItem(10070, "mri_r5frekon", $Language->MenuPhrase("10070", "MenuText"), "r_rekonctb.php", 73, "{049CCBC0-CFE5-40D9-8A80-2D734899363E}", AllowListMenu('{049CCBC0-CFE5-40D9-8A80-2D734899363E}r_rekon'), FALSE, FALSE);
+$RootMenu->AddMenuItem(10077, "mi_lap_gaji2__php", $Language->MenuPhrase("10077", "MenuText"), "lap_gaji2_.php", 73, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}lap_gaji2_.php'), FALSE, TRUE);
 $RootMenu->AddMenuItem(76, "mi_lap_gaji__php", $Language->MenuPhrase("76", "MenuText"), "lap_gaji_.php", 73, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}lap_gaji_.php'), FALSE, TRUE);
 $RootMenu->AddMenuItem(2, "mi_audittrail", $Language->MenuPhrase("2", "MenuText"), "audittraillist.php", 73, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}audittrail'), FALSE, FALSE);
 $RootMenu->AddMenuItem(-2, "mi_changepwd", $Language->Phrase("ChangePwd"), "changepwd.php", -1, "", IsLoggedIn() && !IsSysAdmin());

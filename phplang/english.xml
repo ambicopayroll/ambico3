@@ -649,8 +649,11 @@
     <menu id="10070">
       <phrase id="menutext" value="Rekonsiliasi" />
     </menu>
+    <menu id="10077">
+      <phrase id="menutext" value="Gaji (Bulanan)" />
+    </menu>
     <menu id="76">
-      <phrase id="menutext" value="Gaji" />
+      <phrase id="menutext" value="Gaji (Harian)" />
     </menu>
     <menu id="2">
       <phrase id="menutext" value="User Activity Log" />
@@ -2823,7 +2826,7 @@
       <phrase id="tblcaption" value="Generate Rekonsiliasi Absensi" />
     </table>
     <table id="lap_gaji__php">
-      <phrase id="tblcaption" value="Gaji" />
+      <phrase id="tblcaption" value="Gaji (Harian)" />
     </table>
     <table id="v_jdw_krj_def">
       <phrase id="tblcaption" value="v jdw krj def" />
@@ -2894,6 +2897,9 @@
       <field id="pot_bpjs">
         <phrase id="fldcaption" value="Pot. BPJS" />
       </field>
+    </table>
+    <table id="lap_gaji2__php">
+      <phrase id="tblcaption" value="Gaji (Bulanan)" />
     </table>
   </project>
 </ew-language>

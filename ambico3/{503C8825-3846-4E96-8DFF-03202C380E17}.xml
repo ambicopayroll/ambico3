@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <configuration date="2017/04/22" author="e.World Technology Ltd.">
-  <project id="{503C8825-3846-4E96-8DFF-03202C380E17}" file="D:\xampp\htdocs\ambico3\ambico3.pmp" name="ambico3" product="PHPMaker" version="13.0" datetime="2017/04/22 02:24:03" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0">
+  <project id="{503C8825-3846-4E96-8DFF-03202C380E17}" file="D:\xampp\htdocs\ambico3\ambico3.pmp" name="ambico3" product="PHPMaker" version="13.0" datetime="2017/04/22 02:47:36" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0">
     <table id="att_log" name="att_log" caption="att log" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="audittrail" name="audittrail" caption="User Activity Log" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="cuti_normatif" name="cuti_normatif" caption="cuti normatif" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
@@ -73,9 +73,10 @@
     <table id="dashboard_php" name="dashboard.php" caption="Dashboard" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="gen_jdwkrj__php" name="gen_jdwkrj_.php" caption="Generate Jadwal Kerja" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="gen_rekon__php" name="gen_rekon_.php" caption="Generate Rekonsiliasi Absensi" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="lap_gaji__php" name="lap_gaji_.php" caption="Gaji" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="lap_gaji__php" name="lap_gaji_.php" caption="Gaji (Harian)" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="v_jdw_krj_def" name="v_jdw_krj_def" caption="v jdw krj def" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="t_rumus2_peg" name="t_rumus2_peg" caption="Gaji (Bulanan)" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="t_rumus2" name="t_rumus2" caption="Penggolongan Gaji (Bulanan)" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="lap_gaji2__php" name="lap_gaji2_.php" caption="Gaji (Bulanan)" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
   </project>
 </configuration>
