@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<configuration date="2017/04/22" author="e.World Technology Ltd.">
-  <project id="{503C8825-3846-4E96-8DFF-03202C380E17}" file="D:\xampp\htdocs\ambico3\ambico3.pmp" name="ambico3" product="PHPMaker" version="13.0" datetime="2017/04/22 02:47:36" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0">
+<configuration date="2017/04/24" author="e.World Technology Ltd.">
+  <project id="{503C8825-3846-4E96-8DFF-03202C380E17}" file="D:\xampp\htdocs\ambico3\ambico3.pmp" name="ambico3" product="PHPMaker" version="13.0" datetime="2017/04/24 01:09:13" languagefolder="phplang" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0">
     <table id="att_log" name="att_log" caption="att log" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="audittrail" name="audittrail" caption="User Activity Log" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="cuti_normatif" name="cuti_normatif" caption="cuti normatif" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
@@ -34,7 +34,7 @@
     <table id="pegawai_d" name="pegawai_d" caption="pegawai d" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="pembagian1" name="pembagian1" caption="Jabatan" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="pembagian2" name="pembagian2" caption="Divisi" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
-    <table id="pembagian3" name="pembagian3" caption="Status" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
+    <table id="pembagian3" name="pembagian3" caption="Status Pegawai" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="pendidikan" name="pendidikan" caption="pendidikan" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="setting" name="setting" caption="setting" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
     <table id="shift_result" name="shift_result" caption="shift result" userlevel="-2,&quot;Anonymous&quot;,0;0,&quot;Default&quot;,0" priv="1" />
