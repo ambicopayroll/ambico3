@@ -7331,7 +7331,7 @@ class crEmail {
 }
 
 // Include PHPMailer class
-include_once($EWR_RELATIVE_PATH . "phpmailer5221/PHPMailerAutoload.php");
+include_once($EWR_RELATIVE_PATH . "phpmailer5223/PHPMailerAutoload.php");
 
 // Function to send email
 function ewr_SendEmail($sFrEmail, $sToEmail, $sCcEmail, $sBccEmail, $sSubject, $sMail, $sFormat, $sCharset, $sSmtpSecure = "", $arAttachments = array(), $arImages = array(), $mail = NULL) {

@@ -538,6 +538,7 @@ class crr_att_log_summary extends crr_att_log {
 		global $ReportLanguage;
 
 		// Set field visibility for detail fields
+		$this->pin->SetVisibility();
 		$this->pegawai_nip->SetVisibility();
 		$this->pegawai_nama->SetVisibility();
 		$this->scan_date_tgl_jam->SetVisibility();
@@ -547,7 +548,7 @@ class crr_att_log_summary extends crr_att_log {
 		// 1st dimension = no of groups (level 0 used for grand total)
 		// 2nd dimension = no of fields
 
-		$nDtls = 5;
+		$nDtls = 6;
 		$nGrps = 1;
 		$this->Val = &ewr_InitArray($nDtls, 0);
 		$this->Cnt = &ewr_Init2DArray($nGrps, $nDtls, 0);
@@ -560,7 +561,7 @@ class crr_att_log_summary extends crr_att_log {
 		$this->GrandMx = &ewr_InitArray($nDtls, NULL);
 
 		// Set up array if accumulation required: array(Accum, SkipNullOrZero)
-		$this->Col = array(array(FALSE, FALSE), array(FALSE,FALSE), array(FALSE,FALSE), array(FALSE,FALSE), array(FALSE,FALSE));
+		$this->Col = array(array(FALSE, FALSE), array(FALSE,FALSE), array(FALSE,FALSE), array(FALSE,FALSE), array(FALSE,FALSE), array(FALSE,FALSE));
 
 		// Set up groups per page dynamically
 		$this->SetUpDisplayGrps();
@@ -794,10 +795,11 @@ class crr_att_log_summary extends crr_att_log {
 			$this->pegawai_nama->setDbValue($rs->fields('pegawai_nama'));
 			$this->scan_date_tgl_jam->setDbValue($rs->fields('scan_date_tgl_jam'));
 			$this->scan_date_tgl->setDbValue($rs->fields('scan_date_tgl'));
-			$this->Val[1] = $this->pegawai_nip->CurrentValue;
-			$this->Val[2] = $this->pegawai_nama->CurrentValue;
-			$this->Val[3] = $this->scan_date_tgl_jam->CurrentValue;
-			$this->Val[4] = $this->scan_date_tgl->CurrentValue;
+			$this->Val[1] = $this->pin->CurrentValue;
+			$this->Val[2] = $this->pegawai_nip->CurrentValue;
+			$this->Val[3] = $this->pegawai_nama->CurrentValue;
+			$this->Val[4] = $this->scan_date_tgl_jam->CurrentValue;
+			$this->Val[5] = $this->scan_date_tgl->CurrentValue;
 		} else {
 			$this->sn->setDbValue("");
 			$this->scan_date->setDbValue("");
@@ -1001,6 +1003,9 @@ class crr_att_log_summary extends crr_att_log {
 		if ($this->RowType == EWR_ROWTYPE_TOTAL && !($this->RowTotalType == EWR_ROWTOTAL_GROUP && $this->RowTotalSubType == EWR_ROWTOTAL_HEADER)) { // Summary row
 			ewr_PrependClass($this->RowAttrs["class"], ($this->RowTotalType == EWR_ROWTOTAL_PAGE || $this->RowTotalType == EWR_ROWTOTAL_GRAND) ? "ewRptGrpAggregate" : "ewRptGrpSummary" . $this->RowGroupLevel); // Set up row class
 
+			// pin
+			$this->pin->HrefValue = "";
+
 			// pegawai_nip
 			$this->pegawai_nip->HrefValue = "";
 
@@ -1016,6 +1021,10 @@ class crr_att_log_summary extends crr_att_log {
 			if ($this->RowTotalType == EWR_ROWTOTAL_GROUP && $this->RowTotalSubType == EWR_ROWTOTAL_HEADER) {
 			} else {
 			}
+
+			// pin
+			$this->pin->ViewValue = $this->pin->CurrentValue;
+			$this->pin->CellAttrs["class"] = ($this->RecCount % 2 <> 1) ? "ewTableAltRow" : "ewTableRow";
 
 			// pegawai_nip
 			$this->pegawai_nip->ViewValue = $this->pegawai_nip->CurrentValue;
@@ -1034,6 +1043,9 @@ class crr_att_log_summary extends crr_att_log {
 			$this->scan_date_tgl->ViewValue = ewr_FormatDateTime($this->scan_date_tgl->ViewValue, 0);
 			$this->scan_date_tgl->CellAttrs["class"] = ($this->RecCount % 2 <> 1) ? "ewTableAltRow" : "ewTableRow";
 
+			// pin
+			$this->pin->HrefValue = "";
+
 			// pegawai_nip
 			$this->pegawai_nip->HrefValue = "";
 
@@ -1050,6 +1062,15 @@ class crr_att_log_summary extends crr_att_log {
 		// Call Cell_Rendered event
 		if ($this->RowType == EWR_ROWTYPE_TOTAL) { // Summary row
 		} else {
+
+			// pin
+			$CurrentValue = $this->pin->CurrentValue;
+			$ViewValue = &$this->pin->ViewValue;
+			$ViewAttrs = &$this->pin->ViewAttrs;
+			$CellAttrs = &$this->pin->CellAttrs;
+			$HrefValue = &$this->pin->HrefValue;
+			$LinkAttrs = &$this->pin->LinkAttrs;
+			$this->Cell_Rendered($this->pin, $CurrentValue, $ViewValue, $ViewAttrs, $CellAttrs, $HrefValue, $LinkAttrs);
 
 			// pegawai_nip
 			$CurrentValue = $this->pegawai_nip->CurrentValue;
@@ -1098,6 +1119,7 @@ class crr_att_log_summary extends crr_att_log {
 		$this->GrpColumnCount = 0;
 		$this->SubGrpColumnCount = 0;
 		$this->DtlColumnCount = 0;
+		if ($this->pin->Visible) $this->DtlColumnCount += 1;
 		if ($this->pegawai_nip->Visible) $this->DtlColumnCount += 1;
 		if ($this->pegawai_nama->Visible) $this->DtlColumnCount += 1;
 		if ($this->scan_date_tgl_jam->Visible) $this->DtlColumnCount += 1;
@@ -1746,6 +1768,7 @@ class crr_att_log_summary extends crr_att_log {
 		if ($bResetSort) {
 			$this->setOrderBy("");
 			$this->setStartGroup(1);
+			$this->pin->setSort("");
 			$this->pegawai_nip->setSort("");
 			$this->pegawai_nama->setSort("");
 			$this->scan_date_tgl_jam->setSort("");
@@ -1755,6 +1778,7 @@ class crr_att_log_summary extends crr_att_log {
 		} elseif ($orderBy <> "") {
 			$this->CurrentOrder = $orderBy;
 			$this->CurrentOrderType = $orderType;
+			$this->UpdateSort($this->pin, $bCtrl); // pin
 			$this->UpdateSort($this->pegawai_nip, $bCtrl); // pegawai_nip
 			$this->UpdateSort($this->pegawai_nama, $bCtrl); // pegawai_nama
 			$this->UpdateSort($this->scan_date_tgl_jam, $bCtrl); // scan_date_tgl_jam
@@ -2285,6 +2309,24 @@ while ($rs && !$rs->EOF && $Page->GrpCount <= $Page->DisplayGrps || $Page->ShowH
 <thead>
 	<!-- Table header -->
 	<tr class="ewTableHeader">
+<?php if ($Page->pin->Visible) { ?>
+<?php if ($Page->Export <> "" || $Page->DrillDown) { ?>
+	<td data-field="pin"><div class="r_att_log_pin"><span class="ewTableHeaderCaption"><?php echo $Page->pin->FldCaption() ?></span></div></td>
+<?php } else { ?>
+	<td data-field="pin">
+<?php if ($Page->SortUrl($Page->pin) == "") { ?>
+		<div class="ewTableHeaderBtn r_att_log_pin">
+			<span class="ewTableHeaderCaption"><?php echo $Page->pin->FldCaption() ?></span>
+		</div>
+<?php } else { ?>
+		<div class="ewTableHeaderBtn ewPointer r_att_log_pin" onclick="ewr_Sort(event,'<?php echo $Page->SortUrl($Page->pin) ?>',2);">
+			<span class="ewTableHeaderCaption"><?php echo $Page->pin->FldCaption() ?></span>
+			<span class="ewTableHeaderSort"><?php if ($Page->pin->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($Page->pin->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span>
+		</div>
+<?php } ?>
+	</td>
+<?php } ?>
+<?php } ?>
 <?php if ($Page->pegawai_nip->Visible) { ?>
 <?php if ($Page->Export <> "" || $Page->DrillDown) { ?>
 	<td data-field="pegawai_nip"><div class="r_att_log_pegawai_nip"><span class="ewTableHeaderCaption"><?php echo $Page->pegawai_nip->FldCaption() ?></span></div></td>
@@ -2375,6 +2417,10 @@ while ($rs && !$rs->EOF && $Page->GrpCount <= $Page->DisplayGrps || $Page->ShowH
 		$Page->RenderRow();
 ?>
 	<tr<?php echo $Page->RowAttributes(); ?>>
+<?php if ($Page->pin->Visible) { ?>
+		<td data-field="pin"<?php echo $Page->pin->CellAttributes() ?>>
+<span data-class="tpx<?php echo $Page->GrpCount ?>_<?php echo $Page->RecCount ?>_r_att_log_pin"<?php echo $Page->pin->ViewAttributes() ?>><?php echo $Page->pin->ListViewValue() ?></span></td>
+<?php } ?>
 <?php if ($Page->pegawai_nip->Visible) { ?>
 		<td data-field="pegawai_nip"<?php echo $Page->pegawai_nip->CellAttributes() ?>>
 <span data-class="tpx<?php echo $Page->GrpCount ?>_<?php echo $Page->RecCount ?>_r_att_log_pegawai_nip"<?php echo $Page->pegawai_nip->ViewAttributes() ?>><?php echo $Page->pegawai_nip->ListViewValue() ?></span></td>
