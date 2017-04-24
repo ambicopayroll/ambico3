@@ -2547,14 +2547,15 @@ class cpegawai_list extends cpegawai {
 			$this->gender->setFormValue($objForm->GetValue("x_gender"));
 		}
 		$this->gender->setOldValue($objForm->GetValue("o_gender"));
-		if (!$this->pegawai_id->FldIsDetailKey)
+		if (!$this->pegawai_id->FldIsDetailKey && $this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
 			$this->pegawai_id->setFormValue($objForm->GetValue("x_pegawai_id"));
 	}
 
 	// Restore form values
 	function RestoreFormValues() {
 		global $objForm;
-		$this->pegawai_id->CurrentValue = $this->pegawai_id->FormValue;
+		if ($this->CurrentAction <> "gridadd" && $this->CurrentAction <> "add")
+			$this->pegawai_id->CurrentValue = $this->pegawai_id->FormValue;
 		$this->pegawai_pin->CurrentValue = $this->pegawai_pin->FormValue;
 		$this->pegawai_nip->CurrentValue = $this->pegawai_nip->FormValue;
 		$this->pegawai_nama->CurrentValue = $this->pegawai_nama->FormValue;
@@ -3475,24 +3476,6 @@ class cpegawai_list extends cpegawai {
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
-
-		// Check if key value entered
-		if ($bInsertRow && $this->ValidateKey && strval($rsnew['pegawai_id']) == "") {
-			$this->setFailureMessage($Language->Phrase("InvalidKeyValue"));
-			$bInsertRow = FALSE;
-		}
-
-		// Check for duplicate key
-		if ($bInsertRow && $this->ValidateKey) {
-			$sFilter = $this->KeyFilter();
-			$rsChk = $this->LoadRs($sFilter);
-			if ($rsChk && !$rsChk->EOF) {
-				$sKeyErrMsg = str_replace("%f", $sFilter, $Language->Phrase("DupKey"));
-				$this->setFailureMessage($sKeyErrMsg);
-				$rsChk->Close();
-				$bInsertRow = FALSE;
-			}
-		}
 		if ($bInsertRow) {
 			$conn->raiseErrorFn = $GLOBALS["EW_ERROR_FN"];
 			$AddRow = $this->Insert($rsnew);
