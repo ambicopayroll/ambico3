@@ -1,2 +1,2 @@
 10:08 AM 4/24/2017
-laporan scan finger :: tambahkan field PIN
+laporan scan finger :: tambahkan field PIN >> done 4:28 PM 4/24/2017
