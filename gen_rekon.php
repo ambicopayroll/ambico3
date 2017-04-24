@@ -66,6 +66,6 @@ while ($mrow = mysql_fetch_array($mquery)) {
 	}
 }
 
-header("location: ./r_rekon2ctb.php");
+header("location: ./r_rekonctb.php");
 
 ?>

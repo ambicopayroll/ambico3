@@ -1048,7 +1048,7 @@ class crr_rekon_crosstab extends crr_rekon {
 			$smry = &$this->SummaryFields[2];
 			$scvcnt = count($smry->SummaryCurrentValue);
 			for ($i = 0; $i < $scvcnt; $i++) {
-				$smry->SummaryViewValue[$i] = ewr_FormatDateTime($smry->SummaryCurrentValue[$i], 5);
+				$smry->SummaryViewValue[$i] = ewr_FormatDateTime($smry->SummaryCurrentValue[$i], 11);
 				$smry->SummaryViewAttrs[$i]["style"] = "";
 				$this->SummaryCellAttrs[$i]["class"] = ($this->RowTotalType == EWR_ROWTOTAL_GROUP) ? "ewRptGrpSummary" . $this->RowGroupLevel : "";
 			}
@@ -1057,7 +1057,7 @@ class crr_rekon_crosstab extends crr_rekon {
 			$smry = &$this->SummaryFields[3];
 			$scvcnt = count($smry->SummaryCurrentValue);
 			for ($i = 0; $i < $scvcnt; $i++) {
-				$smry->SummaryViewValue[$i] = ewr_FormatDateTime($smry->SummaryCurrentValue[$i], 5);
+				$smry->SummaryViewValue[$i] = ewr_FormatDateTime($smry->SummaryCurrentValue[$i], 11);
 				$smry->SummaryViewAttrs[$i]["style"] = "";
 				$this->SummaryCellAttrs[$i]["class"] = ($this->RowTotalType == EWR_ROWTOTAL_GROUP) ? "ewRptGrpSummary" . $this->RowGroupLevel : "";
 			}
@@ -1094,7 +1094,7 @@ class crr_rekon_crosstab extends crr_rekon {
 			$smry = &$this->SummaryFields[2];
 			$scvcnt = count($smry->SummaryCurrentValue);
 			for ($i = 0; $i < $scvcnt; $i++) {
-				$smry->SummaryViewValue[$i] = ewr_FormatDateTime($smry->SummaryCurrentValue[$i], 5);
+				$smry->SummaryViewValue[$i] = ewr_FormatDateTime($smry->SummaryCurrentValue[$i], 11);
 				$smry->SummaryViewAttrs[$i]["style"] = "";
 				$this->SummaryCellAttrs[$i]["class"] = ($this->RecCount % 2 <> 1) ? "ewTableAltRow" : "ewTableRow";
 			}
@@ -1103,7 +1103,7 @@ class crr_rekon_crosstab extends crr_rekon {
 			$smry = &$this->SummaryFields[3];
 			$scvcnt = count($smry->SummaryCurrentValue);
 			for ($i = 0; $i < $scvcnt; $i++) {
-				$smry->SummaryViewValue[$i] = ewr_FormatDateTime($smry->SummaryCurrentValue[$i], 5);
+				$smry->SummaryViewValue[$i] = ewr_FormatDateTime($smry->SummaryCurrentValue[$i], 11);
 				$smry->SummaryViewAttrs[$i]["style"] = "";
 				$this->SummaryCellAttrs[$i]["class"] = ($this->RecCount % 2 <> 1) ? "ewTableAltRow" : "ewTableRow";
 			}
