@@ -302,6 +302,10 @@ class cdefault {
 			$this->Page_Terminate("t_rumus2list.php");
 		if ($Security->AllowList(CurrentProjectID() . 'lap_gaji2_.php'))
 			$this->Page_Terminate("lap_gaji2_.php");
+		if ($Security->AllowList(CurrentProjectID() . 't_lapgroup'))
+			$this->Page_Terminate("t_lapgrouplist.php");
+		if ($Security->AllowList(CurrentProjectID() . 't_lapsubgroup'))
+			$this->Page_Terminate("t_lapsubgrouplist.php");
 		if ($Security->IsLoggedIn()) {
 			$this->setFailureMessage(ew_DeniedMsg() . "<br><br><a href=\"logout.php\">" . $Language->Phrase("BackToLogin") . "</a>");
 		} else {

@@ -81,6 +81,12 @@ class caudittrail_list extends caudittrail {
 	var $GridEditUrl;
 	var $MultiDeleteUrl;
 	var $MultiUpdateUrl;
+	var $AuditTrailOnAdd = FALSE;
+	var $AuditTrailOnEdit = FALSE;
+	var $AuditTrailOnDelete = FALSE;
+	var $AuditTrailOnView = FALSE;
+	var $AuditTrailOnViewData = FALSE;
+	var $AuditTrailOnSearch = FALSE;
 
 	// Message
 	function getMessage() {
@@ -920,7 +926,6 @@ class caudittrail_list extends caudittrail {
 
 	// Build basic search SQL
 	function BuildBasicSearchSQL(&$Where, &$Fld, $arKeywords, $type) {
-		global $EW_BASIC_SEARCH_IGNORE_PATTERN;
 		$sDefCond = ($type == "OR") ? "OR" : "AND";
 		$arSQL = array(); // Array for SQL parts
 		$arCond = array(); // Array for search conditions
@@ -929,8 +934,8 @@ class caudittrail_list extends caudittrail {
 		for ($i = 0; $i < $cnt; $i++) {
 			$Keyword = $arKeywords[$i];
 			$Keyword = trim($Keyword);
-			if ($EW_BASIC_SEARCH_IGNORE_PATTERN <> "") {
-				$Keyword = preg_replace($EW_BASIC_SEARCH_IGNORE_PATTERN, "\\", $Keyword);
+			if (EW_BASIC_SEARCH_IGNORE_PATTERN <> "") {
+				$Keyword = preg_replace(EW_BASIC_SEARCH_IGNORE_PATTERN, "\\", $Keyword);
 				$ar = explode("\\", $Keyword);
 			} else {
 				$ar = array($Keyword);
@@ -1987,6 +1992,13 @@ class caudittrail_list extends caudittrail {
 		}
 	}
 
+	// Write Audit Trail start/end for grid update
+	function WriteAuditTrailDummy($typ) {
+		$table = 'audittrail';
+		$usr = CurrentUserID();
+		ew_WriteAuditTrail("log", ew_StdCurrentDateTime(), ew_ScriptName(), $usr, $typ, $table, "", "", "", "");
+	}
+
 	// Page Load event
 	function Page_Load() {
 
@@ -2296,7 +2308,7 @@ $audittrail_list->ShowMessage();
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $audittrail_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $audittrail_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $audittrail_list->Pager->RecordCount ?></span>
 </div>
 <?php } ?>
-<?php if ($audittrail_list->TotalRecs > 0 && (!EW_AUTO_HIDE_PAGE_SIZE_SELECTOR || $audittrail_list->Pager->Visible)) { ?>
+<?php if ($audittrail_list->TotalRecs > 0) { ?>
 <div class="ewPager">
 <input type="hidden" name="t" value="audittrail">
 <select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm ewTooltip" title="<?php echo $Language->Phrase("RecordsPerPage") ?>" onchange="this.form.submit();">
@@ -2326,7 +2338,7 @@ $audittrail_list->ShowMessage();
 <?php } ?>
 <input type="hidden" name="t" value="audittrail">
 <div id="gmp_audittrail" class="<?php if (ew_IsResponsiveLayout()) { echo "table-responsive "; } ?>ewGridMiddlePanel">
-<?php if ($audittrail_list->TotalRecs > 0 || $audittrail->CurrentAction == "gridedit") { ?>
+<?php if ($audittrail_list->TotalRecs > 0) { ?>
 <table id="tbl_audittraillist" class="table ewTable">
 <?php echo $audittrail->TableCustomInnerHtml ?>
 <thead><!-- Table header -->
@@ -2599,7 +2611,7 @@ if ($audittrail_list->Recordset)
 	<span><?php echo $Language->Phrase("Record") ?>&nbsp;<?php echo $audittrail_list->Pager->FromIndex ?>&nbsp;<?php echo $Language->Phrase("To") ?>&nbsp;<?php echo $audittrail_list->Pager->ToIndex ?>&nbsp;<?php echo $Language->Phrase("Of") ?>&nbsp;<?php echo $audittrail_list->Pager->RecordCount ?></span>
 </div>
 <?php } ?>
-<?php if ($audittrail_list->TotalRecs > 0 && (!EW_AUTO_HIDE_PAGE_SIZE_SELECTOR || $audittrail_list->Pager->Visible)) { ?>
+<?php if ($audittrail_list->TotalRecs > 0) { ?>
 <div class="ewPager">
 <input type="hidden" name="t" value="audittrail">
 <select name="<?php echo EW_TABLE_REC_PER_PAGE ?>" class="form-control input-sm ewTooltip" title="<?php echo $Language->Phrase("RecordsPerPage") ?>" onchange="this.form.submit();">

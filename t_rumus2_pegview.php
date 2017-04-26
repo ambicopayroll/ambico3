@@ -74,6 +74,12 @@ class ct_rumus2_peg_view extends ct_rumus2_peg {
 	var $GridEditUrl;
 	var $MultiDeleteUrl;
 	var $MultiUpdateUrl;
+	var $AuditTrailOnAdd = FALSE;
+	var $AuditTrailOnEdit = FALSE;
+	var $AuditTrailOnDelete = FALSE;
+	var $AuditTrailOnView = FALSE;
+	var $AuditTrailOnViewData = FALSE;
+	var $AuditTrailOnSearch = FALSE;
 
 	// Message
 	function getMessage() {
@@ -390,6 +396,7 @@ class ct_rumus2_peg_view extends ct_rumus2_peg {
 		$this->pegawai_id->SetVisibility();
 		$this->gp->SetVisibility();
 		$this->rumus2_id->SetVisibility();
+		$this->tj->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -723,6 +730,7 @@ class ct_rumus2_peg_view extends ct_rumus2_peg {
 		} else {
 			$this->rumus2_id->VirtualValue = ""; // Clear value
 		}
+		$this->tj->setDbValue($rs->fields('tj'));
 	}
 
 	// Load DbValue from recordset
@@ -733,6 +741,7 @@ class ct_rumus2_peg_view extends ct_rumus2_peg {
 		$this->pegawai_id->DbValue = $row['pegawai_id'];
 		$this->gp->DbValue = $row['gp'];
 		$this->rumus2_id->DbValue = $row['rumus2_id'];
+		$this->tj->DbValue = $row['tj'];
 	}
 
 	// Render row values based on field settings
@@ -751,6 +760,10 @@ class ct_rumus2_peg_view extends ct_rumus2_peg {
 		if ($this->gp->FormValue == $this->gp->CurrentValue && is_numeric(ew_StrToFloat($this->gp->CurrentValue)))
 			$this->gp->CurrentValue = ew_StrToFloat($this->gp->CurrentValue);
 
+		// Convert decimal values if posted back
+		if ($this->tj->FormValue == $this->tj->CurrentValue && is_numeric(ew_StrToFloat($this->tj->CurrentValue)))
+			$this->tj->CurrentValue = ew_StrToFloat($this->tj->CurrentValue);
+
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
@@ -759,6 +772,7 @@ class ct_rumus2_peg_view extends ct_rumus2_peg {
 		// pegawai_id
 		// gp
 		// rumus2_id
+		// tj
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -827,6 +841,12 @@ class ct_rumus2_peg_view extends ct_rumus2_peg {
 		}
 		$this->rumus2_id->ViewCustomAttributes = "";
 
+		// tj
+		$this->tj->ViewValue = $this->tj->CurrentValue;
+		$this->tj->ViewValue = ew_FormatNumber($this->tj->ViewValue, 0, -2, -2, -2);
+		$this->tj->CellCssStyle .= "text-align: right;";
+		$this->tj->ViewCustomAttributes = "";
+
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
@@ -841,6 +861,11 @@ class ct_rumus2_peg_view extends ct_rumus2_peg {
 			$this->rumus2_id->LinkCustomAttributes = "";
 			$this->rumus2_id->HrefValue = "";
 			$this->rumus2_id->TooltipValue = "";
+
+			// tj
+			$this->tj->LinkCustomAttributes = "";
+			$this->tj->HrefValue = "";
+			$this->tj->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -1182,6 +1207,13 @@ class ct_rumus2_peg_view extends ct_rumus2_peg {
 		}
 	}
 
+	// Write Audit Trail start/end for grid update
+	function WriteAuditTrailDummy($typ) {
+		$table = 't_rumus2_peg';
+		$usr = CurrentUserID();
+		ew_WriteAuditTrail("log", ew_StdCurrentDateTime(), ew_ScriptName(), $usr, $typ, $table, "", "", "", "");
+	}
+
 	// Page Load event
 	function Page_Load() {
 
@@ -1430,6 +1462,17 @@ $t_rumus2_peg_view->ShowMessage();
 <span id="el_t_rumus2_peg_rumus2_id">
 <span<?php echo $t_rumus2_peg->rumus2_id->ViewAttributes() ?>>
 <?php echo $t_rumus2_peg->rumus2_id->ViewValue ?></span>
+</span>
+</td>
+	</tr>
+<?php } ?>
+<?php if ($t_rumus2_peg->tj->Visible) { // tj ?>
+	<tr id="r_tj">
+		<td><span id="elh_t_rumus2_peg_tj"><?php echo $t_rumus2_peg->tj->FldCaption() ?></span></td>
+		<td data-name="tj"<?php echo $t_rumus2_peg->tj->CellAttributes() ?>>
+<span id="el_t_rumus2_peg_tj">
+<span<?php echo $t_rumus2_peg->tj->ViewAttributes() ?>>
+<?php echo $t_rumus2_peg->tj->ViewValue ?></span>
 </span>
 </td>
 	</tr>

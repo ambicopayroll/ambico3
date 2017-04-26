@@ -42,6 +42,12 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		if ($this->UseTokenInUrl) $PageUrl .= "t=" . $this->TableVar . "&"; // Add page token
 		return $PageUrl;
 	}
+	var $AuditTrailOnAdd = TRUE;
+	var $AuditTrailOnEdit = FALSE;
+	var $AuditTrailOnDelete = FALSE;
+	var $AuditTrailOnView = FALSE;
+	var $AuditTrailOnViewData = FALSE;
+	var $AuditTrailOnSearch = FALSE;
 
 	// Message
 	function getMessage() {
@@ -292,6 +298,7 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		$this->pegawai_id->SetVisibility();
 		$this->gp->SetVisibility();
 		$this->rumus2_id->SetVisibility();
+		$this->tj->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -486,6 +493,7 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		$this->gp->CurrentValue = 0.00;
 		$this->rumus2_id->CurrentValue = NULL;
 		$this->rumus2_id->OldValue = $this->rumus2_id->CurrentValue;
+		$this->tj->CurrentValue = 0.00;
 	}
 
 	// Load form values
@@ -502,6 +510,9 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		if (!$this->rumus2_id->FldIsDetailKey) {
 			$this->rumus2_id->setFormValue($objForm->GetValue("x_rumus2_id"));
 		}
+		if (!$this->tj->FldIsDetailKey) {
+			$this->tj->setFormValue($objForm->GetValue("x_tj"));
+		}
 	}
 
 	// Restore form values
@@ -511,6 +522,7 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		$this->pegawai_id->CurrentValue = $this->pegawai_id->FormValue;
 		$this->gp->CurrentValue = $this->gp->FormValue;
 		$this->rumus2_id->CurrentValue = $this->rumus2_id->FormValue;
+		$this->tj->CurrentValue = $this->tj->FormValue;
 	}
 
 	// Load row based on key values
@@ -556,6 +568,7 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		} else {
 			$this->rumus2_id->VirtualValue = ""; // Clear value
 		}
+		$this->tj->setDbValue($rs->fields('tj'));
 	}
 
 	// Load DbValue from recordset
@@ -566,6 +579,7 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		$this->pegawai_id->DbValue = $row['pegawai_id'];
 		$this->gp->DbValue = $row['gp'];
 		$this->rumus2_id->DbValue = $row['rumus2_id'];
+		$this->tj->DbValue = $row['tj'];
 	}
 
 	// Load old record
@@ -601,6 +615,10 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		if ($this->gp->FormValue == $this->gp->CurrentValue && is_numeric(ew_StrToFloat($this->gp->CurrentValue)))
 			$this->gp->CurrentValue = ew_StrToFloat($this->gp->CurrentValue);
 
+		// Convert decimal values if posted back
+		if ($this->tj->FormValue == $this->tj->CurrentValue && is_numeric(ew_StrToFloat($this->tj->CurrentValue)))
+			$this->tj->CurrentValue = ew_StrToFloat($this->tj->CurrentValue);
+
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
@@ -609,6 +627,7 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		// pegawai_id
 		// gp
 		// rumus2_id
+		// tj
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -677,6 +696,12 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		}
 		$this->rumus2_id->ViewCustomAttributes = "";
 
+		// tj
+		$this->tj->ViewValue = $this->tj->CurrentValue;
+		$this->tj->ViewValue = ew_FormatNumber($this->tj->ViewValue, 0, -2, -2, -2);
+		$this->tj->CellCssStyle .= "text-align: right;";
+		$this->tj->ViewCustomAttributes = "";
+
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
@@ -691,6 +716,11 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 			$this->rumus2_id->LinkCustomAttributes = "";
 			$this->rumus2_id->HrefValue = "";
 			$this->rumus2_id->TooltipValue = "";
+
+			// tj
+			$this->tj->LinkCustomAttributes = "";
+			$this->tj->HrefValue = "";
+			$this->tj->TooltipValue = "";
 		} elseif ($this->RowType == EW_ROWTYPE_ADD) { // Add row
 
 			// pegawai_id
@@ -781,6 +811,13 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 			if ($rswrk) $rswrk->Close();
 			$this->rumus2_id->EditValue = $arwrk;
 
+			// tj
+			$this->tj->EditAttrs["class"] = "form-control";
+			$this->tj->EditCustomAttributes = "";
+			$this->tj->EditValue = ew_HtmlEncode($this->tj->CurrentValue);
+			$this->tj->PlaceHolder = ew_RemoveHtml($this->tj->FldCaption());
+			if (strval($this->tj->EditValue) <> "" && is_numeric($this->tj->EditValue)) $this->tj->EditValue = ew_FormatNumber($this->tj->EditValue, -2, -2, -2, -2);
+
 			// Add refer script
 			// pegawai_id
 
@@ -794,6 +831,10 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 			// rumus2_id
 			$this->rumus2_id->LinkCustomAttributes = "";
 			$this->rumus2_id->HrefValue = "";
+
+			// tj
+			$this->tj->LinkCustomAttributes = "";
+			$this->tj->HrefValue = "";
 		}
 		if ($this->RowType == EW_ROWTYPE_ADD ||
 			$this->RowType == EW_ROWTYPE_EDIT ||
@@ -828,6 +869,12 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		if (!$this->rumus2_id->FldIsDetailKey && !is_null($this->rumus2_id->FormValue) && $this->rumus2_id->FormValue == "") {
 			ew_AddMessage($gsFormError, str_replace("%s", $this->rumus2_id->FldCaption(), $this->rumus2_id->ReqErrMsg));
 		}
+		if (!$this->tj->FldIsDetailKey && !is_null($this->tj->FormValue) && $this->tj->FormValue == "") {
+			ew_AddMessage($gsFormError, str_replace("%s", $this->tj->FldCaption(), $this->tj->ReqErrMsg));
+		}
+		if (!ew_CheckNumber($this->tj->FormValue)) {
+			ew_AddMessage($gsFormError, $this->tj->FldErrMsg());
+		}
 
 		// Return validate result
 		$ValidateForm = ($gsFormError == "");
@@ -861,6 +908,9 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		// rumus2_id
 		$this->rumus2_id->SetDbValueDef($rsnew, $this->rumus2_id->CurrentValue, 0, FALSE);
 
+		// tj
+		$this->tj->SetDbValueDef($rsnew, $this->tj->CurrentValue, 0, strval($this->tj->CurrentValue) == "");
+
 		// Call Row Inserting event
 		$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 		$bInsertRow = $this->Row_Inserting($rs, $rsnew);
@@ -869,6 +919,10 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 			$AddRow = $this->Insert($rsnew);
 			$conn->raiseErrorFn = '';
 			if ($AddRow) {
+
+				// Get insert id if necessary
+				$this->rumus2_peg_id->setDbValue($conn->Insert_ID());
+				$rsnew['rumus2_peg_id'] = $this->rumus2_peg_id->DbValue;
 			}
 		} else {
 			if ($this->getSuccessMessage() <> "" || $this->getFailureMessage() <> "") {
@@ -887,6 +941,7 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 			// Call Row Inserted event
 			$rs = ($rsold == NULL) ? NULL : $rsold->fields;
 			$this->Row_Inserted($rs, $rsnew);
+			$this->WriteAuditTrailOnAdd($rsnew);
 		}
 		return $AddRow;
 	}
@@ -1014,6 +1069,47 @@ class ct_rumus2_peg_add extends ct_rumus2_peg {
 		}
 	}
 
+	// Write Audit Trail start/end for grid update
+	function WriteAuditTrailDummy($typ) {
+		$table = 't_rumus2_peg';
+		$usr = CurrentUserID();
+		ew_WriteAuditTrail("log", ew_StdCurrentDateTime(), ew_ScriptName(), $usr, $typ, $table, "", "", "", "");
+	}
+
+	// Write Audit Trail (add page)
+	function WriteAuditTrailOnAdd(&$rs) {
+		global $Language;
+		if (!$this->AuditTrailOnAdd) return;
+		$table = 't_rumus2_peg';
+
+		// Get key value
+		$key = "";
+		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+		$key .= $rs['rumus2_peg_id'];
+
+		// Write Audit Trail
+		$dt = ew_StdCurrentDateTime();
+		$id = ew_ScriptName();
+		$usr = CurrentUserID();
+		foreach (array_keys($rs) as $fldname) {
+			if ($this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
+				if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") {
+					$newvalue = $Language->Phrase("PasswordMask"); // Password Field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) {
+					if (EW_AUDIT_TRAIL_TO_DATABASE)
+						$newvalue = $rs[$fldname];
+					else
+						$newvalue = "[MEMO]"; // Memo Field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) {
+					$newvalue = "[XML]"; // XML Field
+				} else {
+					$newvalue = $rs[$fldname];
+				}
+				ew_WriteAuditTrail("log", $dt, $id, $usr, "A", $table, $fldname, $key, "", $newvalue);
+			}
+		}
+	}
+
 	// Page Load event
 	function Page_Load() {
 
@@ -1134,6 +1230,12 @@ ft_rumus2_pegadd.Validate = function() {
 			elm = this.GetElements("x" + infix + "_rumus2_id");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus2_peg->rumus2_id->FldCaption(), $t_rumus2_peg->rumus2_id->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_tj");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus2_peg->tj->FldCaption(), $t_rumus2_peg->tj->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_tj");
+			if (elm && !ew_CheckNumber(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus2_peg->tj->FldErrMsg()) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -1256,6 +1358,16 @@ ft_rumus2_pegadd.CreateAutoSuggest({"id":"x_pegawai_id","forceSelect":true});
 <input type="hidden" name="s_x_rumus2_id" id="s_x_rumus2_id" value="<?php echo $t_rumus2_peg->rumus2_id->LookupFilterQuery() ?>">
 </span>
 <?php echo $t_rumus2_peg->rumus2_id->CustomMsg ?></div></div>
+	</div>
+<?php } ?>
+<?php if ($t_rumus2_peg->tj->Visible) { // tj ?>
+	<div id="r_tj" class="form-group">
+		<label id="elh_t_rumus2_peg_tj" for="x_tj" class="col-sm-2 control-label ewLabel"><?php echo $t_rumus2_peg->tj->FldCaption() ?><?php echo $Language->Phrase("FieldRequiredIndicator") ?></label>
+		<div class="col-sm-10"><div<?php echo $t_rumus2_peg->tj->CellAttributes() ?>>
+<span id="el_t_rumus2_peg_tj">
+<input type="text" data-table="t_rumus2_peg" data-field="x_tj" name="x_tj" id="x_tj" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->getPlaceHolder()) ?>" value="<?php echo $t_rumus2_peg->tj->EditValue ?>"<?php echo $t_rumus2_peg->tj->EditAttributes() ?>>
+</span>
+<?php echo $t_rumus2_peg->tj->CustomMsg ?></div></div>
 	</div>
 <?php } ?>
 </div>

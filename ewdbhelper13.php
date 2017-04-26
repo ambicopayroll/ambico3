@@ -11,16 +11,9 @@ if (!defined("EW_USE_MYSQLI")) define("EW_USE_MYSQLI", extension_loaded("mysqli"
  */
 if (!function_exists('DbHelper')) {
 
-	function &DbHelper($dbid = "", $langfolder = "", $langid = "", $info = NULL) {
-		$args = func_get_args();
-		if (count($args) == 1 && is_array($args[0])) { // $info only
-			$dbid = "";
-			$langfolder = "";
-			$langid = "";
-			$info = $args[0];
-		}
+	function &DbHelper($dbid = "") {
 		$dbclass = "cfin_pro_db";
-		$dbhelper = new $dbclass($langfolder, $langid, $info);
+		$dbhelper = new $dbclass();
 		return $dbhelper;
 	}
 }
@@ -102,8 +95,7 @@ abstract class cDbHelper {
 			$this->Debug = EW_DEBUG_ENABLED;
 
 		// Open connection
-		if (!isset($this->Connection))
-			$this->Connection = $this->Connect($info);
+		if (!isset($this->Connection)) $this->Connection = $this->Connect($info);
 
 		// Set up language object
 		if ($langfolder <> "")

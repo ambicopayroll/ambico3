@@ -53,6 +53,12 @@ ft_rumus2_peggrid.Validate = function() {
 			elm = this.GetElements("x" + infix + "_rumus2_id");
 			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
 				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus2_peg->rumus2_id->FldCaption(), $t_rumus2_peg->rumus2_id->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_tj");
+			if (elm && !ew_IsHidden(elm) && !ew_HasValue(elm))
+				return this.OnError(elm, "<?php echo ew_JsEncode2(str_replace("%s", $t_rumus2_peg->tj->FldCaption(), $t_rumus2_peg->tj->ReqErrMsg)) ?>");
+			elm = this.GetElements("x" + infix + "_tj");
+			if (elm && !ew_CheckNumber(elm.value))
+				return this.OnError(elm, "<?php echo ew_JsEncode2($t_rumus2_peg->tj->FldErrMsg()) ?>");
 
 			// Fire Form_CustomValidate event
 			if (!this.Form_CustomValidate(fobj))
@@ -68,6 +74,7 @@ ft_rumus2_peggrid.EmptyRow = function(infix) {
 	if (ew_ValueChanged(fobj, infix, "pegawai_id", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "gp", false)) return false;
 	if (ew_ValueChanged(fobj, infix, "rumus2_id", false)) return false;
+	if (ew_ValueChanged(fobj, infix, "tj", false)) return false;
 	return true;
 }
 
@@ -195,6 +202,15 @@ $t_rumus2_peg_grid->ListOptions->Render("header", "left");
 	<?php } else { ?>
 		<th data-name="rumus2_id"><div><div id="elh_t_rumus2_peg_rumus2_id" class="t_rumus2_peg_rumus2_id">
 			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_rumus2_peg->rumus2_id->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($t_rumus2_peg->rumus2_id->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_rumus2_peg->rumus2_id->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
+        </div></div></th>
+	<?php } ?>
+<?php } ?>		
+<?php if ($t_rumus2_peg->tj->Visible) { // tj ?>
+	<?php if ($t_rumus2_peg->SortUrl($t_rumus2_peg->tj) == "") { ?>
+		<th data-name="tj"><div id="elh_t_rumus2_peg_tj" class="t_rumus2_peg_tj"><div class="ewTableHeaderCaption"><?php echo $t_rumus2_peg->tj->FldCaption() ?></div></div></th>
+	<?php } else { ?>
+		<th data-name="tj"><div><div id="elh_t_rumus2_peg_tj" class="t_rumus2_peg_tj">
+			<div class="ewTableHeaderBtn"><span class="ewTableHeaderCaption"><?php echo $t_rumus2_peg->tj->FldCaption() ?></span><span class="ewTableHeaderSort"><?php if ($t_rumus2_peg->tj->getSort() == "ASC") { ?><span class="caret ewSortUp"></span><?php } elseif ($t_rumus2_peg->tj->getSort() == "DESC") { ?><span class="caret"></span><?php } ?></span></div>
         </div></div></th>
 	<?php } ?>
 <?php } ?>		
@@ -452,6 +468,34 @@ ft_rumus2_peggrid.CreateAutoSuggest({"id":"x<?php echo $t_rumus2_peg_grid->RowIn
 <?php } ?>
 </td>
 	<?php } ?>
+	<?php if ($t_rumus2_peg->tj->Visible) { // tj ?>
+		<td data-name="tj"<?php echo $t_rumus2_peg->tj->CellAttributes() ?>>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_ADD) { // Add record ?>
+<span id="el<?php echo $t_rumus2_peg_grid->RowCnt ?>_t_rumus2_peg_tj" class="form-group t_rumus2_peg_tj">
+<input type="text" data-table="t_rumus2_peg" data-field="x_tj" name="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->getPlaceHolder()) ?>" value="<?php echo $t_rumus2_peg->tj->EditValue ?>"<?php echo $t_rumus2_peg->tj->EditAttributes() ?>>
+</span>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_tj" name="o<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="o<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" value="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->OldValue) ?>">
+<?php } ?>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_EDIT) { // Edit record ?>
+<span id="el<?php echo $t_rumus2_peg_grid->RowCnt ?>_t_rumus2_peg_tj" class="form-group t_rumus2_peg_tj">
+<input type="text" data-table="t_rumus2_peg" data-field="x_tj" name="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->getPlaceHolder()) ?>" value="<?php echo $t_rumus2_peg->tj->EditValue ?>"<?php echo $t_rumus2_peg->tj->EditAttributes() ?>>
+</span>
+<?php } ?>
+<?php if ($t_rumus2_peg->RowType == EW_ROWTYPE_VIEW) { // View record ?>
+<span id="el<?php echo $t_rumus2_peg_grid->RowCnt ?>_t_rumus2_peg_tj" class="t_rumus2_peg_tj">
+<span<?php echo $t_rumus2_peg->tj->ViewAttributes() ?>>
+<?php echo $t_rumus2_peg->tj->ListViewValue() ?></span>
+</span>
+<?php if ($t_rumus2_peg->CurrentAction <> "F") { ?>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_tj" name="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" value="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->FormValue) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_tj" name="o<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="o<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" value="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->OldValue) ?>">
+<?php } else { ?>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_tj" name="ft_rumus2_peggrid$x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="ft_rumus2_peggrid$x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" value="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->FormValue) ?>">
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_tj" name="ft_rumus2_peggrid$o<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="ft_rumus2_peggrid$o<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" value="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->OldValue) ?>">
+<?php } ?>
+<?php } ?>
+</td>
+	<?php } ?>
 <?php
 
 // Render list options (body, right)
@@ -567,6 +611,22 @@ ft_rumus2_peggrid.CreateAutoSuggest({"id":"x<?php echo $t_rumus2_peg_grid->RowIn
 <input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_id" name="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_rumus2_id" id="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_rumus2_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->rumus2_id->FormValue) ?>">
 <?php } ?>
 <input type="hidden" data-table="t_rumus2_peg" data-field="x_rumus2_id" name="o<?php echo $t_rumus2_peg_grid->RowIndex ?>_rumus2_id" id="o<?php echo $t_rumus2_peg_grid->RowIndex ?>_rumus2_id" value="<?php echo ew_HtmlEncode($t_rumus2_peg->rumus2_id->OldValue) ?>">
+</td>
+	<?php } ?>
+	<?php if ($t_rumus2_peg->tj->Visible) { // tj ?>
+		<td data-name="tj">
+<?php if ($t_rumus2_peg->CurrentAction <> "F") { ?>
+<span id="el$rowindex$_t_rumus2_peg_tj" class="form-group t_rumus2_peg_tj">
+<input type="text" data-table="t_rumus2_peg" data-field="x_tj" name="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" size="30" placeholder="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->getPlaceHolder()) ?>" value="<?php echo $t_rumus2_peg->tj->EditValue ?>"<?php echo $t_rumus2_peg->tj->EditAttributes() ?>>
+</span>
+<?php } else { ?>
+<span id="el$rowindex$_t_rumus2_peg_tj" class="form-group t_rumus2_peg_tj">
+<span<?php echo $t_rumus2_peg->tj->ViewAttributes() ?>>
+<p class="form-control-static"><?php echo $t_rumus2_peg->tj->ViewValue ?></p></span>
+</span>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_tj" name="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="x<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" value="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->FormValue) ?>">
+<?php } ?>
+<input type="hidden" data-table="t_rumus2_peg" data-field="x_tj" name="o<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" id="o<?php echo $t_rumus2_peg_grid->RowIndex ?>_tj" value="<?php echo ew_HtmlEncode($t_rumus2_peg->tj->OldValue) ?>">
 </td>
 	<?php } ?>
 <?php

@@ -7,16 +7,11 @@ $t_rumus2_peg = NULL;
 // Table class for t_rumus2_peg
 //
 class ct_rumus2_peg extends cTable {
-	var $AuditTrailOnAdd = TRUE;
-	var $AuditTrailOnEdit = TRUE;
-	var $AuditTrailOnDelete = TRUE;
-	var $AuditTrailOnView = FALSE;
-	var $AuditTrailOnViewData = FALSE;
-	var $AuditTrailOnSearch = FALSE;
 	var $rumus2_peg_id;
 	var $pegawai_id;
 	var $gp;
 	var $rumus2_id;
+	var $tj;
 
 	//
 	// Table class constructor
@@ -73,6 +68,12 @@ class ct_rumus2_peg extends cTable {
 		$this->rumus2_id->PleaseSelectText = $Language->Phrase("PleaseSelect"); // PleaseSelect text
 		$this->rumus2_id->FldDefaultErrMsg = $Language->Phrase("IncorrectInteger");
 		$this->fields['rumus2_id'] = &$this->rumus2_id;
+
+		// tj
+		$this->tj = new cField('t_rumus2_peg', 't_rumus2_peg', 'x_tj', 'tj', '`tj`', '`tj`', 4, -1, FALSE, '`tj`', FALSE, FALSE, FALSE, 'FORMATTED TEXT', 'TEXT');
+		$this->tj->Sortable = TRUE; // Allow sort
+		$this->tj->FldDefaultErrMsg = $Language->Phrase("IncorrectFloat");
+		$this->fields['tj'] = &$this->tj;
 	}
 
 	// Set Field Visibility
@@ -447,16 +448,7 @@ class ct_rumus2_peg extends cTable {
 	// Insert
 	function Insert(&$rs) {
 		$conn = &$this->Connection();
-		$bInsert = $conn->Execute($this->InsertSQL($rs));
-		if ($bInsert) {
-
-			// Get insert id if necessary
-			$this->rumus2_peg_id->setDbValue($conn->Insert_ID());
-			$rs['rumus2_peg_id'] = $this->rumus2_peg_id->DbValue;
-			if ($this->AuditTrailOnAdd)
-				$this->WriteAuditTrailOnAdd($rs);
-		}
-		return $bInsert;
+		return $conn->Execute($this->InsertSQL($rs));
 	}
 
 	// UPDATE statement
@@ -481,14 +473,7 @@ class ct_rumus2_peg extends cTable {
 	// Update
 	function Update(&$rs, $where = "", $rsold = NULL, $curfilter = TRUE) {
 		$conn = &$this->Connection();
-		$bUpdate = $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
-		if ($bUpdate && $this->AuditTrailOnEdit) {
-			$rsaudit = $rs;
-			$fldname = 'rumus2_peg_id';
-			if (!array_key_exists($fldname, $rsaudit)) $rsaudit[$fldname] = $rsold[$fldname];
-			$this->WriteAuditTrailOnEdit($rsaudit, $rsold);
-		}
-		return $bUpdate;
+		return $conn->Execute($this->UpdateSQL($rs, $where, $curfilter));
 	}
 
 	// DELETE statement
@@ -512,10 +497,7 @@ class ct_rumus2_peg extends cTable {
 	// Delete
 	function Delete(&$rs, $where = "", $curfilter = TRUE) {
 		$conn = &$this->Connection();
-		$bDelete = $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
-		if ($bDelete && $this->AuditTrailOnDelete)
-			$this->WriteAuditTrailOnDelete($rs);
-		return $bDelete;
+		return $conn->Execute($this->DeleteSQL($rs, $where, $curfilter));
 	}
 
 	// Key filter WHERE clause
@@ -708,6 +690,7 @@ class ct_rumus2_peg extends cTable {
 		$this->pegawai_id->setDbValue($rs->fields('pegawai_id'));
 		$this->gp->setDbValue($rs->fields('gp'));
 		$this->rumus2_id->setDbValue($rs->fields('rumus2_id'));
+		$this->tj->setDbValue($rs->fields('tj'));
 	}
 
 	// Render list row values
@@ -722,6 +705,7 @@ class ct_rumus2_peg extends cTable {
 		// pegawai_id
 		// gp
 		// rumus2_id
+		// tj
 		// rumus2_peg_id
 
 		$this->rumus2_peg_id->ViewValue = $this->rumus2_peg_id->CurrentValue;
@@ -788,6 +772,12 @@ class ct_rumus2_peg extends cTable {
 		}
 		$this->rumus2_id->ViewCustomAttributes = "";
 
+		// tj
+		$this->tj->ViewValue = $this->tj->CurrentValue;
+		$this->tj->ViewValue = ew_FormatNumber($this->tj->ViewValue, 0, -2, -2, -2);
+		$this->tj->CellCssStyle .= "text-align: right;";
+		$this->tj->ViewCustomAttributes = "";
+
 		// rumus2_peg_id
 		$this->rumus2_peg_id->LinkCustomAttributes = "";
 		$this->rumus2_peg_id->HrefValue = "";
@@ -807,6 +797,11 @@ class ct_rumus2_peg extends cTable {
 		$this->rumus2_id->LinkCustomAttributes = "";
 		$this->rumus2_id->HrefValue = "";
 		$this->rumus2_id->TooltipValue = "";
+
+		// tj
+		$this->tj->LinkCustomAttributes = "";
+		$this->tj->HrefValue = "";
+		$this->tj->TooltipValue = "";
 
 		// Call Row Rendered event
 		$this->Row_Rendered();
@@ -872,6 +867,13 @@ class ct_rumus2_peg extends cTable {
 		$this->rumus2_id->EditAttrs["class"] = "form-control";
 		$this->rumus2_id->EditCustomAttributes = "";
 
+		// tj
+		$this->tj->EditAttrs["class"] = "form-control";
+		$this->tj->EditCustomAttributes = "";
+		$this->tj->EditValue = $this->tj->CurrentValue;
+		$this->tj->PlaceHolder = ew_RemoveHtml($this->tj->FldCaption());
+		if (strval($this->tj->EditValue) <> "" && is_numeric($this->tj->EditValue)) $this->tj->EditValue = ew_FormatNumber($this->tj->EditValue, -2, -2, -2, -2);
+
 		// Call Row Rendered event
 		$this->Row_Rendered();
 	}
@@ -902,11 +904,13 @@ class ct_rumus2_peg extends cTable {
 					if ($this->pegawai_id->Exportable) $Doc->ExportCaption($this->pegawai_id);
 					if ($this->gp->Exportable) $Doc->ExportCaption($this->gp);
 					if ($this->rumus2_id->Exportable) $Doc->ExportCaption($this->rumus2_id);
+					if ($this->tj->Exportable) $Doc->ExportCaption($this->tj);
 				} else {
 					if ($this->rumus2_peg_id->Exportable) $Doc->ExportCaption($this->rumus2_peg_id);
 					if ($this->pegawai_id->Exportable) $Doc->ExportCaption($this->pegawai_id);
 					if ($this->gp->Exportable) $Doc->ExportCaption($this->gp);
 					if ($this->rumus2_id->Exportable) $Doc->ExportCaption($this->rumus2_id);
+					if ($this->tj->Exportable) $Doc->ExportCaption($this->tj);
 				}
 				$Doc->EndExportRow();
 			}
@@ -941,11 +945,13 @@ class ct_rumus2_peg extends cTable {
 						if ($this->pegawai_id->Exportable) $Doc->ExportField($this->pegawai_id);
 						if ($this->gp->Exportable) $Doc->ExportField($this->gp);
 						if ($this->rumus2_id->Exportable) $Doc->ExportField($this->rumus2_id);
+						if ($this->tj->Exportable) $Doc->ExportField($this->tj);
 					} else {
 						if ($this->rumus2_peg_id->Exportable) $Doc->ExportField($this->rumus2_peg_id);
 						if ($this->pegawai_id->Exportable) $Doc->ExportField($this->pegawai_id);
 						if ($this->gp->Exportable) $Doc->ExportField($this->gp);
 						if ($this->rumus2_id->Exportable) $Doc->ExportField($this->rumus2_id);
+						if ($this->tj->Exportable) $Doc->ExportField($this->tj);
 					}
 					$Doc->EndExportRow();
 				}
@@ -984,129 +990,6 @@ class ct_rumus2_peg extends cTable {
 			return ew_ArrayToJson($rsarr);
 		} else {
 			return FALSE;
-		}
-	}
-
-	// Write Audit Trail start/end for grid update
-	function WriteAuditTrailDummy($typ) {
-		$table = 't_rumus2_peg';
-		$usr = CurrentUserID();
-		ew_WriteAuditTrail("log", ew_StdCurrentDateTime(), ew_ScriptName(), $usr, $typ, $table, "", "", "", "");
-	}
-
-	// Write Audit Trail (add page)
-	function WriteAuditTrailOnAdd(&$rs) {
-		global $Language;
-		if (!$this->AuditTrailOnAdd) return;
-		$table = 't_rumus2_peg';
-
-		// Get key value
-		$key = "";
-		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-		$key .= $rs['rumus2_peg_id'];
-
-		// Write Audit Trail
-		$dt = ew_StdCurrentDateTime();
-		$id = ew_ScriptName();
-		$usr = CurrentUserID();
-		foreach (array_keys($rs) as $fldname) {
-			if (array_key_exists($fldname, $this->fields) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
-				if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") {
-					$newvalue = $Language->Phrase("PasswordMask"); // Password Field
-				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) {
-					if (EW_AUDIT_TRAIL_TO_DATABASE)
-						$newvalue = $rs[$fldname];
-					else
-						$newvalue = "[MEMO]"; // Memo Field
-				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) {
-					$newvalue = "[XML]"; // XML Field
-				} else {
-					$newvalue = $rs[$fldname];
-				}
-				ew_WriteAuditTrail("log", $dt, $id, $usr, "A", $table, $fldname, $key, "", $newvalue);
-			}
-		}
-	}
-
-	// Write Audit Trail (edit page)
-	function WriteAuditTrailOnEdit(&$rsold, &$rsnew) {
-		global $Language;
-		if (!$this->AuditTrailOnEdit) return;
-		$table = 't_rumus2_peg';
-
-		// Get key value
-		$key = "";
-		if ($key <> "") $key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-		$key .= $rsold['rumus2_peg_id'];
-
-		// Write Audit Trail
-		$dt = ew_StdCurrentDateTime();
-		$id = ew_ScriptName();
-		$usr = CurrentUserID();
-		foreach (array_keys($rsnew) as $fldname) {
-			if (array_key_exists($fldname, $this->fields) && array_key_exists($fldname, $rsold) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
-				if ($this->fields[$fldname]->FldDataType == EW_DATATYPE_DATE) { // DateTime field
-					$modified = (ew_FormatDateTime($rsold[$fldname], 0) <> ew_FormatDateTime($rsnew[$fldname], 0));
-				} else {
-					$modified = !ew_CompareValue($rsold[$fldname], $rsnew[$fldname]);
-				}
-				if ($modified) {
-					if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") { // Password Field
-						$oldvalue = $Language->Phrase("PasswordMask");
-						$newvalue = $Language->Phrase("PasswordMask");
-					} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) { // Memo field
-						if (EW_AUDIT_TRAIL_TO_DATABASE) {
-							$oldvalue = $rsold[$fldname];
-							$newvalue = $rsnew[$fldname];
-						} else {
-							$oldvalue = "[MEMO]";
-							$newvalue = "[MEMO]";
-						}
-					} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) { // XML field
-						$oldvalue = "[XML]";
-						$newvalue = "[XML]";
-					} else {
-						$oldvalue = $rsold[$fldname];
-						$newvalue = $rsnew[$fldname];
-					}
-					ew_WriteAuditTrail("log", $dt, $id, $usr, "U", $table, $fldname, $key, $oldvalue, $newvalue);
-				}
-			}
-		}
-	}
-
-	// Write Audit Trail (delete page)
-	function WriteAuditTrailOnDelete(&$rs) {
-		global $Language;
-		if (!$this->AuditTrailOnDelete) return;
-		$table = 't_rumus2_peg';
-
-		// Get key value
-		$key = "";
-		if ($key <> "")
-			$key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
-		$key .= $rs['rumus2_peg_id'];
-
-		// Write Audit Trail
-		$dt = ew_StdCurrentDateTime();
-		$id = ew_ScriptName();
-		$curUser = CurrentUserID();
-		foreach (array_keys($rs) as $fldname) {
-			if (array_key_exists($fldname, $this->fields) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
-				if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") {
-					$oldvalue = $Language->Phrase("PasswordMask"); // Password Field
-				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) {
-					if (EW_AUDIT_TRAIL_TO_DATABASE)
-						$oldvalue = $rs[$fldname];
-					else
-						$oldvalue = "[MEMO]"; // Memo field
-				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) {
-					$oldvalue = "[XML]"; // XML field
-				} else {
-					$oldvalue = $rs[$fldname];
-				}
-				ew_WriteAuditTrail("log", $dt, $id, $curUser, "D", $table, $fldname, $key, $oldvalue, "");
-			}
 		}
 	}
 

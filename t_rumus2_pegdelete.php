@@ -42,6 +42,12 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 		if ($this->UseTokenInUrl) $PageUrl .= "t=" . $this->TableVar . "&"; // Add page token
 		return $PageUrl;
 	}
+	var $AuditTrailOnAdd = FALSE;
+	var $AuditTrailOnEdit = FALSE;
+	var $AuditTrailOnDelete = TRUE;
+	var $AuditTrailOnView = FALSE;
+	var $AuditTrailOnViewData = FALSE;
+	var $AuditTrailOnSearch = FALSE;
 
 	// Message
 	function getMessage() {
@@ -289,6 +295,7 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 		$this->pegawai_id->SetVisibility();
 		$this->gp->SetVisibility();
 		$this->rumus2_id->SetVisibility();
+		$this->tj->SetVisibility();
 
 		// Global Page Loading event (in userfn*.php)
 		Page_Loading();
@@ -480,6 +487,7 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 		} else {
 			$this->rumus2_id->VirtualValue = ""; // Clear value
 		}
+		$this->tj->setDbValue($rs->fields('tj'));
 	}
 
 	// Load DbValue from recordset
@@ -490,6 +498,7 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 		$this->pegawai_id->DbValue = $row['pegawai_id'];
 		$this->gp->DbValue = $row['gp'];
 		$this->rumus2_id->DbValue = $row['rumus2_id'];
+		$this->tj->DbValue = $row['tj'];
 	}
 
 	// Render row values based on field settings
@@ -502,6 +511,10 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 		if ($this->gp->FormValue == $this->gp->CurrentValue && is_numeric(ew_StrToFloat($this->gp->CurrentValue)))
 			$this->gp->CurrentValue = ew_StrToFloat($this->gp->CurrentValue);
 
+		// Convert decimal values if posted back
+		if ($this->tj->FormValue == $this->tj->CurrentValue && is_numeric(ew_StrToFloat($this->tj->CurrentValue)))
+			$this->tj->CurrentValue = ew_StrToFloat($this->tj->CurrentValue);
+
 		// Call Row_Rendering event
 		$this->Row_Rendering();
 
@@ -510,6 +523,7 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 		// pegawai_id
 		// gp
 		// rumus2_id
+		// tj
 
 		if ($this->RowType == EW_ROWTYPE_VIEW) { // View row
 
@@ -578,6 +592,12 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 		}
 		$this->rumus2_id->ViewCustomAttributes = "";
 
+		// tj
+		$this->tj->ViewValue = $this->tj->CurrentValue;
+		$this->tj->ViewValue = ew_FormatNumber($this->tj->ViewValue, 0, -2, -2, -2);
+		$this->tj->CellCssStyle .= "text-align: right;";
+		$this->tj->ViewCustomAttributes = "";
+
 			// pegawai_id
 			$this->pegawai_id->LinkCustomAttributes = "";
 			$this->pegawai_id->HrefValue = "";
@@ -592,6 +612,11 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 			$this->rumus2_id->LinkCustomAttributes = "";
 			$this->rumus2_id->HrefValue = "";
 			$this->rumus2_id->TooltipValue = "";
+
+			// tj
+			$this->tj->LinkCustomAttributes = "";
+			$this->tj->HrefValue = "";
+			$this->tj->TooltipValue = "";
 		}
 
 		// Call Row Rendered event
@@ -670,6 +695,10 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 		}
 		if ($DeleteRows) {
 			$conn->CommitTrans(); // Commit the changes
+			if ($DeleteRows) {
+				foreach ($rsold as $row)
+					$this->WriteAuditTrailOnDelete($row);
+			}
 			if ($this->AuditTrailOnDelete) $this->WriteAuditTrailDummy($Language->Phrase("BatchDeleteSuccess")); // Batch delete success
 		} else {
 			$conn->RollbackTrans(); // Rollback changes
@@ -768,6 +797,48 @@ class ct_rumus2_peg_delete extends ct_rumus2_peg {
 		global $gsLanguage;
 		$pageId = $pageId ?: $this->PageID;
 		switch ($fld->FldVar) {
+		}
+	}
+
+	// Write Audit Trail start/end for grid update
+	function WriteAuditTrailDummy($typ) {
+		$table = 't_rumus2_peg';
+		$usr = CurrentUserID();
+		ew_WriteAuditTrail("log", ew_StdCurrentDateTime(), ew_ScriptName(), $usr, $typ, $table, "", "", "", "");
+	}
+
+	// Write Audit Trail (delete page)
+	function WriteAuditTrailOnDelete(&$rs) {
+		global $Language;
+		if (!$this->AuditTrailOnDelete) return;
+		$table = 't_rumus2_peg';
+
+		// Get key value
+		$key = "";
+		if ($key <> "")
+			$key .= $GLOBALS["EW_COMPOSITE_KEY_SEPARATOR"];
+		$key .= $rs['rumus2_peg_id'];
+
+		// Write Audit Trail
+		$dt = ew_StdCurrentDateTime();
+		$id = ew_ScriptName();
+		$curUser = CurrentUserID();
+		foreach (array_keys($rs) as $fldname) {
+			if (array_key_exists($fldname, $this->fields) && $this->fields[$fldname]->FldDataType <> EW_DATATYPE_BLOB) { // Ignore BLOB fields
+				if ($this->fields[$fldname]->FldHtmlTag == "PASSWORD") {
+					$oldvalue = $Language->Phrase("PasswordMask"); // Password Field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_MEMO) {
+					if (EW_AUDIT_TRAIL_TO_DATABASE)
+						$oldvalue = $rs[$fldname];
+					else
+						$oldvalue = "[MEMO]"; // Memo field
+				} elseif ($this->fields[$fldname]->FldDataType == EW_DATATYPE_XML) {
+					$oldvalue = "[XML]"; // XML field
+				} else {
+					$oldvalue = $rs[$fldname];
+				}
+				ew_WriteAuditTrail("log", $dt, $id, $curUser, "D", $table, $fldname, $key, $oldvalue, "");
+			}
 		}
 	}
 
@@ -916,6 +987,9 @@ $t_rumus2_peg_delete->ShowMessage();
 <?php if ($t_rumus2_peg->rumus2_id->Visible) { // rumus2_id ?>
 		<th><span id="elh_t_rumus2_peg_rumus2_id" class="t_rumus2_peg_rumus2_id"><?php echo $t_rumus2_peg->rumus2_id->FldCaption() ?></span></th>
 <?php } ?>
+<?php if ($t_rumus2_peg->tj->Visible) { // tj ?>
+		<th><span id="elh_t_rumus2_peg_tj" class="t_rumus2_peg_tj"><?php echo $t_rumus2_peg->tj->FldCaption() ?></span></th>
+<?php } ?>
 	</tr>
 	</thead>
 	<tbody>
@@ -958,6 +1032,14 @@ while (!$t_rumus2_peg_delete->Recordset->EOF) {
 <span id="el<?php echo $t_rumus2_peg_delete->RowCnt ?>_t_rumus2_peg_rumus2_id" class="t_rumus2_peg_rumus2_id">
 <span<?php echo $t_rumus2_peg->rumus2_id->ViewAttributes() ?>>
 <?php echo $t_rumus2_peg->rumus2_id->ListViewValue() ?></span>
+</span>
+</td>
+<?php } ?>
+<?php if ($t_rumus2_peg->tj->Visible) { // tj ?>
+		<td<?php echo $t_rumus2_peg->tj->CellAttributes() ?>>
+<span id="el<?php echo $t_rumus2_peg_delete->RowCnt ?>_t_rumus2_peg_tj" class="t_rumus2_peg_tj">
+<span<?php echo $t_rumus2_peg->tj->ViewAttributes() ?>>
+<?php echo $t_rumus2_peg->tj->ListViewValue() ?></span>
 </span>
 </td>
 <?php } ?>

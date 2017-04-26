@@ -12,6 +12,7 @@ $RootMenu->AddMenuItem(34, "mi_pembagian3", $Language->MenuPhrase("34", "MenuTex
 $RootMenu->AddMenuItem(43, "mi_t_jk", $Language->MenuPhrase("43", "MenuText"), "t_jklist.php", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_jk'), FALSE, FALSE);
 $RootMenu->AddMenuItem(10076, "mi_t_rumus2", $Language->MenuPhrase("10076", "MenuText"), "t_rumus2list.php", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_rumus2'), FALSE, FALSE);
 $RootMenu->AddMenuItem(44, "mi_t_rumus", $Language->MenuPhrase("44", "MenuText"), "t_rumuslist.php", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_rumus'), FALSE, FALSE);
+$RootMenu->AddMenuItem(10078, "mi_t_lapgroup", $Language->MenuPhrase("10078", "MenuText"), "t_lapgrouplist.php", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_lapgroup'), FALSE, FALSE);
 $RootMenu->AddMenuItem(30, "mi_pegawai", $Language->MenuPhrase("30", "MenuText"), "pegawailist.php", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}pegawai'), FALSE, FALSE);
 $RootMenu->AddMenuItem(42, "mi_t_jdw_krj_peg", $Language->MenuPhrase("42", "MenuText"), "t_jdw_krj_peglist.php?cmd=resetall", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_jdw_krj_peg'), FALSE, FALSE);
 $RootMenu->AddMenuItem(41, "mi_t_jdw_krj_def", $Language->MenuPhrase("41", "MenuText"), "t_jdw_krj_deflist.php", 71, "", AllowListMenu('{503C8825-3846-4E96-8DFF-03202C380E17}t_jdw_krj_def'), FALSE, FALSE);
