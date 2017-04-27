@@ -1,6 +1,13 @@
+4:23 PM 4/27/2017
+- perlu setting hari libur, untuk mengetahui apakah hari itu memang tidak scan karena hari libur;
+- buat view untuk mengetahui gaji, view ini diperlukan untuk laporan gaji
+- penambahan tunjangan jabatan :: done;
+
+
+
+
 10:26 AM 4/25/2017
 mencoba menyederhanakan proses generate laporan rekonsiliasi absensi, karena dirasa terlalu lama dalam prosesnya
-
 
 
 
