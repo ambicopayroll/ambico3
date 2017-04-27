@@ -1,39 +1,41 @@
 <?php
 
 // Global variable for table object
-$r_rekon = NULL;
+$r_rekon2 = NULL;
 
 //
-// Table class for r_rekon
+// Table class for r_rekon2
 //
-class crr_rekon extends crTableCrosstab {
+class crr_rekon2 extends crTableCrosstab {
 	var $jdw_id;
 	var $pegawai_id;
-	var $pegawai_nama;
 	var $tgl;
 	var $jk_id;
-	var $scan_masuk;
-	var $scan_keluar;
+	var $hk_def;
 	var $pegawai_pin;
-	var $pegawai_nip;
+	var $pegawai_nama;
 	var $jk_nm;
 	var $jk_kd;
-	var $gol_hk;
+	var $jk_m;
+	var $jk_k;
+	var $scan_masuk;
+	var $scan_keluar;
+	var $pembagian2_nama;
 
 	//
 	// Table class constructor
 	//
 	function __construct() {
 		global $ReportLanguage, $gsLanguage;
-		$this->TableVar = 'r_rekon';
-		$this->TableName = 'r_rekon';
+		$this->TableVar = 'r_rekon2';
+		$this->TableName = 'r_rekon2';
 		$this->TableType = 'REPORT';
 		$this->DBID = 'DB';
 		$this->ExportAll = FALSE;
 		$this->ExportPageBreakCount = 0;
 
 		// jdw_id
-		$this->jdw_id = new crField('r_rekon', 'r_rekon', 'x_jdw_id', 'jdw_id', '`jdw_id`', 3, EWR_DATATYPE_NUMBER, -1);
+		$this->jdw_id = new crField('r_rekon2', 'r_rekon2', 'x_jdw_id', 'jdw_id', '`jdw_id`', 3, EWR_DATATYPE_NUMBER, -1);
 		$this->jdw_id->Sortable = TRUE; // Allow sort
 		$this->jdw_id->FldDefaultErrMsg = $ReportLanguage->Phrase("IncorrectInteger");
 		$this->fields['jdw_id'] = &$this->jdw_id;
@@ -42,7 +44,7 @@ class crr_rekon extends crTableCrosstab {
 		$this->jdw_id->SqlOrderBy = "";
 
 		// pegawai_id
-		$this->pegawai_id = new crField('r_rekon', 'r_rekon', 'x_pegawai_id', 'pegawai_id', '`pegawai_id`', 3, EWR_DATATYPE_NUMBER, -1);
+		$this->pegawai_id = new crField('r_rekon2', 'r_rekon2', 'x_pegawai_id', 'pegawai_id', '`pegawai_id`', 3, EWR_DATATYPE_NUMBER, -1);
 		$this->pegawai_id->Sortable = TRUE; // Allow sort
 		$this->pegawai_id->FldDefaultErrMsg = $ReportLanguage->Phrase("IncorrectInteger");
 		$this->fields['pegawai_id'] = &$this->pegawai_id;
@@ -50,26 +52,17 @@ class crr_rekon extends crTableCrosstab {
 		$this->pegawai_id->SqlSelect = "";
 		$this->pegawai_id->SqlOrderBy = "";
 
-		// pegawai_nama
-		$this->pegawai_nama = new crField('r_rekon', 'r_rekon', 'x_pegawai_nama', 'pegawai_nama', '`pegawai_nama`', 200, EWR_DATATYPE_STRING, -1);
-		$this->pegawai_nama->Sortable = TRUE; // Allow sort
-		$this->pegawai_nama->GroupingFieldId = 1;
-		$this->fields['pegawai_nama'] = &$this->pegawai_nama;
-		$this->pegawai_nama->DateFilter = "";
-		$this->pegawai_nama->SqlSelect = "";
-		$this->pegawai_nama->SqlOrderBy = "";
-
 		// tgl
-		$this->tgl = new crField('r_rekon', 'r_rekon', 'x_tgl', 'tgl', '`tgl`', 133, EWR_DATATYPE_DATE, -1);
+		$this->tgl = new crField('r_rekon2', 'r_rekon2', 'x_tgl', 'tgl', '`tgl`', 133, EWR_DATATYPE_DATE, 0);
 		$this->tgl->Sortable = TRUE; // Allow sort
-		$this->tgl->FldDefaultErrMsg = str_replace("%s", $GLOBALS["EWR_DATE_SEPARATOR"], $ReportLanguage->Phrase("IncorrectDateYMD"));
+		$this->tgl->FldDefaultErrMsg = str_replace("%s", $GLOBALS["EWR_DATE_FORMAT"], $ReportLanguage->Phrase("IncorrectDate"));
 		$this->fields['tgl'] = &$this->tgl;
 		$this->tgl->DateFilter = "";
-		$this->tgl->SqlSelect = "";
-		$this->tgl->SqlOrderBy = "";
+		$this->tgl->SqlSelect = "SELECT DISTINCT `tgl`, `tgl` AS `DispFld` FROM " . $this->getSqlFrom();
+		$this->tgl->SqlOrderBy = "`tgl`";
 
 		// jk_id
-		$this->jk_id = new crField('r_rekon', 'r_rekon', 'x_jk_id', 'jk_id', '`jk_id`', 3, EWR_DATATYPE_NUMBER, -1);
+		$this->jk_id = new crField('r_rekon2', 'r_rekon2', 'x_jk_id', 'jk_id', '`jk_id`', 3, EWR_DATATYPE_NUMBER, -1);
 		$this->jk_id->Sortable = TRUE; // Allow sort
 		$this->jk_id->FldDefaultErrMsg = $ReportLanguage->Phrase("IncorrectInteger");
 		$this->fields['jk_id'] = &$this->jk_id;
@@ -77,42 +70,34 @@ class crr_rekon extends crTableCrosstab {
 		$this->jk_id->SqlSelect = "";
 		$this->jk_id->SqlOrderBy = "";
 
-		// scan_masuk
-		$this->scan_masuk = new crField('r_rekon', 'r_rekon', 'x_scan_masuk', 'scan_masuk', '`scan_masuk`', 135, EWR_DATATYPE_DATE, 11);
-		$this->scan_masuk->Sortable = TRUE; // Allow sort
-		$this->scan_masuk->FldDefaultErrMsg = $ReportLanguage->Phrase("IncorrectField");
-		$this->fields['scan_masuk'] = &$this->scan_masuk;
-		$this->scan_masuk->DateFilter = "";
-		$this->scan_masuk->SqlSelect = "";
-		$this->scan_masuk->SqlOrderBy = "";
-
-		// scan_keluar
-		$this->scan_keluar = new crField('r_rekon', 'r_rekon', 'x_scan_keluar', 'scan_keluar', '`scan_keluar`', 135, EWR_DATATYPE_DATE, 11);
-		$this->scan_keluar->Sortable = TRUE; // Allow sort
-		$this->scan_keluar->FldDefaultErrMsg = $ReportLanguage->Phrase("IncorrectField");
-		$this->fields['scan_keluar'] = &$this->scan_keluar;
-		$this->scan_keluar->DateFilter = "";
-		$this->scan_keluar->SqlSelect = "";
-		$this->scan_keluar->SqlOrderBy = "";
+		// hk_def
+		$this->hk_def = new crField('r_rekon2', 'r_rekon2', 'x_hk_def', 'hk_def', '`hk_def`', 16, EWR_DATATYPE_NUMBER, -1);
+		$this->hk_def->Sortable = TRUE; // Allow sort
+		$this->hk_def->FldDefaultErrMsg = $ReportLanguage->Phrase("IncorrectInteger");
+		$this->fields['hk_def'] = &$this->hk_def;
+		$this->hk_def->DateFilter = "";
+		$this->hk_def->SqlSelect = "";
+		$this->hk_def->SqlOrderBy = "";
 
 		// pegawai_pin
-		$this->pegawai_pin = new crField('r_rekon', 'r_rekon', 'x_pegawai_pin', 'pegawai_pin', '`pegawai_pin`', 200, EWR_DATATYPE_STRING, -1);
+		$this->pegawai_pin = new crField('r_rekon2', 'r_rekon2', 'x_pegawai_pin', 'pegawai_pin', '`pegawai_pin`', 200, EWR_DATATYPE_STRING, -1);
 		$this->pegawai_pin->Sortable = TRUE; // Allow sort
 		$this->fields['pegawai_pin'] = &$this->pegawai_pin;
 		$this->pegawai_pin->DateFilter = "";
 		$this->pegawai_pin->SqlSelect = "";
 		$this->pegawai_pin->SqlOrderBy = "";
 
-		// pegawai_nip
-		$this->pegawai_nip = new crField('r_rekon', 'r_rekon', 'x_pegawai_nip', 'pegawai_nip', '`pegawai_nip`', 200, EWR_DATATYPE_STRING, -1);
-		$this->pegawai_nip->Sortable = TRUE; // Allow sort
-		$this->fields['pegawai_nip'] = &$this->pegawai_nip;
-		$this->pegawai_nip->DateFilter = "";
-		$this->pegawai_nip->SqlSelect = "";
-		$this->pegawai_nip->SqlOrderBy = "";
+		// pegawai_nama
+		$this->pegawai_nama = new crField('r_rekon2', 'r_rekon2', 'x_pegawai_nama', 'pegawai_nama', '`pegawai_nama`', 200, EWR_DATATYPE_STRING, -1);
+		$this->pegawai_nama->Sortable = TRUE; // Allow sort
+		$this->pegawai_nama->GroupingFieldId = 2;
+		$this->fields['pegawai_nama'] = &$this->pegawai_nama;
+		$this->pegawai_nama->DateFilter = "";
+		$this->pegawai_nama->SqlSelect = "";
+		$this->pegawai_nama->SqlOrderBy = "";
 
 		// jk_nm
-		$this->jk_nm = new crField('r_rekon', 'r_rekon', 'x_jk_nm', 'jk_nm', '`jk_nm`', 200, EWR_DATATYPE_STRING, -1);
+		$this->jk_nm = new crField('r_rekon2', 'r_rekon2', 'x_jk_nm', 'jk_nm', '`jk_nm`', 200, EWR_DATATYPE_STRING, -1);
 		$this->jk_nm->Sortable = TRUE; // Allow sort
 		$this->fields['jk_nm'] = &$this->jk_nm;
 		$this->jk_nm->DateFilter = "";
@@ -120,21 +105,57 @@ class crr_rekon extends crTableCrosstab {
 		$this->jk_nm->SqlOrderBy = "";
 
 		// jk_kd
-		$this->jk_kd = new crField('r_rekon', 'r_rekon', 'x_jk_kd', 'jk_kd', '`jk_kd`', 200, EWR_DATATYPE_STRING, -1);
+		$this->jk_kd = new crField('r_rekon2', 'r_rekon2', 'x_jk_kd', 'jk_kd', '`jk_kd`', 200, EWR_DATATYPE_STRING, -1);
 		$this->jk_kd->Sortable = TRUE; // Allow sort
 		$this->fields['jk_kd'] = &$this->jk_kd;
 		$this->jk_kd->DateFilter = "";
 		$this->jk_kd->SqlSelect = "";
 		$this->jk_kd->SqlOrderBy = "";
 
-		// gol_hk
-		$this->gol_hk = new crField('r_rekon', 'r_rekon', 'x_gol_hk', 'gol_hk', '`gol_hk`', 16, EWR_DATATYPE_NUMBER, -1);
-		$this->gol_hk->Sortable = TRUE; // Allow sort
-		$this->gol_hk->FldDefaultErrMsg = $ReportLanguage->Phrase("IncorrectInteger");
-		$this->fields['gol_hk'] = &$this->gol_hk;
-		$this->gol_hk->DateFilter = "";
-		$this->gol_hk->SqlSelect = "";
-		$this->gol_hk->SqlOrderBy = "";
+		// jk_m
+		$this->jk_m = new crField('r_rekon2', 'r_rekon2', 'x_jk_m', 'jk_m', '`jk_m`', 134, EWR_DATATYPE_TIME, -1);
+		$this->jk_m->Sortable = TRUE; // Allow sort
+		$this->jk_m->FldDefaultErrMsg = $ReportLanguage->Phrase("IncorrectTime");
+		$this->fields['jk_m'] = &$this->jk_m;
+		$this->jk_m->DateFilter = "";
+		$this->jk_m->SqlSelect = "";
+		$this->jk_m->SqlOrderBy = "";
+
+		// jk_k
+		$this->jk_k = new crField('r_rekon2', 'r_rekon2', 'x_jk_k', 'jk_k', '`jk_k`', 134, EWR_DATATYPE_TIME, -1);
+		$this->jk_k->Sortable = TRUE; // Allow sort
+		$this->jk_k->FldDefaultErrMsg = $ReportLanguage->Phrase("IncorrectTime");
+		$this->fields['jk_k'] = &$this->jk_k;
+		$this->jk_k->DateFilter = "";
+		$this->jk_k->SqlSelect = "";
+		$this->jk_k->SqlOrderBy = "";
+
+		// scan_masuk
+		$this->scan_masuk = new crField('r_rekon2', 'r_rekon2', 'x_scan_masuk', 'scan_masuk', '`scan_masuk`', 135, EWR_DATATYPE_DATE, 0);
+		$this->scan_masuk->Sortable = TRUE; // Allow sort
+		$this->scan_masuk->FldDefaultErrMsg = str_replace("%s", $GLOBALS["EWR_DATE_FORMAT"], $ReportLanguage->Phrase("IncorrectDate"));
+		$this->fields['scan_masuk'] = &$this->scan_masuk;
+		$this->scan_masuk->DateFilter = "";
+		$this->scan_masuk->SqlSelect = "";
+		$this->scan_masuk->SqlOrderBy = "";
+
+		// scan_keluar
+		$this->scan_keluar = new crField('r_rekon2', 'r_rekon2', 'x_scan_keluar', 'scan_keluar', '`scan_keluar`', 135, EWR_DATATYPE_DATE, 0);
+		$this->scan_keluar->Sortable = TRUE; // Allow sort
+		$this->scan_keluar->FldDefaultErrMsg = str_replace("%s", $GLOBALS["EWR_DATE_FORMAT"], $ReportLanguage->Phrase("IncorrectDate"));
+		$this->fields['scan_keluar'] = &$this->scan_keluar;
+		$this->scan_keluar->DateFilter = "";
+		$this->scan_keluar->SqlSelect = "";
+		$this->scan_keluar->SqlOrderBy = "";
+
+		// pembagian2_nama
+		$this->pembagian2_nama = new crField('r_rekon2', 'r_rekon2', 'x_pembagian2_nama', 'pembagian2_nama', '`pembagian2_nama`', 200, EWR_DATATYPE_STRING, -1);
+		$this->pembagian2_nama->Sortable = TRUE; // Allow sort
+		$this->pembagian2_nama->GroupingFieldId = 1;
+		$this->fields['pembagian2_nama'] = &$this->pembagian2_nama;
+		$this->pembagian2_nama->DateFilter = "";
+		$this->pembagian2_nama->SqlSelect = "";
+		$this->pembagian2_nama->SqlOrderBy = "";
 	}
 
 	// Set Field Visibility
@@ -262,7 +283,7 @@ class crr_rekon extends crTableCrosstab {
 	var $_SqlFrom = "";
 
 	function getSqlFrom() {
-		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`v_rekon`";
+		return ($this->_SqlFrom <> "") ? $this->_SqlFrom : "`v_rekon2`";
 	}
 
 	function SqlFrom() { // For backward compatibility
@@ -277,7 +298,7 @@ class crr_rekon extends crTableCrosstab {
 	var $_SqlSelect = "";
 
 	function getSqlSelect() {
-		return ($this->_SqlSelect <> "") ? $this->_SqlSelect : "SELECT `pegawai_nama`, <DistinctColumnFields> FROM " . $this->getSqlFrom();
+		return ($this->_SqlSelect <> "") ? $this->_SqlSelect : "SELECT `pembagian2_nama`, `pegawai_nama`, <DistinctColumnFields> FROM " . $this->getSqlFrom();
 	}
 
 	function SqlSelect() { // For backward compatibility
@@ -308,7 +329,7 @@ class crr_rekon extends crTableCrosstab {
 	var $_SqlGroupBy = "";
 
 	function getSqlGroupBy() {
-		return ($this->_SqlGroupBy <> "") ? $this->_SqlGroupBy : "`pegawai_nama`";
+		return ($this->_SqlGroupBy <> "") ? $this->_SqlGroupBy : "`pembagian2_nama`, `pegawai_nama`";
 	}
 
 	function SqlGroupBy() { // For backward compatibility
@@ -338,7 +359,7 @@ class crr_rekon extends crTableCrosstab {
 	var $_SqlOrderBy = "";
 
 	function getSqlOrderBy() {
-		return ($this->_SqlOrderBy <> "") ? $this->_SqlOrderBy : "`pegawai_nama` ASC";
+		return ($this->_SqlOrderBy <> "") ? $this->_SqlOrderBy : "`pembagian2_nama` ASC, `pegawai_nama` ASC";
 	}
 
 	function SqlOrderBy() { // For backward compatibility
@@ -353,7 +374,7 @@ class crr_rekon extends crTableCrosstab {
 	var $_SqlDistinctSelect = "";
 
 	function getSqlDistinctSelect() {
-		return ($this->_SqlDistinctSelect <> "") ? $this->_SqlDistinctSelect : "SELECT DISTINCT DATE_FORMAT(`tgl`,'%Y-%m-%d') FROM `v_rekon`";
+		return ($this->_SqlDistinctSelect <> "") ? $this->_SqlDistinctSelect : "SELECT DISTINCT DATE_FORMAT(`tgl`,'%Y-%m-%d') FROM `v_rekon2`";
 	}
 
 	function SqlDistinctSelect() { // For backward compatibility
@@ -419,7 +440,7 @@ class crr_rekon extends crTableCrosstab {
 			exit();
 		}
 */
-		$this->Col = &ewr_Init2DArray($this->ColCount+1, 2, NULL);
+		$this->Col = &ewr_Init2DArray($this->ColCount+1, 3, NULL);
 		$colcnt = 0;
 		while (!$rscol->EOF) {
 			if (is_null($rscol->fields[0])) {
@@ -441,8 +462,8 @@ class crr_rekon extends crTableCrosstab {
 		// 1st dimension = no of groups (level 0 used for grand total)
 		// 2nd dimension = no of distinct values
 
-		$nGrps = 1;
-		$this->SummaryFields[0] = new crSummaryField('x_gol_hk', 'gol_hk', '`gol_hk`', 'MAX');
+		$nGrps = 2;
+		$this->SummaryFields[0] = new crSummaryField('x_hk_def', 'hk_def', '`hk_def`', 'MAX');
 		$this->SummaryFields[0]->SummaryCaption = $ReportLanguage->Phrase("RptMax");
 		$this->SummaryFields[0]->SummaryVal = &ewr_InitArray($this->ColCount+1, NULL);
 		$this->SummaryFields[0]->SummaryValCnt = &ewr_InitArray($this->ColCount+1, NULL);
@@ -496,7 +517,7 @@ class crr_rekon extends crTableCrosstab {
 	var $_SqlFirstGroupField = "";
 
 	function getSqlFirstGroupField() {
-		return ($this->_SqlFirstGroupField <> "") ? $this->_SqlFirstGroupField : "`pegawai_nama`";
+		return ($this->_SqlFirstGroupField <> "") ? $this->_SqlFirstGroupField : "`pembagian2_nama`";
 	}
 
 	function SqlFirstGroupField() { // For backward compatibility
@@ -526,7 +547,7 @@ class crr_rekon extends crTableCrosstab {
 	var $_SqlOrderByGroup = "";
 
 	function getSqlOrderByGroup() {
-		return ($this->_SqlOrderByGroup <> "") ? $this->_SqlOrderByGroup : "`pegawai_nama` ASC";
+		return ($this->_SqlOrderByGroup <> "") ? $this->_SqlOrderByGroup : "`pembagian2_nama` ASC";
 	}
 
 	function SqlOrderByGroup() { // For backward compatibility
@@ -586,19 +607,6 @@ class crr_rekon extends crTableCrosstab {
 	function SetupLookupFilters($fld) {
 		global $gsLanguage;
 		switch ($fld->FldVar) {
-		case "x_pegawai_nama":
-			$sSqlWrk = "";
-		$sSqlWrk = "SELECT DISTINCT `pegawai_nama`, `pegawai_nama` AS `DispFld`, '' AS `DispFld2`, '' AS `DispFld3`, '' AS `DispFld4` FROM `v_rekon`";
-		$sWhereWrk = "{filter}";
-		$this->pegawai_nama->LookupFilters = array("dx1" => '`pegawai_nama`');
-			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "DB", "f0" => '`pegawai_nama` = {filter_value}', "t0" => "200", "fn0" => "");
-			$sSqlWrk = "";
-		$this->Lookup_Selecting($this->pegawai_nama, $sWhereWrk); // Call Lookup selecting
-		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
-		$sSqlWrk .= " ORDER BY `pegawai_nama` ASC";
-			if ($sSqlWrk <> "")
-				$fld->LookupFilters["s"] .= $sSqlWrk;
-			break;
 		}
 	}
 
@@ -646,7 +654,7 @@ class crr_rekon extends crTableCrosstab {
 		if ($Field->FldName == "jk_kd") {
 			$ViewAttrs["style"] = "color: blue";
 		}
-		if ($Field->FldName == "gol_hk") {
+		if ($Field->FldName == "hk_def") {
 			$ViewAttrs["style"] = "color: brown";
 		}
 	}

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<ew-language date="2017/4/24" version="10.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
+<ew-language date="2017/4/27" version="10.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
   <!-- 
 	*** Important Notes:
 	1. Language ID should follow: https://developers.google.com/recaptcha/docs/language,
@@ -350,11 +350,23 @@
   <project>
     <phrase id="bodytitle" value="AMBICO" />
     <phrase id="footertext" value="&amp;copy;2017 AMBICO. All rights reserved." />
+    <menu id="78">
+      <phrase id="menutext" value="t lapgroup" />
+    </menu>
+    <menu id="79">
+      <phrase id="menutext" value="t lapsubgroup" />
+    </menu>
     <menu id="74">
       <phrase id="menutext" value="t rumus 2" />
     </menu>
     <menu id="75">
       <phrase id="menutext" value="t rumus 2 peg" />
+    </menu>
+    <menu id="76">
+      <phrase id="menutext" value="v rekon 2" />
+    </menu>
+    <menu id="77">
+      <phrase id="menutext" value="Rekonsiliasi #2" />
     </menu>
     <menu id="72">
       <phrase id="menutext" value="Jadwal Kerja (Perincian)" />
@@ -2475,6 +2487,126 @@
       </field>
       <field id="gp">
         <phrase id="fldcaption" value="gp" />
+      </field>
+      <field id="tj">
+        <phrase id="fldcaption" value="tj" />
+      </field>
+    </table>
+    <table id="t_lapgroup">
+      <phrase id="tblcaption" value="t lapgroup" />
+      <field id="lapgroup_id">
+        <phrase id="fldcaption" value="lapgroup id" />
+      </field>
+      <field id="lapgroup_nama">
+        <phrase id="fldcaption" value="lapgroup nama" />
+      </field>
+      <field id="lapgroup_index">
+        <phrase id="fldcaption" value="lapgroup index" />
+      </field>
+    </table>
+    <table id="t_lapsubgroup">
+      <phrase id="tblcaption" value="t lapsubgroup" />
+      <field id="lapsubgroup_id">
+        <phrase id="fldcaption" value="lapsubgroup id" />
+      </field>
+      <field id="pembagian2_id">
+        <phrase id="fldcaption" value="pembagian 2 id" />
+      </field>
+      <field id="lapsubgroup_index">
+        <phrase id="fldcaption" value="lapsubgroup index" />
+      </field>
+      <field id="lapgroup_id">
+        <phrase id="fldcaption" value="lapgroup id" />
+      </field>
+    </table>
+    <table id="v_rekon2">
+      <phrase id="tblcaption" value="v rekon 2" />
+      <field id="jdw_id">
+        <phrase id="fldcaption" value="jdw id" />
+      </field>
+      <field id="pegawai_id">
+        <phrase id="fldcaption" value="pegawai id" />
+      </field>
+      <field id="tgl">
+        <phrase id="fldcaption" value="tgl" />
+      </field>
+      <field id="jk_id">
+        <phrase id="fldcaption" value="jk id" />
+      </field>
+      <field id="hk_def">
+        <phrase id="fldcaption" value="hk def" />
+      </field>
+      <field id="pegawai_pin">
+        <phrase id="fldcaption" value="pegawai pin" />
+      </field>
+      <field id="pegawai_nama">
+        <phrase id="fldcaption" value="pegawai nama" />
+      </field>
+      <field id="jk_nm">
+        <phrase id="fldcaption" value="jk nm" />
+      </field>
+      <field id="jk_kd">
+        <phrase id="fldcaption" value="jk kd" />
+      </field>
+      <field id="jk_m">
+        <phrase id="fldcaption" value="jk m" />
+      </field>
+      <field id="jk_k">
+        <phrase id="fldcaption" value="jk k" />
+      </field>
+      <field id="scan_masuk">
+        <phrase id="fldcaption" value="scan masuk" />
+      </field>
+      <field id="scan_keluar">
+        <phrase id="fldcaption" value="scan keluar" />
+      </field>
+      <field id="pembagian2_nama">
+        <phrase id="fldcaption" value="pembagian 2 nama" />
+      </field>
+    </table>
+    <table id="r_rekon2">
+      <phrase id="tblcaption" value="Rekonsiliasi #2" />
+      <field id="jdw_id">
+        <phrase id="fldcaption" value="jdw id" />
+      </field>
+      <field id="pegawai_id">
+        <phrase id="fldcaption" value="pegawai id" />
+      </field>
+      <field id="tgl">
+        <phrase id="fldcaption" value="Tanggal" />
+      </field>
+      <field id="jk_id">
+        <phrase id="fldcaption" value="jk id" />
+      </field>
+      <field id="hk_def">
+        <phrase id="fldcaption" value="Gol. Hari Kerja" />
+      </field>
+      <field id="pegawai_pin">
+        <phrase id="fldcaption" value="pegawai pin" />
+      </field>
+      <field id="pegawai_nama">
+        <phrase id="fldcaption" value="Pegawai" />
+      </field>
+      <field id="jk_nm">
+        <phrase id="fldcaption" value="jk nm" />
+      </field>
+      <field id="jk_kd">
+        <phrase id="fldcaption" value="Kode Jam Kerja" />
+      </field>
+      <field id="jk_m">
+        <phrase id="fldcaption" value="jk m" />
+      </field>
+      <field id="jk_k">
+        <phrase id="fldcaption" value="jk k" />
+      </field>
+      <field id="scan_masuk">
+        <phrase id="fldcaption" value="Scan Masuk" />
+      </field>
+      <field id="scan_keluar">
+        <phrase id="fldcaption" value="Scan Keluar" />
+      </field>
+      <field id="pembagian2_nama">
+        <phrase id="fldcaption" value="Bagian" />
       </field>
     </table>
   </project>

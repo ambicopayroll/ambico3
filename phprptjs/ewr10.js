@@ -211,26 +211,24 @@ function ewr_ExportCharts(el, url, exportid, f) {
 	// Export chart
 	function chartExport(id) {
 		var cht = FusionCharts(id), chartid = "cht_" + id.substr(6), divid = "div_export_" + id.substr(6), $svg = $("#" + divid + " svg");
-		cht.getSVGString(function(svgString) {
-			var data = { "stream_type": "svg", "stream": svgString, "token": EWR_TOKEN, // Add token
-				"meta_bgColor": "#ffffff", "meta_bgAlpha": "1", // Do not change
-				"meta_DOMId": id, "meta_width": $svg.attr("width"), "meta_height": $svg.attr("height"),
-				"parameters": "exportfilename=" + exportid + "_" + id + ".png|exportformat=png|exportaction=download|exportparameters=undefined"
-			};
-			$.ajax({ "url": EWR_CHART_EXPORT_HANDLER, "data": data, "cache": false, "type": "POST", "success": function() {
-				chartcnt++;
-				if (chartcnt == ewrExportCharts.length) { // All charts exported
-					_export();
-					ewrExporting = false;
-					$("body").css("cursor", "default");
-				} else { // Next chart
-					chartExport(ewrExportCharts[chartcnt]);
-				}
-			}}).fail(function(xhr, status, error) {
+		var data = { "stream_type": "svg", "stream": cht.getSVGString(), "token": EWR_TOKEN, // Add token
+			"meta_bgColor": "#ffffff", "meta_bgAlpha": "1", // Do not change
+			"meta_DOMId": id, "meta_width": $svg.attr("width"), "meta_height": $svg.attr("height"),
+			"parameters": "exportfilename=" + exportid + "_" + id  + ".png|exportformat=png|exportaction=download|exportparameters=undefined"
+		};
+		$.ajax({ "url": EWR_CHART_EXPORT_HANDLER, "data": data, "cache": false, "type": "POST", "success": function() {
+			chartcnt++;
+			if (chartcnt == ewrExportCharts.length) { // All charts exported
+				_export();
 				ewrExporting = false;
 				$("body").css("cursor", "default");
-				ewr_Alert(error);
-			});
+			} else { // Next chart
+				chartExport(ewrExportCharts[chartcnt]);
+			}
+		}}).fail(function(xhr, status, error) {
+			ewrExporting = false;
+			$("body").css("cursor", "default");
+			ewr_Alert(error);
 		});
 	}
 
@@ -523,12 +521,6 @@ function ewr_Form(id) {
 	this.PreSubmit = function() {
 		var form = this.GetForm(), $form = $(form);
 		$form.find("input[name^=s_],input[name^=sx_],input[name^=q_]").prop("disabled", true); // Do not submit these values
-		$form.find("input[name$='[]'][data-multiple='1']").each(function() { // Report maker only
-			var $this = $(this), id = $this.attr("id"), ar = $this.val().split(",");
-			$.each(ar, function(i, v) {
-				$this.clone().attr("id", id + i).val(v).appendTo($form);
-			});
-		}).remove();
 	}
 
 	// Submit
@@ -1172,12 +1164,11 @@ function ewr_SelectOpt(obj, value_array) {
 			}
 		}
 	} else if (ewr_IsModalLookup(obj)) {
-		var $obj = $(obj), val = "", txt = "", opts = $obj.data("options") || [],
-			ar = (value_array.length) ? value_array[0].split(",") : [];
+		var $obj = $(obj), val = "", txt = "", opts = $obj.data("options") || [];
 		for (var i = 0, len = opts.length; i < len; i++) {
-			if (ewr_InArray(opts[i].val, ar) > -1) {
-				val += (val !== "" ? "," : "") + opts[i].val;
-				txt += (txt !== "" ? ", " : "") + opts[i].lbl;
+			if (opts[i].val == value_array[0]) {
+				val = (val !== "" ? "," : "") + opts[i].val;
+				txt = (txt !== "" ? ", " : "") + opts[i].lbl;
 			}
 		}
 		$obj.val(val);
@@ -3426,148 +3417,147 @@ ewr_Extend(jQuery);
 
 // Dropdown based on Bootstrap
 +function ($) {
-	'use strict';
+  'use strict';
 
-	// DROPDOWN CLASS DEFINITION
-	// =========================
+  // DROPDOWN CLASS DEFINITION
+  // =========================
 
-	var backdrop = '.dropdown-backdrop'
-	var toggle = '.ewDropdown' //***
-	var Dropdown = function (element) {
-		$(element).on('click.bs.dropdown', this.toggle)
-	}
+  var backdrop = '.dropdown-backdrop'
+  //var toggle = '#ewMobileMenu .ewDropdown'
+  var toggle = '.ewDropdown'
+  var Dropdown = function (element) {
+    $(element).on('click.bs.dropdown', this.toggle)
+  }
 
-	Dropdown.prototype.toggle = function (e) {
-		var $this = $(this)
+  Dropdown.prototype.toggle = function (e) {
+    var $this = $(this)
 
-		if ($this.is('.disabled, :disabled')) return
+    if ($this.is('.disabled, :disabled')) return
 
-		var $parent  = getParent($this)
-		var isActive = $parent.hasClass('open')
+    var $parent  = getParent($this)
+    var isActive = $parent.hasClass('open')
 
-		clearMenus(e)
+    clearMenus(e)
 
-		if (!isActive) {
-			if ('ontouchstart' in document.documentElement && !$parent.closest('.navbar-nav').length) {
-				// if mobile we use a backdrop because click events don't delegate
-				$('<div class="dropdown-backdrop"/>').insertAfter($(this)).on('click', clearMenus)
-			}
-
-			var relatedTarget = { relatedTarget: this }
-			$parent.trigger(e = $.Event('show.bs.dropdown', relatedTarget))
-
-			if (e.isDefaultPrevented()) return
-
-			$this.trigger('focus')
-
-			$parent
-				.toggleClass('open')
-				.trigger('shown.bs.dropdown', relatedTarget)
-
-			// adjust padding-left of the dropdown menu
-			var $next = $this.next();
-			if ($next.is('ul.dropdown-menu'))
-				$next.find("> li > a").css("padding-left", (parseInt($this.css("padding-left"), 10) + 10) + "px") // add 10px
+    if (!isActive) {
+		if ('ontouchstart' in document.documentElement && !$parent.closest('.navbar-nav').length) {
+			// if mobile we use a backdrop because click events don't delegate
+			$('<div class="dropdown-backdrop"/>').insertAfter($(this)).on('click', clearMenus)
 		}
 
-		return false
-	}
+		var relatedTarget = { relatedTarget: this }
+		$parent.trigger(e = $.Event('show.bs.dropdown', relatedTarget))
 
-	Dropdown.prototype.keydown = function (e) {
-		if (!/(38|40|27)/.test(e.keyCode)) return
+		if (e.isDefaultPrevented()) return
 
-		var $this = $(this)
+		$this.trigger('focus')
 
-		e.preventDefault()
-		e.stopPropagation()
+		$parent
+			.toggleClass('open')
+			.trigger('shown.bs.dropdown', relatedTarget)
 
-		if ($this.is('.disabled, :disabled')) return
+		// adjust padding-left of the dropdown menu
+		var $next = $this.next();
+		if ($next.is('ul.dropdown-menu'))
+			$next.find("> li > a").css("padding-left", (parseInt($this.css("padding-left"), 10) + 10) + "px") // add 10px
+    }
 
-		var $parent  = getParent($this)
-		var isActive = $parent.hasClass('open')
+    return false
+  }
 
-		if (!isActive || (isActive && e.keyCode == 27)) {
-			if (e.which == 27) $parent.find(toggle).trigger('focus')
-			return $this.trigger('click')
-		}
+  Dropdown.prototype.keydown = function (e) {
+    if (!/(38|40|27)/.test(e.keyCode)) return
 
-		var desc = ' li:not(.divider):visible a'
-		var $items = $parent.find('[role="menu"]' + desc + ', [role="listbox"]' + desc)
+    var $this = $(this)
 
-		if (!$items.length) return
+    e.preventDefault()
+    e.stopPropagation()
 
-		var index = $items.index($items.filter(':focus'))
+    if ($this.is('.disabled, :disabled')) return
 
-		if (e.keyCode == 38 && index > 0)                 index--                        // up
-		if (e.keyCode == 40 && index < $items.length - 1) index++                        // down
-		if (!~index)                                      index = 0
+    var $parent  = getParent($this)
+    var isActive = $parent.hasClass('open')
 
-		$items.eq(index).trigger('focus')
-	}
+    if (!isActive || (isActive && e.keyCode == 27)) {
+      if (e.which == 27) $parent.find(toggle).trigger('focus')
+      return $this.trigger('click')
+    }
 
-	function clearMenus(e) {
-		if (e && e.which === 3) return
-		$(backdrop).remove()
-		$(toggle, $(e.currentTarget).is(toggle) ? $(e.currentTarget).parent() : document).each(function () {
-			var $parent = getParent($(this))
-			var relatedTarget = { relatedTarget: this }
-			if (!$parent.hasClass('open')) return
-			$parent.trigger(e = $.Event('hide.bs.dropdown', relatedTarget))
-			if (e.isDefaultPrevented()) return
-			$parent.removeClass('open').trigger('hidden.bs.dropdown', relatedTarget)
-		})
-	}
+    var desc = ' li:not(.divider):visible a'
+    var $items = $parent.find('[role="menu"]' + desc + ', [role="listbox"]' + desc)
 
-	function getParent($this) {
-		var selector = $this.attr('data-target')
+    if (!$items.length) return
 
-		if (!selector) {
-		selector = $this.attr('href')
-		selector = selector && /#[A-Za-z]/.test(selector) && selector.replace(/.*(?=#[^\s]*$)/, '') //strip for ie7
-		}
+    var index = $items.index($items.filter(':focus'))
 
-		var $parent = selector && $(selector)
+    if (e.keyCode == 38 && index > 0)                 index--                        // up
+    if (e.keyCode == 40 && index < $items.length - 1) index++                        // down
+    if (!~index)                                      index = 0
 
-		return $parent && $parent.length ? $parent : $this.parent()
-	}
+    $items.eq(index).trigger('focus')
+  }
 
+  function clearMenus(e) {
+    if (e && e.which === 3) return
+    $(backdrop).remove()
+    $(toggle, $(e.currentTarget).is(toggle) ? $(e.currentTarget).parent() : document).each(function () {
+		var $parent = getParent($(this))
+		var relatedTarget = { relatedTarget: this }
+		if (!$parent.hasClass('open')) return
+		$parent.trigger(e = $.Event('hide.bs.dropdown', relatedTarget))
+		if (e.isDefaultPrevented()) return
+		$parent.removeClass('open').trigger('hidden.bs.dropdown', relatedTarget)
+    })
+  }
 
-	// DROPDOWN PLUGIN DEFINITION
-	// ==========================
+  function getParent($this) {
+    var selector = $this.attr('data-target')
 
-	var old = $.fn.dropdown
+    if (!selector) {
+      selector = $this.attr('href')
+      selector = selector && /#[A-Za-z]/.test(selector) && selector.replace(/.*(?=#[^\s]*$)/, '') //strip for ie7
+    }
 
-	$.fn.dropdown = function (option) {
-		return this.each(function () {
-		var $this = $(this)
-		var data  = $this.data('bs.dropdown')
+    var $parent = selector && $(selector)
 
-		if (!data) $this.data('bs.dropdown', (data = new Dropdown(this)))
-		if (typeof option == 'string') data[option].call($this)
-		})
-	}
-
-	$.fn.dropdown.Constructor = Dropdown
-
-
-	// DROPDOWN NO CONFLICT
-	// ====================
-
-	$.fn.dropdown.noConflict = function () {
-		$.fn.dropdown = old
-		return this
-	}
+    return $parent && $parent.length ? $parent : $this.parent()
+  }
 
 
-	// APPLY TO STANDARD DROPDOWN ELEMENTS
-	// ===================================
+  // DROPDOWN PLUGIN DEFINITION
+  // ==========================
 
-	$(document)
-		.on('click.bs.dropdown.data-api', clearMenus)
-		.on('click.bs.dropdown.data-api', '.dropdown form', function (e) { e.stopPropagation() })
-		.off('click.bs.dropdown.data-api', toggle) //***
-		.on('click.bs.dropdown.data-api', toggle, Dropdown.prototype.toggle)
-		.off('keydown.bs.dropdown.data-api', toggle + ', [role="menu"], [role="listbox"]') //***
-		.on('keydown.bs.dropdown.data-api', toggle + ', [role="menu"], [role="listbox"]', Dropdown.prototype.keydown)
+  var old = $.fn.dropdown
+
+  $.fn.dropdown = function (option) {
+    return this.each(function () {
+      var $this = $(this)
+      var data  = $this.data('bs.dropdown')
+
+      if (!data) $this.data('bs.dropdown', (data = new Dropdown(this)))
+      if (typeof option == 'string') data[option].call($this)
+    })
+  }
+
+  $.fn.dropdown.Constructor = Dropdown
+
+
+  // DROPDOWN NO CONFLICT
+  // ====================
+
+  $.fn.dropdown.noConflict = function () {
+    $.fn.dropdown = old
+    return this
+  }
+
+
+  // APPLY TO STANDARD DROPDOWN ELEMENTS
+  // ===================================
+
+  $(document)
+    .on('click.bs.dropdown.data-api', clearMenus)
+    .on('click.bs.dropdown.data-api', '.dropdown form', function (e) { e.stopPropagation() })
+    .on('click.bs.dropdown.data-api', toggle, Dropdown.prototype.toggle)
+    .on('keydown.bs.dropdown.data-api', toggle + ', [role="menu"], [role="listbox"]', Dropdown.prototype.keydown)
 
 }(jQuery);

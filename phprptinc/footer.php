@@ -21,4 +21,3 @@
 <div id="ewrDrillDownPanel"></div>
 <?php } ?>
 <?php } ?>
-<script type="text/javascript">ewr_GetScript("phprptjs/ewrusrevt10.js");</script>

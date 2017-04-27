@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<ew-language date="2017/4/26" version="13.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
+<ew-language date="2017/4/27" version="13.0.0" id="en" name="English" desc="English" author="e.World Technology Ltd.">
   <!-- 
 	*** Important Notes:
 	1. Language ID should follow: https://developers.google.com/recaptcha/docs/language,
@@ -583,14 +583,8 @@
   <project>
     <phrase id="bodytitle" value="AMBICO" />
     <phrase id="footertext" value="&amp;copy;2017 AMBICO. All rights reserved." />
-    <menu id="10079">
-      <phrase id="menutext" value="Sub-Group Laporan Gaji" />
-    </menu>
     <menu id="70">
       <phrase id="menutext" value="Dashboard" />
-    </menu>
-    <menu id="10074">
-      <phrase id="menutext" value="v jdw krj def" />
     </menu>
     <menu id="71">
       <phrase id="menutext" value="Setup" />
@@ -654,6 +648,9 @@
     </menu>
     <menu id="10070">
       <phrase id="menutext" value="Rekonsiliasi" />
+    </menu>
+    <menu id="10081">
+      <phrase id="menutext" value="Rekonsiliasi #2" />
     </menu>
     <menu id="10077">
       <phrase id="menutext" value="Gaji (Bulanan)" />
@@ -837,6 +834,15 @@
     </menu>
     <menu id="69">
       <phrase id="menutext" value="zx kredit m" />
+    </menu>
+    <menu id="10080">
+      <phrase id="menutext" value="v rekon 2" />
+    </menu>
+    <menu id="10074">
+      <phrase id="menutext" value="t rumus 2" />
+    </menu>
+    <menu id="10079">
+      <phrase id="menutext" value="t rumus 2 peg" />
     </menu>
     <menu id="10072">
       <phrase id="menutext" value="Jadwal Kerja (Perincian)" />

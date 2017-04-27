@@ -384,7 +384,7 @@ class crr_att_log extends crTableBase {
 		$sSqlWrk = "SELECT DISTINCT `pegawai_nip`, `pegawai_nip` AS `DispFld`, '' AS `DispFld2`, '' AS `DispFld3`, '' AS `DispFld4` FROM `v_att_log`";
 		$sWhereWrk = "{filter}";
 		$this->pegawai_nip->LookupFilters = array("dx1" => '`pegawai_nip`');
-			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "DB", "f0" => '`pegawai_nip` = {filter_value}', "t0" => "200", "fn0" => "", "dlm" => ewr_Encrypt($fld->FldDelimiter));
+			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "DB", "f0" => '`pegawai_nip` = {filter_value}', "t0" => "200", "fn0" => "");
 			$sSqlWrk = "";
 		$this->Lookup_Selecting($this->pegawai_nip, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;
@@ -397,7 +397,7 @@ class crr_att_log extends crTableBase {
 		$sSqlWrk = "SELECT DISTINCT `pegawai_nama`, `pegawai_nama` AS `DispFld`, '' AS `DispFld2`, '' AS `DispFld3`, '' AS `DispFld4` FROM `v_att_log`";
 		$sWhereWrk = "{filter}";
 		$this->pegawai_nama->LookupFilters = array("dx1" => '`pegawai_nama`');
-			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "DB", "f0" => '`pegawai_nama` = {filter_value}', "t0" => "200", "fn0" => "", "dlm" => ewr_Encrypt($fld->FldDelimiter));
+			$fld->LookupFilters += array("s" => $sSqlWrk, "d" => "DB", "f0" => '`pegawai_nama` = {filter_value}', "t0" => "200", "fn0" => "");
 			$sSqlWrk = "";
 		$this->Lookup_Selecting($this->pegawai_nama, $sWhereWrk); // Call Lookup selecting
 		if ($sWhereWrk <> "") $sSqlWrk .= " WHERE " . $sWhereWrk;

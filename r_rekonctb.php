@@ -1302,18 +1302,18 @@ class crr_rekon_crosstab extends crr_rekon {
 		$FldVal = strval($FldVal);
 		if ($FldOpr == "") $FldOpr = "=";
 		$sWrk = "";
-		if (ewr_SameStr($FldVal, EWR_NULL_VALUE)) {
+		if ($FldVal == EWR_NULL_VALUE) {
 			$sWrk = $FldExpression . " IS NULL";
-		} elseif (ewr_SameStr($FldVal, EWR_NOT_NULL_VALUE)) {
+		} elseif ($FldVal == EWR_NOT_NULL_VALUE) {
 			$sWrk = $FldExpression . " IS NOT NULL";
-		} elseif (ewr_SameStr($FldVal, EWR_EMPTY_VALUE)) {
+		} elseif ($FldVal == EWR_EMPTY_VALUE) {
 			$sWrk = $FldExpression . " = ''";
-		} elseif (ewr_SameStr($FldVal, EWR_ALL_VALUE)) {
+		} elseif ($FldVal == EWR_ALL_VALUE) {
 			$sWrk = "1 = 1";
 		} else {
 			if (substr($FldVal, 0, 2) == "@@") {
 				$sWrk = $this->GetCustomFilter($fld, $FldVal, $this->DBID);
-			} elseif ($FldDelimiter <> "" && trim($FldVal) <> "" && ($FldDataType == EWR_DATATYPE_STRING || $FldDataType == EWR_DATATYPE_MEMO)) {
+			} elseif ($FldDelimiter <> "" && trim($FldVal) <> "") {
 				$sWrk = ewr_GetMultiSearchSql($FldExpression, trim($FldVal), $this->DBID);
 			} else {
 				if ($FldVal <> "" && $FldVal <> EWR_INIT_VALUE) {
@@ -1558,7 +1558,7 @@ class crr_rekon_crosstab extends crr_rekon {
 
 	// Load selection from session
 	function LoadSelectionFromSession($parm) {
-		$fld = &$this->FieldByParm($parm);
+		$fld = &$this->fields($parm);
 		$fld->SelectionList = @$_SESSION["sel_r_rekon_$parm"];
 		$fld->RangeFrom = @$_SESSION["rf_r_rekon_$parm"];
 		$fld->RangeTo = @$_SESSION["rt_r_rekon_$parm"];
@@ -2204,7 +2204,7 @@ if (!$Page->DrillDownInPanel) {
 	<span onclick="jQuery(this).parent().next().click();" tabindex="-1" class="form-control ewLookupText" id="lu_sv_pegawai_nama"><?php echo (strval(ewr_FilterDropDownValue($Page->pegawai_nama)) == "" ? $ReportLanguage->Phrase("PleaseSelect") : ewr_FilterDropDownValue($Page->pegawai_nama)); ?></span>
 </span>
 <button type="button" title="<?php echo ewr_HtmlEncode(str_replace("%s", ewr_RemoveHtml($Page->pegawai_nama->FldCaption()), $ReportLanguage->Phrase("LookupLink", TRUE))) ?>" onclick="ewr_ModalLookupShow({lnk:this,el:'sv_pegawai_nama',m:0,n:10});" class="ewLookupBtn btn btn-default btn-sm"><span class="glyphicon glyphicon-search ewIcon"></span></button>
-<input type="hidden" data-table="r_rekon" data-field="x_pegawai_nama" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $Page->pegawai_nama->DisplayValueSeparatorAttribute() ?>" name="sv_pegawai_nama" id="sv_pegawai_nama" value="<?php echo ewr_FilterDropDownValue($Page->pegawai_nama, ",") ?>"<?php echo $Page->pegawai_nama->EditAttributes() ?>>
+<input type="hidden" data-table="r_rekon" data-field="x_pegawai_nama" data-multiple="0" data-lookup="1" data-value-separator="<?php echo $Page->pegawai_nama->DisplayValueSeparatorAttribute() ?>" name="sv_pegawai_nama" id="sv_pegawai_nama" value="<?php echo ewr_FilterDropDownValue($Page->pegawai_nama) ?>"<?php echo $Page->pegawai_nama->EditAttributes() ?>>
 <input type="hidden" name="s_sv_pegawai_nama" id="s_sv_pegawai_nama" value="<?php echo $Page->pegawai_nama->LookupFilterQuery() ?>"></span>
 </div>
 </div>
