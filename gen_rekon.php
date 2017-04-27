@@ -21,7 +21,7 @@ $msql = "
 		and (
 		isnull(scan_masuk)
 		or isnull(scan_keluar))
-	"; //echo $msql; exit;
+	"; echo $msql; exit;
 $mquery = mysql_query($msql);
 if (mysql_num_rows($mquery) < 0) {
 	exit;	
